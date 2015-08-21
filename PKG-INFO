@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: PyInteraph
+Version: 1.0
+Summary: Compute interatomic interactions in protein ensembles
+Home-page: http://linux.btbs.unimib.it/pyinteraph/
+Author: Matteo Tiberti, Gaetano Invernizzi, Yuval Inbar, Matteo Lambrughi, Gideon Schreiber, Elena Papaleo
+Author-email: matteo.tiberti@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN

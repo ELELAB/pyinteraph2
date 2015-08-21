@@ -1,0 +1,98 @@
+=====================
+Installing PyInteraph
+=====================
+
+PyInteraph is composed of a Python and C package (libinteract) and some front-end scripts.
+The C library is wrapped for Python using a Cython wrapper. The latter has already been pre-compiled to C, 
+so you shouldn't need to recompile it. However, the Cython (pxd and pyx) files are also included in the 
+src directory in case of need or for customization purposes.
+
+In order to build PyInteraph from source you will need
+
+- Python 2.7
+- a C/C++ compiler (e.g. GNU gcc)
+- the Python header files (e.g. package python-dev in Debian-based Linux distributions)
+- the numpy header files (which are usually pre-installed with the numpy package)
+- Cython (optional)
+
+Few open-source libraries are also required:
+
+- MDAnalysis (< 0.8)
+- numpy 
+- scipy 
+- matplotlib 
+- networkx 
+
+The PyInteraph module and scripts are installed in separate locations, and the configuration files are installed together
+with the scripts.
+
+Installation instructions
+=========================
+
+0) Install the prerequisites. On Linux systems, this means having a working Python 2.7 installation 
+with the aforamention libraries installed. On Debian-based systems (such as Debian or Ubuntu) this 
+boils down to installing few packages with sudo or using the root user:
+
+       sudo apt-get install python-dev python-cython python-numpy g++ gcc
+       sudo apt-get install python-networkx python-scipy python-matplotlib python-biopython python-netcdf4 libhdf5-dev
+
+and then installing mdanalysis using pip:
+       
+       pip install MDAnalysis==0.7.6   
+
+If this doesn't work out, you can install from source. Download the MDAnalysis .tar.gz source file
+from the MDAnalysis website ( http://code.google.com/p/mdanalysis ) and run:
+
+       tar xvzf MDAnalysis*.tar.gz
+       cd MDAnalysis*
+       python setup.py install 
+
+For more complete instructions for the installation of MDAnalysis, 
+please refer to the MDAnalysis guidelines: http://code.google.com/p/mdanalysis/wiki/Install .
+
+On OSX, the easiest way to install the prerequisites is performed through MacPorts ( http://www.macports.org/install.php ). 
+MacPorts requires having Xcode and the command-line compilation
+tools installed; please refer to the respective websites for instructions to do so.
+Once you have MacPorts installed, all you have to do is:
+
+       port install py26-numpy py27-cython
+       port install py27-scipy py27-matplotlib py27-biopython hdf5 netcdf+dap+netcdf4 py27-networkx
+
+Then you can install MDAnalysis through pip, or manual installation, as detailed before for linux systems. 
+
+1) The whole PyInteraph package can be easily built and installed from source using the provided distutils script. The command
+
+       python setup.py install
+
+builds and installs module, programs, and configuration files system-wide. In this case it probably requires administrative privileges to write into the appropriate directories (e.g. sudo python setup.py install). 
+Otherwise, it is also possible to customize the installation directories by using the setup script flags, as standard with distutils. 
+For instance:
+
+--install-data=/new/path allows to change the location of the pyinteraph installation directory (scripts and data)
+--install-lib=/new/path  allows to change the location of the libinteract module
+--home=/new/path performs a completely local installation, from the supplied path. 
+If you change the default library location using the last two options  
+you'll probably need to change the PYTHONPATH system variable for the libinteract module 
+to be available system-wide. For instance:
+
+	export PYTHONPATH=$PYTHONPATH:localdir/lib/python/
+
+2) export the PYINTERAPH system variable to the location of the configuration files and scripts (default is /usr/local/pyinteraph). For instance, in the bash shell:
+
+	export PYINTERAPH=/usr/local/pyinteraph
+
+It is advisable to automatically execute this operation at login (i.e. to insert this line into the .shellrc file of your choice, as .bashrc for bash).
+
+3) add the pyinteraph directory to your PATH system variable:
+
+	export PATH=$PATH:$PYINTERAPH
+
+so that you'll be able to call the front-end scripts from anywhere.
+
+For instance, the installation of the whole program in the local "test" directory would look something like this:
+
+python setup.py install --home=test
+export PYTHONPATH=$PYTHONPATH:$(pwd)/test/lib/python/
+export PYINTERAPH=$(pwd)/test/pyinteraph
+export PATH=$PATH:$PYINTERAPH
+

@@ -1,0 +1,455 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#    PyInteraph, a software suite to analyze interactions and interaction network in structural ensembles.
+#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, Gaetano Invernizzi, Yuval Inbar, 
+#    Matteo Lambrughi, Gideon Schreiber,  Elena Papaleo <elena.papaleo@unimib.it> <elena.papaleo@bio.ku.dk>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+import argparse
+import logging as log
+import numpy as np
+import ConfigParser as cp
+import os
+import sys
+
+### Helper functions
+def str2file(string, fname):
+    fhout = open(fname, 'w')
+    fhout.write(string)
+    fhout.close()
+
+
+def parse_cgs_file(fname):
+    grps_str = 'CHARGED_GROUPS'
+    res_str = 'RESIDUES'
+    default_grps_str = 'default_charged_groups'
+
+    cfg = cp.ConfigParser()
+    cfg.read(fname)
+    try:
+        cfg.read(fname)
+    except: 
+        log.error("file %s not readeable or not in the right format." % fname)
+        exit(1)
+
+    out = {}
+    group_definitions = {}
+
+    charged_groups = cfg.options(grps_str)
+    charged_groups.remove(default_grps_str)
+    charged_groups = [ i.strip() for i in charged_groups ]
+
+    default_charged = cfg.get(grps_str, default_grps_str).split(",")
+    default_charged = [ i.strip() for i in default_charged ]
+
+    residues = cfg.options(res_str)
+    
+    for i in charged_groups + default_charged:
+        group_definitions[i] = cfg.get(grps_str, i).split(",")
+	for j in range(len(group_definitions[i])):
+	    group_definitions[i][j] = group_definitions[i][j].strip()
+
+    try:
+        for i in residues:
+            i = i.upper()
+            out[i] = {}
+            for j in default_charged:
+                out[i][j] = group_definitions[j]
+            this_cgs = cfg.get(res_str, i).split(",")
+            for j in this_cgs:
+                if j:
+                    out[i][j] = group_definitions[j.lower()]
+    except:
+        logging.error("could not parse the charged groups file. Are there any inconsistencies?")
+    
+    return out
+
+def parse_hbs_file(fname):
+    hbs_str = 'HYDROGEN_BONDS'
+    acceptors_str = 'ACCEPTORS'
+    donors_str = 'DONORS'
+    cfg = cp.ConfigParser()
+    
+    try:
+        cfg.read(fname)
+    except: 
+        log.error("file %s not readeable or not in the right format." % fname)
+        exit(1)
+    
+    acceptors = cfg.get(hbs_str, acceptors_str)
+    tmp = acceptors.strip().split(",")
+    acceptors = [ i.strip() for i in tmp ]
+
+    donors = cfg.get(hbs_str, donors_str)
+    tmp = donors.strip().split(",")
+    donors = [ i.strip() for i in tmp ]
+
+    return dict(ACCEPTORS=acceptors, DONORS=donors)
+
+# List of default hydrophobic residues
+hc_reslist = ['ALA', 'VAL', 'LEU', 'ILE', 'PHE', 'PRO', 'TRP', 'MET'] 
+
+# List of default charged groups
+#cter=['C','O1','O2']
+#nter=['N','H1','H2','H3']
+
+# Default charged groups
+
+#default_cgs = {
+#    'ALA':{"cter":cter,"nter":nter},
+#    'ASN':{"cter":cter,"nter":nter},
+#    'ASP':{"cter":cter,"nter":nter,'sc.asp.COO':['OD1','OD2',"!HD1"]},
+#    'ARG':{"cter":cter,"nter":nter,'sc.arg.NCNN':['NE','NH1','NH2']},
+#    'CYS':{"cter":cter,"nter":nter},
+#    'CYSH':{"cter":cter,"nter":nter},
+#    'GLN':{"cter":cter,"nter":nter},
+#    'GLU':{"cter":cter,"nter":nter,'sc.glu.COO':['OE1','OE2',"!HE1"]},
+#    'GLY':{"cter":cter,"nter":nter},
+#    'HIS':{"cter":cter,"nter":nter,'sc.his.ED':['HD1','HE2']},
+#    'HISA':{"cter":cter,"nter":nter,'sc.his.ED':['HD1','HE2']},
+#    'HISB':{"cter":cter,"nter":nter,'sc.his.ED':['HD1','HE2']},
+#    'ILE':{"cter":cter,"nter":nter},
+#    'LEU':{"cter":cter,"nter":nter},
+#    'LYS':{"cter":cter,"nter":nter, 'sc.lys.NZ':['NZ','HZ1','HZ2']},
+#    'LYSH':{"cter":cter,"nter":nter,'sc.lys.NZ':['NZ','HZ1','HZ2']},
+#    'MET':{"cter":cter,"nter":nter},
+#    'PHE':{"cter":cter,"nter":nter},
+#    'PRO':{"cter":cter,"nter":nter},
+#    'SER':{"cter":cter,"nter":nter},
+#    'THR':{"cter":cter,"nter":nter},
+#    'TRP':{"cter":cter,"nter":nter},
+#    'TYR':{"cter":cter,"nter":nter},
+#    'VAL':{"cter":cter,"nter":nter},
+#    }
+
+
+# Residue list for potential calculation - all canonical but G
+kbp_residues_list = ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL"] 
+
+# Logging format
+LOGFMT = "%(levelname)s: %(message)s"
+
+#####
+
+# Check env. variables
+INSTALL_DIR = os.getenv('PYINTERAPH')
+
+if not INSTALL_DIR:
+    log.warn("PYINTERAPH system variable should contain the path to the PYINTERAPH installation directory! Defaulting to local dir")
+    INSTALL_DIR='./'
+
+if not os.path.isdir(INSTALL_DIR):
+    log.warn("The path specified by system variable PYINTERAPH does not exist. Defaulting to local dir")
+    INSTALL_DIR='./'
+
+INSTALL_DIR += '/'
+sys.path.append(INSTALL_DIR)
+
+from libinteract import libinteract as li
+
+ff_masses_dir = 'ff_masses'
+masses_dir = INSTALL_DIR+ff_masses_dir
+masses_files = os.listdir(masses_dir)
+
+# Command line parsing & stuff
+
+parser = argparse.ArgumentParser(description='Interaction calculator')
+
+parser.add_argument('-v','--verbose', action='store_true', dest='verbose', help='Verbose mode')
+
+# Top/trajs
+parser.add_argument('-s', '--top', action='store', type=str, dest='top', default=None, help='Topology file')
+parser.add_argument('-t', '--trj', action='store', type=str, dest='trj', default=None, help='Trajectory file')
+parser.add_argument('-r', '--ref', action='store', type=str, dest='ref', default=None, help='Reference structure')
+
+# Analyses
+parser.add_argument('-b','--salt-bridges', action='store_true', help='Analyze salt-bridges', dest='do_sb')
+parser.add_argument('-f','--hydrophobic', action='store_true', help='Analyze hydrophobic clusters', dest='do_hc')
+parser.add_argument('-y','--hydrogen-bonds', action='store_true', help='Analyze hydrogen bonds', dest='do_hb')
+parser.add_argument('-p','--potential', action='store_true', help='Analyze interactions using the knowledge-based potential', dest='do_kbp')
+
+# Salt-bridges
+parser.add_argument('--sb-co','--sb-cutoff', action='store', type=float, help="Distance cut-off for side-chain interaction", dest='sb_co', default=4.5)
+parser.add_argument('--sb-perco','--sb-persistence-cutoff', action='store', type=float, help="Minimum persistence for interactions", dest='sb_perco', default=0.0)
+parser.add_argument('--sb-dat', action='store', type=str, default='salt-bridges.dat', dest='sb_dat')
+parser.add_argument('--sb-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", default=None, dest='sb_graph')
+parser.add_argument('--sb-cg-file', action='store', dest='cgs_file', type=str, default=INSTALL_DIR+'charged_groups.ini', help="default charged groups file")
+parser.add_argument('--sb-mode', action='store', dest='cgs_mode', type=str, choices=['different_charge','same_charge','all'], default="different_charge", help="Electrostatic interactions mode")
+
+# Hydrophobic clusters
+parser.add_argument('--hc-co','--hc-cutoff', action='store', type=float, help="Distance cut-off for side-chain interaction", dest='hc_co', default=5.0)
+parser.add_argument('--hc-residues', action='store', type=str, help="Comma-separated list of hydrophobic residues (default: %s)" % ",".join(hc_reslist), dest='hc_reslist', default=None)
+parser.add_argument('--hc-perco','--hc-persistence-cutoff', action='store', type=float, help="Minimum persistence for interactions", dest='hc_perco', default=0.0)
+parser.add_argument('--hc-dat', action='store', type=str, default='hydrophobic-clusters.dat', dest='hc_dat')
+parser.add_argument('--hc-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", dest='hc_graph', default=None)
+
+# Hydrogen bonds
+parser.add_argument('--hb-co','--hb-cutoff', action='store', type=float, help="Donor-acceptor distance cut-off", dest='hb_co', default=3.5)
+parser.add_argument('--hb-ang','--hb-angle', action='store', type=float, help="Donor-acceptor angle cut-off", dest='hb_angle', default=120.0)
+parser.add_argument('--hb-dat', action='store', type=str, default='hydrogen-bonds.dat', dest='hb_dat')
+parser.add_argument('--hb-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", dest='hb_graph', default=None)
+parser.add_argument('--hb-perco', action='store', type=float, help="Minimum persistence for hydrogen bonds", default=None, dest="hb_perco")
+parser.add_argument('--hb-class', action='store', type=str, choices=['all','mc-mc','mc-sc','sc-sc','custom'], help = "Class of hydrogen bonds to analyse", default='all')
+parser.add_argument('--hb-ad-file', action='store', type=str, dest='hbs_file', default=INSTALL_DIR+'hydrogen_bonds.ini',  help = "File defining hydrogen bonds donor and acceptor atoms")
+parser.add_argument('--hb-custom-group-1', action='store', type=str, dest='hb_group1', help='Custom group 1 for hydrogen bonds calculation', default=None)
+parser.add_argument('--hb-custom-group-2', action='store', type=str, dest='hb_group2',help='Custom group 2 for hydrogen bonds calculation', default=None)
+
+# Statistical potential
+parser.add_argument('--kbp-ff','--force-field', action='store', type=str, dest='kbp_ff', default=INSTALL_DIR+'ff.S050.bin64', help='Statistical potential definition file')
+parser.add_argument('--kbp-atomlist', action='store', type=str, default=INSTALL_DIR+'kbp_atomlist', dest='kbp_atomlist', help='Ordered, force-field specific list of atom names')
+parser.add_argument('--kbp-dat', action='store', type=str, default='kb-potential.dat', dest='kbp_dat')
+parser.add_argument('--kbp-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", dest='kbp_graph', default=None)
+parser.add_argument('--kbp-kbt', action='store', type=float, help="kb*T value used in the inverse-boltzmann relation for the knowledge-based potential", dest='kbp_kbt', default=1.0)
+
+# Miscellaneous
+#parser.add_argument('--np', action='store', type=int, help="Maximum number of cores to use (default: as the number of analyses", dest='np')
+parser.add_argument('--ff-masses', action='store', type=str, choices=masses_files, help="Force field to be used (for masses calculation only)", dest="ffmasses", default='charmm27')
+
+args = parser.parse_args()
+
+#########################################
+### set logging level
+if args.verbose:
+    log.basicConfig(level=log.INFO,    format=LOGFMT)
+else:
+    log.basicConfig(level=log.WARNING, format=LOGFMT)
+
+######################################### 
+### Input sanity check
+
+# top and trj must be present
+if not args.top or not args.trj:
+    log.error("Topology and trajectory are required.")
+    exit()
+
+# if no reference, topology is reference
+if not args.ref:
+    args.ref = args.top
+    log.info("Using topology as reference structure")
+
+args.ffmasses = masses_dir+'/'+args.ffmasses
+
+# Load systems
+try:
+    pdb,uni = li.loadsys(args.ref, args.top, args.trj)
+except ValueError:
+    log.error("Could not read one of the input files, or trajectory and topology are not compatible.")
+    exit(1)
+
+
+
+######################################### 
+### Hydrophobic clusters analysis
+
+
+if args.do_hc:
+    
+    if args.hc_reslist:
+        hc_reslist = args.hc_reslist.strip().split(",")
+        for i in range(len(hc_reslist)):
+            hc_reslist[i] = hc_reslist[i].strip()
+
+
+    # Get on with it
+    if args.hc_graph:
+        fullmatrix = li.SCFullmatrix
+    else:
+        fullmatrix = None
+
+    str_out, hc_mat_out = li.dointeract(li.generateSCIdentifiers,
+                                     pdb = pdb,
+                                     uni = uni,
+                                     co = args.hc_co, 
+                                     perco = args.hc_perco,
+                                     ffmasses = args.ffmasses, 
+                                     fullmatrix = fullmatrix, 
+                                     reslist = hc_reslist,
+                                     mindist = False)
+
+    # Save .dat
+    str2file(str_out, args.hc_dat)
+
+    # Save .mat (if available)
+    if hc_mat_out != None:
+        np.savetxt(args.hc_graph, hc_mat_out, fmt="%.1f")
+
+
+######################################### 
+### Salt-bridges analysis
+
+if args.do_sb:
+    
+# sb = dointeract(gro, xtc, pdb, generateCGIdentifiers, co=co, ffmasses=ffmasses, fullmatrix=CGFullmatrix, perco=perco, cgs=defaultcharged, mindist=True, fulldata=False)
+
+    # Load charged groups
+    #try:
+    if True:
+        default_cgs = parse_cgs_file(args.cgs_file)
+    #except:
+    #    log.error("Error parsing the charged groups file!")
+    #    exit(1)
+    if args.cgs_mode == 'same_charge':
+        cgs_mode = 'same'
+    if args.cgs_mode == 'different_charge':
+        cgs_mode = 'diff'
+    if args.cgs_mode == 'all':
+        cgs_mode = 'both'
+    
+
+    # Get on with it
+    fullmatrix = None
+    if args.sb_graph:
+        fullmatrix = li.CGFullmatrix
+
+    str_out, sb_mat_out = li.dointeract(li.generateCGIdentifiers,
+                                        pdb = pdb,
+                                        uni = uni,
+                                        co = args.sb_co, 
+                                        perco = args.sb_perco,
+                                        ffmasses = args.ffmasses, 
+                                        fullmatrix = fullmatrix, 
+                                        mindist = True,
+                                        mindist_mode = cgs_mode,
+                                        cgs = default_cgs)
+
+    # Save .dat
+    str2file(str_out, args.sb_dat)
+
+    # Save .mat (if available)
+    if sb_mat_out != None:
+        np.savetxt(args.sb_graph, sb_mat_out, fmt="%.1f")
+
+
+######################################### 
+### Hydrogen bonds analysis
+
+if args.do_hb:
+    
+# sb = dointeract(gro, xtc, pdb, generateCGIdentifiers, co=co, ffmasses=ffmasses, fullmatrix=CGFullmatrix, perco=perco, cgs=defaultcharged, mindist=True, fulldata=False)
+
+# Handle hb groups
+
+    mc_sel = 'backbone or name H or name H1 or name H2 or name H3 or name O1 or name O2 or name \
+OXT'
+    sc_sel = 'protein and not (%s)' % mc_sel
+
+    if (args.hb_group1 and args.hb_group2) and not args.hb_class == 'custom':
+        log.warning("Hydrogen bond custom groups have been specified; they will be used. Please \
+use --hb-class=custom to get rid of this warning.!")
+        args.hb_class = 'custom'
+
+    if args.hb_class == 'all':
+        hb_group1 = 'protein'
+        hb_group2 = 'protein'
+    elif args.hb_class == 'mc-mc':
+        hb_group1 = mc_sel
+        hb_group2 = mc_sel
+    elif args.hb_class == 'sc-sc':
+        hb_group1 = sc_sel
+        hb_group2 = sc_sel
+    elif args.hb_class == 'mc-sc':
+        hb_group1 = mc_sel
+        hb_group2 = sc_sel
+    elif args.hb_class == 'custom':
+        if not args.hb_group1 or not args.hb_group2:
+            log.error("Hydrogen bond class 'custom' requires the definition of two interation gr\
+oups. (see options --hb-custom-group1 and hb-custom-group2)")
+            exit(1)
+        else:
+            hb_group1 = args.hb_group1
+            hb_group2 = args.hb_group2
+
+    if args.hb_class == 'custom':
+        try:
+            hb_sel1 = uni.selectAtoms(hb_group1)
+        except:
+            log.error("Error: hydrogen bonds group one is not valid.")
+            exit(1)
+        try:
+            hb_sel2 = uni.selectAtoms(hb_group2)
+        except:
+            log.error("Error: hydrogen bonds group two is not valid.")
+            exit(1)
+
+        if len(hb_sel1) == 0:
+            log.error("No atoms were found in selection group 1 for hydrogen bonds analysis.")
+            exit(1)
+        if len(hb_sel2) == 0:
+            log.error("No atoms were found in selection group 2 for hydrogen bonds analysis.")
+            exit(1)
+
+    try:
+
+        hbs = parse_hbs_file(args.hbs_file)
+    except:
+        log.error("Error parsing the hydrogen bonds definition file!")
+        exit(1)
+
+    # Get on with it
+    fullmatrix = False
+    perresidue = False
+    if args.hb_graph:
+        fullmatrix = True
+    
+    str_out, hb_mat_out = li.dohbonds(sel1 = hb_group1,
+                                   sel2 = hb_group2,
+                                   pdb = pdb,
+                                   uni = uni,
+                                   distance = args.hb_co,
+                                   angle = args.hb_angle,
+                                   perco=args.hb_perco,
+                                   perresidue = perresidue,
+                                   dofullmatrix = fullmatrix,
+                                   other_hbs = hbs)                                    
+
+    # Save .dat
+    str2file(str_out, args.hb_dat)
+
+    # Save .mat (if available)
+    if hb_mat_out != None:
+        np.savetxt(args.hb_graph, hb_mat_out, fmt="%.1f")
+
+
+######################################### 
+### Statistical Potential Calculation
+
+if args.do_kbp:
+    
+    kbp_atomlist = li.parse_atomlist(args.kbp_atomlist)
+
+    fullmatrix = False
+    if args.kbp_graph:
+        fullmatrix = True
+    
+    kbp_seq_dist_co = 0
+    str_out, mat_out = li.dopotential(kbp_atomlist, 
+                         residues_list = kbp_residues_list,
+                         potential_file = args.kbp_ff,
+                         seq_dist_co = kbp_seq_dist_co, 
+                         uni = uni,
+                         pdb = pdb,
+                         dofullmatrix = fullmatrix,
+                         kbT=args.kbp_kbt)
+
+    # Save .dat
+    str2file(str_out, args.kbp_dat)
+    
+    # Save .mat (if available)
+    if mat_out != None:
+        np.savetxt(args.kbp_graph, mat_out, fmt="%.3f")
+
+
