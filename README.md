@@ -15,7 +15,6 @@ on the various flags available to the user.
 Installation instructions and requirements are found in the INSTALL file.
 
 When using PyInteraph for publication, please cite:
-PyInteraph: A Framework for the Analysis of Interaction Networks in Structural Ensembles of Proteins
 
   ``Matteo Tiberti, Gaetano Invernizzi, Matteo Lambrughi, Yuval Inbar, Gideon Schreiber, and Elena Papaleo
   PyInteraph: A Framework for the Analysis of Interaction Networks in Structural Ensembles of Proteins
