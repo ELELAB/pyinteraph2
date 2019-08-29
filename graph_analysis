@@ -305,11 +305,6 @@ if args.do_paths:
 
 		print "Path #\tLength\tSum of weights\tAverage weight\tPath"
 		for i,p in enumerate(sorted_paths):
-			#print p
-			#print "%d" % p[1]
-			#print "%.1f" % p[2]
-			#print "%.1f" % p[3]
-			#print "%s" % ",".join(p[0])
 			print "%d\t%d\t%.1f\t\t%.1f\t\t%s" % (i+1,p[1],p[2],p[3],",".join(p[0]))
 		if args.write_paths:
 			for i,p in enumerate(sorted_paths):
@@ -320,26 +315,4 @@ if args.do_paths:
 					this_a[x,y] = G[p[0][e]][p[0][e+1]]['weight']
 					this_a[y,x] = G[p[0][e+1]][p[0][e]]['weight']
 				np.savetxt("path_%d.dat" % (i+1) , this_a, fmt="%.1f")
-		#print sorted_paths
-		#print full_paths
-		#print G.edges()
-		#for i in paths: print i
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 0 2 1
-# 2 0 0
-# 1 0 0
 
