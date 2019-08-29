@@ -215,7 +215,7 @@ int square_mindist(double* coords1, double* coords2, int nframes, int nsets1, in
     out_mat[i] = 0;
 
   int sets_ends1[nsets1];
-  int sets_starts1[nsets2];
+  int sets_starts1[nsets1];
   int sets_ends2[nsets2];
   int sets_starts2[nsets2];
 
