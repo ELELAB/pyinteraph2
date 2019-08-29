@@ -18,11 +18,21 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse
-import networkx as nx
-import numpy as np
-import MDAnalysis as mda
+from __future__ import absolute_import
 import sys
+
+major, minor, patch  = sys.version_info
+if major < 2 or (major == 2 and minor < 7):
+	errstr = \
+		"Your Python version is {:s}, but only " \
+		"versions >= 2.7 are supported."
+	log.error(errstr.format(sys.version))
+	exit(1)
+
+import argparse
+import numpy as np
+import networkx as nx
+import MDAnalysis as mda
 from Bio import PDB
 
 parser = argparse.ArgumentParser(description='PyInteraph network analysis module.')
