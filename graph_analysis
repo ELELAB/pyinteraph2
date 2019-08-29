@@ -120,7 +120,7 @@ parser.add_argument("-d","--write-paths", \
 args = parser.parse_args()
 
 def residue_key(x):
-	return int(filter(str.isdigit, str(x)))
+	return int("".join(list(filter(str.isdigit, str(x)))))
 
 def build_graph(fname,pdb=None):
 	try:
