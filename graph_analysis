@@ -30,6 +30,7 @@ if major < 2 or (major == 2 and minor < 7):
 	exit(1)
 
 import argparse
+import logging as log
 import numpy as np
 import networkx as nx
 import MDAnalysis as mda
@@ -122,26 +123,46 @@ args = parser.parse_args()
 def residue_key(x):
 	return int("".join(list(filter(str.isdigit, str(x)))))
 
-def build_graph(fname,pdb=None):
+def build_graph(fname, pdb = None):
 	try:
 		data = np.loadtxt(fname)
 	except:
-		print("ERROR: Could not load file %s or wrong file format. Exiting..." %fname)
+		errstr = \
+			"Could not load file {:s} or wrong file format. Exiting..."
+		# log the full numpy stack trace with exc_info
+		log.error(errstr.format(fname), exc_info = True)
 		exit(1)
 
-	if pdb:
+	if pdb is not None:
 		try:
-			pdb = mda.Universe(pdb)
-		except: 
-			print("ERROR: Could not load topology file. Exiting...")
-		identifiers = ["%s-%d%s" % (r.segment.name, r.resnum, r.name) for r in pdb.residues]
+			# generate a Universe object from the PDB file
+			# (use the PDB for both the 'topology' and 'trajectory'
+			# arguments necessary to create the Universe)
+			u = mda.Universe(pdb, pdb)
+		except Exception:
+			errstr = \
+				"Exception caught during creation of the Universe " \
+				"object. Exiting..."
+			# log the full MDAnalysis stack trace with exc_info
+			log.error(errstr, exc_info = True)
+		
+		identifiers = \
+			["{:s}-{:d}{:s}".format(r.segment.segid, \
+									r.resnum, \
+									r.resname) \
+			 for r in u.residues]
  
 	else:
-		identifiers = map(str,range(1,data.shape[0]+1))
-
-	node_names = dict(zip(range(0,data.shape[0]),identifiers))
+		# generate automatic identifiers going from 1 to the
+		# total number of residues considered
+		identifiers = [str(name) for name in range(1,data.shape[0]+1)]
+	
+	# generate a graph from the data loaded
 	G = nx.Graph(data)
-	nx.relabel_nodes(G, node_names, copy=False)
+
+	# set the names of the graph nodes (in place)
+	node_names = dict(zip(range(data.shape[0]), identifiers))
+	nx.relabel_nodes(G, mapping = node_names, copy = False)
 
 	return identifiers, G
 
