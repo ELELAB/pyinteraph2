@@ -106,12 +106,13 @@ maxclustsize = []
 
 for val in vals:       
     boolmats = [i>val for i in matrices]
+    allmat = boolmats[0]
     if len(boolmats) > 1:
-         allmat = np.logical_or(*boolmats)
-    else:
-         allmat = boolmats[0]
+        for i in range (1,len(boolmats)):
+             allmat = np.logical_or(allmat, boolmats[i])
+
     G=nx.Graph(allmat)
-    maxclustsize.append(len(nx.algorithms.components.connected_components(G)[0]))
+    maxclustsize.append(len(max(list(nx.algorithms.components.connected_components(G)), key=len)))
 
 x = vals
 y = maxclustsize
