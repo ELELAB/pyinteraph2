@@ -35,21 +35,87 @@ import networkx as nx
 import MDAnalysis as mda
 from Bio import PDB
 
-parser = argparse.ArgumentParser(description='PyInteraph network analysis module.')
+########################### ARGUMENT PARSER ###########################
 
-parser.add_argument("-r","--reference", metavar="TOPOLOGY", dest='top', type=str, help="Reference topology file", default=None)
-parser.add_argument("-a","--adj-matrix", metavar="DAT", dest='dat', type=str, help="Input graph file")
-parser.add_argument("-c","--components", dest='do_components', action='store_true', default=False, help="Calculate connected components")
-parser.add_argument("-u","--hubs", dest='do_hubs', action='store_true', default=False, help="Calculate hubs")
-parser.add_argument("-k","--hubs-cutoff", dest='hubs_cutoff', default=4, type=int, help="Minimum number of connections for hubs")
-parser.add_argument("-p","--all-paths", dest='do_paths', action='store_true', default=False, help="Calculate all simple paths between two residues in the graph")
-parser.add_argument("-r1","--source", dest='source', default=None, help="First residue for paths calculation (see option -p)")
-parser.add_argument("-r2","--target", dest='target', default=None, help="Last residue for paths calculation (see option -p)")
-parser.add_argument("-l","--maximum-path-length", dest='maxl', default=3, type=int, help="Maximum path length (see option -p)")
-parser.add_argument("-s","--sort-paths", dest='sort_paths_by', choices=['length','cumulative_weight','avg_weight'], default='length', help="How to sort pathways in output (default: length)")
-parser.add_argument("-cb","--components-pdb", dest="components_pdb", default=None, help="Save connected components ID in PDB file")
-parser.add_argument("-ub","--hubs-pdb", dest="hubs_pdb", default=None, help="Save hub degrees in PDB file") 
-parser.add_argument("-d","--write-paths", dest="write_paths", default=False, action='store_true')
+description = "PyInteraph network analysis module."
+parser = argparse.ArgumentParser(description = description)
+
+parser.add_argument("-r","--reference", \
+					metavar = "TOPOLOGY", \
+					dest = "top", \
+					type = str, \
+					help = "Reference topology file", \
+					default = None)
+
+parser.add_argument("-a","--adj-matrix", \
+					metavar = "DAT", \
+					dest = "dat", \
+					type = str, \
+					help = "Input graph file")
+
+parser.add_argument("-c","--components", \
+	                dest = "do_components", \
+	                action = "store_true", \
+	                default = False, \
+	                help = "Calculate connected components")
+
+parser.add_argument("-u","--hubs", \
+	                dest = "do_hubs", \
+	                action = "store_true", \
+	                default = False, \
+	                help = "Calculate hubs")
+
+parser.add_argument("-k","--hubs-cutoff", \
+	                dest = "hubs_cutoff", \
+	                default = 4, \
+	                type = int, \
+	                help = "Minimum number of connections for hubs")
+
+parser.add_argument("-p","--all-paths", \
+	                dest = "do_paths", \
+	                action = "store_true", \
+	                default = False, \
+	                help = "Calculate all simple paths between " \
+	                       "two residues in the graph")
+
+parser.add_argument("-r1","--source", \
+	                dest = "source", \
+	                default = None, \
+	                help = "First residue for paths calculation " \
+	                	   "(see option -p)")
+
+parser.add_argument("-r2","--target", \
+					dest = "target", \
+					default = None, \
+					help = "Last residue for paths calculation " \
+						   "(see option -p)")
+
+parser.add_argument("-l","--maximum-path-length", \
+					dest = "maxl", \
+					default = 3, \
+					type = int, \
+					help = "Maximum path length (see option -p)")
+
+parser.add_argument("-s","--sort-paths", \
+					dest = "sort_paths_by", \
+					choices = ["length", "cumulative_weight", "avg_weight"], \
+					default = "length", \
+					help = "How to sort pathways in output (default: length)")
+
+parser.add_argument("-cb","--components-pdb", \
+					dest = "components_pdb", \
+					default = None, \
+					help = "Save connected components ID in PDB file")
+
+parser.add_argument("-ub","--hubs-pdb", \
+					dest = "hubs_pdb", \
+					default = None, \
+					help = "Save hub degrees in PDB file")
+
+parser.add_argument("-d","--write-paths", \
+					dest = "write_paths", \
+					default = False, \
+					action = "store_true")
 
 args = parser.parse_args()
 
