@@ -111,11 +111,14 @@ def values_to_bfac(pdb, vals, pdb_out):
 	parser = PDB.PDBParser()
 	structure = parser.get_structure('protein',pdb)
 	io = PDB.PDBIO()
+        chain_offset = 0
 	for model in structure:
 		for chain in model:
 			for i,residue in enumerate(chain):
 				for atom in residue:
-					atom.set_bfactor(float(vals[i]))
+					atom.set_bfactor(float(vals[i+chain_offset]))
+			chain_offset += len(chain)
+
 	io.set_structure(structure)
 	io.save(pdb_out)
 
@@ -133,7 +136,7 @@ for i in sorted(G.nodes(), key=residue_key):
 	print "\t%s" % i
 
 if args.do_components:
-	ccs = get_connected_components(G)
+	ccs = list(get_connected_components(G))
 	for i,cc in enumerate(ccs):
 		print "Connected component %d:\n\t (%d elements)" % (i+1, len(cc)),
 		print ", ".join(sorted(cc, key=residue_key))
@@ -156,17 +159,14 @@ if args.do_hubs:
 	else:
 		print "No hubs with connectivity >= %d have been found." % args.hubs_cutoff
 	if args.hubs_pdb:
-                hubs_array = np.array(identifiers)
+                hubs_array = np.zeros(len(identifiers))
 		hubs_dict = dict(sorted_hubs)
-		print sorted_hubs
 		for i,idt in enumerate(identifiers):
-			try: 
+			try:
 				hubs_array[i] = hubs_dict[idt]
 			except:
-				hubs_array[i] = 0.0
-
+                                pass
                 values_to_bfac(args.top, hubs_array, args.hubs_pdb)	
-	#if args.cb_components:
 		
 if args.do_paths:
 	if not args.source or not args.target:
