@@ -121,6 +121,9 @@ parser.add_argument("-d","--write-paths", \
 
 args = parser.parse_args()
 
+
+############################## FUNCTIONS ##############################
+
 def residue_key(x):
 	return int("".join(list(filter(str.isdigit, str(x)))))
 
@@ -194,33 +197,58 @@ def values_to_bfac(pdb, vals, pdb_out):
 	io.set_structure(structure)
 	io.save(pdb_out)
 
+
+################################ MAIN #################################
+
 if args.dat is None:
+	# Exit if the adjacency matrix was not speficied
     log.error("Graph adjacency matrix must be specified. Exiting...")
     exit(1)
 
-if (args.components_pdb is None or args.hubs_pdb is None) and args.top is None:
+if (args.components_pdb is None or args.hubs_pdb is None) \
+and args.top is None:
+	# Exit if the user requested the PDB files with connected
+	# components and hubs but did not provide a reference PDB
+	# file
 	log.error(\
 		"A PDB reference file must be supplied with options " \
 		"-cb and -ub. Exiting...")
+	exit(1)
 
-identifiers, G = build_graph(args.dat, pdb=args.top)
+# build the graph
+identifiers, G = build_graph(args.dat, pdb = args.top)
+nodes = G.nodes()
+edges = G.edges()
 
-print "Graph loaded! %d nodes, %d edges" % (len(G.nodes()), len(G.edges()))
-print "Node list:"
-for i in sorted(G.nodes(), key=residue_key): 
-	print "\t%s" % i
+logstr = "Graph loaded! {:d} nodes, {:d} edges"
+log.info(logstr.format(len(nodes), len(edges)))
+logstr = "Node list: {:s}"
+log.info(\
+	logstr.format(\
+		"\t".join([node for node in sorted(nodes, key = residue_key)])))
 
 if args.do_components:
+	# calculate the connected components
 	ccs = list(get_connected_components(G))
+	logstr = "Connected component {:d}\n ({:d} elements) {:s}"
 	for i,cc in enumerate(ccs):
-		print "Connected component %d:\n\t (%d elements)" % (i+1, len(cc)),
-		print ", ".join(sorted(cc, key=residue_key))
-	if args.components_pdb:
+		log.info(\
+			logstr.format(\
+				i + 1, \
+				len(cc), \
+				", ".join(list(sorted(cc, key = residue_key)))))
+
+	if args.components_pdb is not None:
 		conn_comp_array = np.array(identifiers)
-		for i,cc in enumerate(ccs):
+		for i, cc in enumerate(ccs):
 			for res in cc:
 				conn_comp_array[identifiers.index(res)] = i+1
-		values_to_bfac(args.top, conn_comp_array, args.components_pdb)
+		# write a PDB file identical to the reference PDB file
+		# but with the b-factor column filled with the number of
+		# the connected component a residue belongs to
+		values_to_bfac(pdb = args.top, \
+					   vals = conn_comp_array, \
+					   pdb_out = args.components_pdb)
 		
 if args.do_hubs:
 	hubs = get_hubs(G, min_k=args.hubs_cutoff)
