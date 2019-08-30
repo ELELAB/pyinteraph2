@@ -178,15 +178,14 @@ def get_all_paths(G, source, target, cutoff = None):
 													   target = target, \
 													   cutoff = cutoff)
 	
-
 def values_to_bfac(pdb, vals, pdb_out):
 	parser = PDB.PDBParser()
-	structure = parser.get_structure('protein',pdb)
+	structure = parser.get_structure("protein",pdb)
 	io = PDB.PDBIO()
-        chain_offset = 0
+    chain_offset = 0
 	for model in structure:
 		for chain in model:
-			for i,residue in enumerate(chain):
+			for i, residue in enumerate(chain):
 				for atom in residue:
 					atom.set_bfactor(float(vals[i+chain_offset]))
 			chain_offset += len(chain)
