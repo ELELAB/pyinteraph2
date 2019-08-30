@@ -313,13 +313,32 @@ if args.do_paths:
 		exit(1)
 
 	if len(shortest) > args.maxl:
-		print "No paths were found between the given nodes at the give cut-off. Shortest path length beetween these two nodes is: %d" % len(shortest)
+		warnstr = \
+			"No paths were found between the given nodes at the " \
+			"given cut-off. Shortest path length between these two " \
+			"nodes is {:d}"
+		log.warning(warnstr.format(len(shortest)))
+	
 	else:
-		paths_g = get_all_paths(G, args.source, args.target, cutoff=args.maxl)
-		paths = [p for p in paths_g]
-		lengths = [ len(p) for p in paths ]
-		sum_weights = [ np.sum([ G[p[i]][p[i+1]]['weight'] for i in range(len(p)-1) ]) for p in paths ]
-		avg_weights = [ np.average([ G[p[i]][p[i+1]]['weight'] for i in range(len(p)-1) ]) for p in paths ]
+		# calculate all the paths
+		paths = list(get_all_paths(G = G, \
+								   source = args.source, \
+								   target = args.target, \
+								   cutoff = args.maxl))
+
+		lengths = [len(p) for p in paths]
+		
+		# calculate the sum of their weights
+		sum_weights = \
+			[np.sum([G[p[i]][p[i+1]]["weight"] \
+					for i in range(len(p)-1)]) \
+			for p in paths]
+		
+		# calculate the average of their weights
+		avg_weights = \
+			[np.average([G[p[i]][p[i+1]]["weight"] \
+				for i in range(len(p)-1)]) \
+			for p in paths]
 
 		full_paths = zip(paths, lengths, sum_weights, avg_weights)
 		
