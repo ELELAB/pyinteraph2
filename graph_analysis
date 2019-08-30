@@ -227,6 +227,9 @@ log.info(\
 	logstr.format(\
 		"\t".join([node for node in sorted(nodes, key = residue_key)])))
 
+
+######################## CONNECTED COMPONENTS #########################
+
 if args.do_components:
 	# calculate the connected components
 	ccs = list(get_connected_components(G))
@@ -249,6 +252,9 @@ if args.do_components:
 		values_to_bfac(pdb = args.top, \
 					   vals = conn_comp_array, \
 					   pdb_out = args.components_pdb)
+
+
+################################ HUBS #################################
 		
 if args.do_hubs:
 	# calculate the hubs
@@ -282,21 +288,31 @@ if args.do_hubs:
 		# but with the b-factor column filled with the degree of
 		# a residue if it is a hub, zero otherwise       
         values_to_bfac(args.top, hubs_array, args.hubs_pdb)	
+
+
+################################ PATHS ################################
 		
 if args.do_paths:
-	if not args.source or not args.target:
-		print "ERROR: You must specify source and target residues. Exiting..."
+	# calculate paths between a pair of residues
+	if args.source is None or args.target is None:
+		log.error("You must specify source and target residues. Exiting...")
+		exit(1)
+	
 	if not args.source in G.nodes() or not args.target in G.nodes():
-		print "ERROR: source or target residues have been badly specified. Exiting..."
+		# maybe logstring should reflect better the error?
+		log.error("Source or target residues have been badly specified. " \
+				  "Exiting...")
+		exit(1)
+	
 	try:
-		shortest = nx.algorithms.shortest_path(G, args.source, args.target)
-	except:
-		print "ERROR: No paths exist between selected residues."
+		shortest = nx.algorithms.shortest_path(G = G, \
+											   source = args.source, \
+											   target = args.target)
+	except nx.NetworkXNoPath:
+		log.warning("No paths exist between selected residues.")
 		exit(1)
-	if len(shortest) == 0:
-		print "No paths exist between source and target."
-		exit(1)
-	elif len(shortest) > args.maxl:
+
+	if len(shortest) > args.maxl:
 		print "No paths were found between the given nodes at the give cut-off. Shortest path length beetween these two nodes is: %d" % len(shortest)
 	else:
 		paths_g = get_all_paths(G, args.source, args.target, cutoff=args.maxl)
