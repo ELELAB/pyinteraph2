@@ -169,14 +169,8 @@ def build_graph(fname, pdb = None):
 def get_connected_components(G):
 	return nx.connected_components(G)
 
-
-def get_hubs(G, min_k=4):
-	hubs = dict()
-	for key,val in nx.degree(G).iteritems():
-		if val >= min_k:
-			hubs[key] = val
-
-	return hubs
+def get_hubs(G, min_k = 3):
+	return {node : k for node, k in G.degree if k >= min_k}
 
 def get_all_paths(G, source, target, cutoff=None): # From Networkx 1.9.dev_20130728171020
 
