@@ -232,11 +232,11 @@ if args.do_components:
 	ccs = list(get_connected_components(G))
 	logstr = "Connected component {:d}\n ({:d} elements) {:s}"
 	for i,cc in enumerate(ccs):
-		log.info(\
-			logstr.format(\
+		### TODO: output to a file, not print
+		print(logstr.format(\
 				i + 1, \
 				len(cc), \
-				", ".join(list(sorted(cc, key = residue_key)))))
+				", ".join(sorted(cc, key = residue_key))))
 
 	if args.components_pdb is not None:
 		conn_comp_array = np.array(identifiers)
@@ -251,25 +251,37 @@ if args.do_components:
 					   pdb_out = args.components_pdb)
 		
 if args.do_hubs:
-	hubs = get_hubs(G, min_k=args.hubs_cutoff)
-	if len(hubs.keys()) > 0:
-		print "Hubs:"
-		print "\tNode\tk"
-		sorted_hubs = sorted(hubs.items(), key=lambda x: x[1], reverse=True)
-
-		for el in sorted_hubs:
-			print "\t%s\t%d" % (el[0],el[1])
+	# calculate the hubs
+	hubs = get_hubs(G = G, min_k = args.hubs_cutoff)
+	if len(list(hubs.keys())) > 0:
+		sorted_hubs = \
+			sorted(hubs.items(), \
+				   key = lambda item: item[1], reverse = True)
+		### TODO: output to a file, not print
+		print("Hubs:\n\tNode\tk{:s}")
+		for hub, k in sorted_hubs:
+			print("\t{:s}\t{:d}".format(hub, k))
 	else:
-		print "No hubs with connectivity >= %d have been found." % args.hubs_cutoff
-	if args.hubs_pdb:
-                hubs_array = np.zeros(len(identifiers))
+		# warn the user that no hubs have been found
+		logstr = \
+			"No hubs with connectivity >= {:d} have been found."
+		log.warning(logstr.format(args.hubs_cutoff))
+	
+	if args.hubs_pdb is not None:
+        hubs_array = np.zeros(len(identifiers))
 		hubs_dict = dict(sorted_hubs)
-		for i,idt in enumerate(identifiers):
-			try:
-				hubs_array[i] = hubs_dict[idt]
-			except:
-                                pass
-                values_to_bfac(args.top, hubs_array, args.hubs_pdb)	
+		for index, node in enumerate(identifiers):
+			if node in set(hubs_dict.keys()):
+				# check if the node is a hub
+				# iterate and check over a set()
+				# of keys because it is faster than
+				# a list (keys() returns a list
+				# in python2)
+				hubs_array[index] = hubs_dict[node]
+		# write a PDB file identical to the reference PDB file
+		# but with the b-factor column filled with the degree of
+		# a residue if it is a hub, zero otherwise       
+        values_to_bfac(args.top, hubs_array, args.hubs_pdb)	
 		
 if args.do_paths:
 	if not args.source or not args.target:
