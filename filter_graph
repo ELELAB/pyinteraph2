@@ -168,45 +168,55 @@ parser.add_argument("-n", \
 
 options = parser.parse_args()
 
-if not options.datfiles:
-    logging.error("input file(s) must be provided.")
+if options.datfiles is None:
+    logging.error("Input file(s) must be provided.")
     exit(1)
 
 if options.upper <= options.lower:
-    logging.error("maximum range value must be higher than minimum.")
+    logging.error("Maximum range value must be higher than minimum.")
     exit(1)
 
 if options.step > (options.upper - options.lower):
-    logging.error("step value must be lower than or equal to [upper_value - lower_value]")
+    logstr = \
+        "Step value must be lower than or equal to " \
+        "[upper_value - lower_value]"
+    logging.error(logstr)
     exit(1)
 
-fnames=options.datfiles
-
+fnames = options.datfiles
 matrices = []
-
-
-for fname in options.datfiles:
+for fname in fnames:
     try:
-        matrices.append(np.loadtxt(fname))
+        matrix = np.loadtxt(fname)
+        matrices.append(matrix)
     except:
-        logging.error("could not open file %s, or file in wrong format" %fname)
+        # catch numpy errors and include the traceback when
+        # logging
+        logstr = "Could not open file {:s}, or file in wrong format"
+        logging.error(logstr.format(fname, exc_info = True))
         exit(1)
 
 shapes = []
-for i in matrices:  shapes.extend(i.shape)
+for i in matrices:  
+    shapes.extend(i.shape)
+
 if len(set(shapes)) != 1:
-    logging.error("matrices do not have the same shape.")
+    logging.error("Matrices do not have the same shape.")
     exit(1)
 
-for i in range(len(matrices)):
-    for j in range(matrices[i].shape[0]):
-        for k in range(matrices[i].shape[1]):
-            if matrices[i][j,k] != matrices[i][k,j]:
-                logging.error("matrix %s is not square" % (fnames[i]))
-                exit(1)
-            if j == k and matrices[i][j,k] > 0.0:
-                #logging.warning("diagonal element in matrix %s (%d,%d) > 0.0. Will not be considered." % (fnames[i],j,k))
-                matrices[i][j,k] = 0.0
+for fname, matrix in zip(fnames, matrices):
+    if matrix.shape[0] != matrix.shape[1]:
+        logstr = "Matrix {:s} is not square"
+        logging.error(logstr.format(fname))
+        exit(1)
+    if not np.allclose(matrix, matrix.T):
+        logstr = "Matrix {:s} is not symmetric"
+        logging.error(logstr.format(fname))
+        exit(1)
+
+    # all diagonal elements must be zero
+    np.fill_diagonal(matrix, 0.0)
+
 
 vals = np.arange(options.lower, options.upper, options.step)
 
