@@ -18,17 +18,18 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
+
+import argparse
 import re
-import numpy as np
-from sys import argv
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as plt
 import logging
-import networkx as nx
+
+import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import fsolve
-import argparse 
+import matplotlib.pyplot as plt
+import networkx as nx
+
 
 # Parametric sigmoid function for fitting
 def sigmoid(x, x0, k, m, n): 
