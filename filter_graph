@@ -30,6 +30,7 @@ from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 import networkx as nx
 
+########################## HELPER FUNCTIONS ###########################
 
 # Parametric sigmoid function for fitting
 def sigmoid(x, x0, k, m, n): 
@@ -38,26 +39,132 @@ def sigmoid(x, x0, k, m, n):
 
 # Parametric analytic second derivative of sigmoid 
 def seconddevsigmoid(x, x0, k, l, m): 
-    y = ( k**2 * l * np.exp(k*(x+x0)) * ( np.exp(k*x)-np.exp(k*x0) )  )   /   ( np.exp(k*x0) + np.exp(k*x) )**3    
+    y = \
+        (k**2 * l * np.exp(k*(x+x0)) * (np.exp(k*x)-np.exp(k*x0)))  \
+        / (np.exp(k*x0) + np.exp(k*x))**3    
+    
     return y    
 
-parser = argparse.ArgumentParser(description='find persistence critical value')
-    
-parser.add_argument('-d','--input-dat', dest='datfiles', help='dat file matrices (multiple: -d file.dat -d file2.dat ...)',action='append')
-parser.add_argument('-o','--output-dat', dest='out_dat', help='output dat file matrix', action='store', type=str, default=None)
-parser.add_argument('-c','--output-clusters', dest='out_clusters', help='output clusters file', action='store', type=str, default=None)
-parser.add_argument('-t','--filter-threshold', dest='filter', type=float, default=0.0, help='filter input matrices according to this threshold')
-parser.add_argument('-p','--plot', dest='plot', default=None, help='Plot clusters')
-parser.add_argument('-f','--fit', dest='do_fit', default=False, action='store_true', help='Try to fit the plot to a sigmoid y = m / (1 + exp(k*(x-x0))) + n')
-parser.add_argument('-u','--range-upper', dest='upper', default=100.0, type=float, help='Maxium range value to be considered')
-parser.add_argument('-l','--range-lower', dest='lower', default=0.0, type=float, help='Minimum range value to be considered')
-parser.add_argument('-s','--range-step', dest='step', default=5.0, type=float, help='step range value to be considered')
-parser.add_argument('-w','--weight-matrix', dest='weights', help='Use values in this matrix as weights for the output adjacency matrix',action='store', type=str)
+########################## ARGUMENT PARSER ############################
 
-parser.add_argument("-x","--x0", dest='x0',default=20.0, help='starting x0 parameter for sigmoid fitting (default: 20.0)',  type=float)
-parser.add_argument('-k',        dest='k', default=2.0,  help='starting k parameter for sigmoid fitting (default: 2.0)',  type=float)
-parser.add_argument('-m',        dest='m', default=20.0, help='starting m parameter for sigmoid fitting (default: 20.0)',  type=float)
-parser.add_argument('-n',        dest='n', default=10.0, help='starting n parameter for sigmoid fitting (default: 10.0)',  type=float)
+description = "Find persistence critical value"
+parser = argparse.ArgumentParser(description = description)
+
+d_helpstr = \
+    ".dat file matrices (multiple: -d file.dat -d file2.dat ...)"
+parser.add_argument("-d", "--input-dat", \
+                    dest = "datfiles", \
+                    help = d_helpstr, \
+                    action = "append", \
+                    default = None)
+
+o_helpstr = "Output .dat file matrix"
+parser.add_argument("-o", "--output-dat", \
+                    dest = "out_dat", \
+                    help = o_helpstr, \
+                    action = "store", \
+                    type = str, \
+                    default = None)
+
+c_helpstr = "Output clusters file"
+parser.add_argument("-c", "--output-clusters", \
+                    dest = "out_clusters", \
+                    help = c_helpstr, \
+                    action = "store", \
+                    type = str, \
+                    default = None)
+
+t_default = 0.0
+t_helpstr = \
+    "Filter input matrices according to this threshold (default: {:f})"
+parser.add_argument("-t", "--filter-threshold", \
+                    dest = "filter", \
+                    help = t_helpstr.format(t_default), \
+                    type = float, \
+                    default = t_default)
+
+p_helpstr = "Plot clusters"
+parser.add_argument("-p", "--plot", \
+                    dest = "plot", \
+                    action = "store_true", \
+                    help = p_helpstr)
+
+f_helpstr = \
+    "Try to fit the plot to a sigmoid y = m / (1 + exp(k*(x-x0))) + n"
+parser.add_argument("-f", "--fit", \
+                    dest = "do_fit", \
+                    help = f_helpstr, \
+                    action = "store_true")
+
+u_default = 100.0
+u_helpstr = \
+    "Maxium range value to be considered (default: {:f})"
+parser.add_argument("-u", "--range-upper", \
+                    dest = "upper", \
+                    help = u_helpstr.format(u_default), \
+                    type = float, \
+                    default = u_default)
+
+l_default = 0.0
+l_helpstr = "Minimum range value to be considered (default: {:f})"
+parser.add_argument("-l", "--range-lower", \
+                    dest = "lower", \
+                    help = l_helpstr.format(l_default), \
+                    type = float, \
+                    default = l_default)
+
+s_default = 5.0
+s_helpstr = \
+    "Step range value to be considered (default: {:f})"
+parser.add_argument("-s", "--range-step", \
+                    dest = "step", \
+                    help = s_helpstr.format(s_default), \
+                    type = float, \
+                    default = s_default)
+
+w_helpstr = \
+    "Use values in this matrix as weights for the output " \
+    "adjacency matrix"
+parser.add_argument("-w", "--weight-matrix", \
+                    dest = "weights", \
+                    help = w_helpstr, \
+                    type = str)
+
+x_default = 20.0
+x_helpstr = \
+    "Starting x0 parameter for sigmoid fitting (default: {:f})"
+parser.add_argument("-x", "--x0", \
+                    dest = "x0", \
+                    help = x_helpstr.format(x_default), \
+                    type = float, \
+                    default = x_default)
+
+k_default = 2.0
+k_helpstr = \
+    "Starting k parameter for sigmoid fitting (default: {:f})"
+parser.add_argument("-k", \
+                    dest = "k", \
+                    help = k_helpstr.format(k_default),
+                    type = float, \
+                    default = k_default)
+
+m_default = 20.0
+m_helpstr = \
+    "Starting m parameter for sigmoid fitting (default: {:f})"
+parser.add_argument("-m", \
+                    dest = "m", \
+                    help = m_helpstr.format(m_default), \
+                    type = float, \
+                    default = m_default)
+
+n_default = 10.0
+n_helpstr = \
+    "Starting n parameter for sigmoid fitting (default: {:f})"
+parser.add_argument("-n", \
+                    dest = "n", \
+                    help = n_helpstr.format(n_default), \
+                    type = float, \
+                    default = n_default)
 
 options = parser.parse_args()
 
