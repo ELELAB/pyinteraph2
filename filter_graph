@@ -33,8 +33,8 @@ import networkx as nx
 
 # Parametric sigmoid function for fitting
 def sigmoid(x, x0, k, m, n): 
-     y = m / (1 + np.exp(k*(x-x0))) + n
-     return y
+    y = m / (1 + np.exp(k*(x-x0))) + n
+    return y
 
 # Parametric analytic second derivative of sigmoid 
 def seconddevsigmoid(x, x0, k, l, m): 
@@ -62,16 +62,16 @@ parser.add_argument('-n',        dest='n', default=10.0, help='starting n parame
 options = parser.parse_args()
 
 if not options.datfiles:
-     logging.error("input file(s) must be provided.")
-     exit(1)
+    logging.error("input file(s) must be provided.")
+    exit(1)
 
 if options.upper <= options.lower:
-     logging.error("maximum range value must be higher than minimum.")
-     exit(1)
+    logging.error("maximum range value must be higher than minimum.")
+    exit(1)
 
 if options.step > (options.upper - options.lower):
-     logging.error("step value must be lower than or equal to [upper_value - lower_value]")
-     exit(1)
+    logging.error("step value must be lower than or equal to [upper_value - lower_value]")
+    exit(1)
 
 fnames=options.datfiles
 
@@ -79,11 +79,11 @@ matrices = []
 
 
 for fname in options.datfiles:
-     try:
-          matrices.append(np.loadtxt(fname))
-     except:
-          logging.error("could not open file %s, or file in wrong format" %fname)
-          exit(1)
+    try:
+        matrices.append(np.loadtxt(fname))
+    except:
+        logging.error("could not open file %s, or file in wrong format" %fname)
+        exit(1)
 
 shapes = []
 for i in matrices:  shapes.extend(i.shape)
@@ -110,7 +110,7 @@ for val in vals:
     allmat = boolmats[0]
     if len(boolmats) > 1:
         for i in range (1,len(boolmats)):
-             allmat = np.logical_or(allmat, boolmats[i])
+            allmat = np.logical_or(allmat, boolmats[i])
 
     G=nx.Graph(allmat)
     maxclustsize.append(len(max(list(nx.algorithms.components.connected_components(G)), key=len)))
@@ -122,23 +122,23 @@ args = None
 flex = None
 
 if options.do_fit:
-     logging.info("""Fitting data points to functional form: y = l / (1 + exp(k*(x-x0))) + m
+    logging.info("""Fitting data points to functional form: y = l / (1 + exp(k*(x-x0))) + m
 Starting parameters:
     x0 = %3.2f 
     k =  %3.2f 
     m =  %3.2f  
     n =  %3.2f""" % (options.x0, options.k, options.m, options.n))
 
-     try:
-          popt, pcov = curve_fit(sigmoid, x, y, maxfev=100000, p0=(options.x0, options.k, options.m, options.n) )
-          args=(popt[0],popt[1],popt[2],popt[3])
-     except:
-          logging.error("could not complete fitting.")
-          args = None
+    try:
+        popt, pcov = curve_fit(sigmoid, x, y, maxfev=100000, p0=(options.x0, options.k, options.m, options.n) )
+        args=(popt[0],popt[1],popt[2],popt[3])
+    except:
+        logging.error("could not complete fitting.")
+        args = None
 
-     flex = None
-     if args:
-          logging.info("""
+    flex = None
+    if args:
+        logging.info("""
 Done!
 Calculated parameters: 
     x0 = %3.5f
@@ -146,37 +146,37 @@ Calculated parameters:
     l  = %3.5f
     m  = %3.5f""" % (args[0],args[1],args[2],args[3]))
 
-          logging.info("Looking for central point of inflection (f''(x) = 0) ...")
+        logging.info("Looking for central point of inflection (f''(x) = 0) ...")
 
-          solvestart = options.x0
+        solvestart = options.x0
 
-          logging.info("Starting from: %3.5f ..." % solvestart) 
+        logging.info("Starting from: %3.5f ..." % solvestart) 
 
-          try:
-               flex = fsolve(seconddevsigmoid,solvestart,args=args,maxfev=5000)    
-          except:
-               flex = None
+        try:
+           flex = fsolve(seconddevsigmoid,solvestart,args=args,maxfev=5000)    
+        except:
+           flex = None
 
-          if flex:
-               print "Flexus point at %3.2f" % flex
+        if flex:
+            print "Flexus point at %3.2f" % flex
 
 if options.plot:
-     plt.plot(x, y, 'o')
+    plt.plot(x, y, 'o')
 
-     plt.xlim((options.lower, options.upper))
-     plt.xlabel("$p_{min}$")
-     plt.ylabel("Size of the biggest cluster")
-     if args:
-          xplot = np.linspace(max(x),min(x))
-          yplot = sigmoid(xplot, *popt)
-          plt.plot(xplot, yplot, label='Fitting')
+    plt.xlim((options.lower, options.upper))
+    plt.xlabel("$p_{min}$")
+    plt.ylabel("Size of the biggest cluster")
+    if args:
+        xplot = np.linspace(max(x),min(x))
+        yplot = sigmoid(xplot, *popt)
+        plt.plot(xplot, yplot, label='Fitting')
          
-     if flex:
-          plt.plot(flex,sigmoid(flex,*popt),'o',label = 'Critical value', color = 'red')
-          plt.axvline(x=flex)
+    if flex:
+        plt.plot(flex,sigmoid(flex,*popt),'o',label = 'Critical value', color = 'red')
+        plt.axvline(x=flex)
 
-     plt.legend(loc='best')
-     plt.savefig(options.plot)
+    plt.legend(loc='best')
+    plt.savefig(options.plot)
 
 if options.out_clusters:
     try:
@@ -184,31 +184,31 @@ if options.out_clusters:
         fh.write("P_min\tSize of biggest cluster\n")
     except:
         logging.error("Could not write clusters file.")
-	exit(1)
+    exit(1)
     for i, xi in enumerate(x):
         fh.write("%.3f\t%d\n" % (xi, y[i]))
     fh.close()
 
 if options.out_dat:
     if len(matrices) == 1:         
-         mask = matrices[0] <= options.filter
-         out_matrix = np.ma.masked_array(data=matrices[0], mask = mask, fill_value=0.0).filled()
+        mask = matrices[0] <= options.filter
+        out_matrix = np.ma.masked_array(data=matrices[0], mask = mask, fill_value=0.0).filled()
     else:
-         boolmats = [i > options.filter for i in matrices]
-         out_matrix = boolmats[0]
-         for i in range (1,len(boolmats)):
-             out_matrix = np.logical_or(out_matrix, boolmats[i])
+        boolmats = [i > options.filter for i in matrices]
+        out_matrix = boolmats[0]
+        for i in range (1,len(boolmats)):
+            out_matrix = np.logical_or(out_matrix, boolmats[i])
     if options.weights:
-         try:
-              weights = np.loadtxt(options.weights)
-         except:
-              logging.error("Could not read weights matrix.")
-              exit()
+        try:
+            weights = np.loadtxt(options.weights)
+        except:
+            logging.error("Could not read weights matrix.")
+            exit()
          
-         if weights.shape != out_matrix.shape:
-              logging.error("Output and weight matrix have different shapes.")
+        if weights.shape != out_matrix.shape:
+            logging.error("Output and weight matrix have different shapes.")
 
-         np.savetxt(options.out_dat, np.ma.masked_array(data=weights, mask=out_matrix > 0.0, fill_value = 0.0).filled(), fmt="%3.2f")
+        np.savetxt(options.out_dat, np.ma.masked_array(data=weights, mask=out_matrix > 0.0, fill_value = 0.0).filled(), fmt="%3.2f")
 
     else:
-         np.savetxt(options.out_dat, out_matrix,fmt="%3.2f")
+        np.savetxt(options.out_dat, out_matrix,fmt="%3.2f")
