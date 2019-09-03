@@ -295,13 +295,15 @@ if args.do_hubs:
 if args.do_paths:
 	# calculate paths between a pair of residues
 	if args.source is None or args.target is None:
-		log.error("You must specify source and target residues. Exiting...")
+		log.error(\
+			"You must specify source and target residues. Exiting...")
 		exit(1)
 	
 	if not args.source in G.nodes() or not args.target in G.nodes():
 		# maybe logstring should reflect better the error?
-		log.error("Source or target residues have been badly specified. " \
-				  "Exiting...")
+		log.error(\
+			"Source or target residues have been badly specified. " \
+			"Exiting...")
 		exit(1)
 	
 	try:
@@ -340,32 +342,44 @@ if args.do_paths:
 				for i in range(len(p)-1)]) \
 			for p in paths]
 
-		full_paths = zip(paths, lengths, sum_weights, avg_weights)
-		
-		reverse = True
-		
-		if args.sort_paths_by == 'length':
+		# sort the paths
+		full_paths = zip(paths, lengths, sum_weights, avg_weights)		
+		reverse = True		
+		if args.sort_paths_by == "length":
 			key = lambda x: x[1]
-			reverse = False
-			
-		elif args.sort_paths_by == 'cumulative_weight':
+			reverse = False			
+		elif args.sort_paths_by == "cumulative_weight":
 			key = lambda x: x[2]
-
-		elif args.sort_paths_by == 'avg_weight':
+		elif args.sort_paths_by == "avg_weight":
 			key = lambda x: x[3]
 
-		sorted_paths = sorted(full_paths, key=key, reverse=reverse)
+		sorted_paths = sorted(full_paths, \
+							  key = key, \
+							  reverse = reverse)
 
-		print "Path #\tLength\tSum of weights\tAverage weight\tPath"
-		for i,p in enumerate(sorted_paths):
-			print "%d\t%d\t%.1f\t\t%.1f\t\t%s" % (i+1,p[1],p[2],p[3],",".join(p[0]))
+		# write the paths found to the output in a human-readable
+		# format	
+		print("Path #\tLength\tSum of weights\tAverage weight\tPath")
+		pathfmt_str = "{:d}\t{:d}\t{:.1f}\t\t{:.1f}\t\t{:s}"
+		for index, path in enumerate(sorted_paths):
+			print(\
+				pathfmt_str.format(\
+					index+1, path[1], path[2], path[3], ",".join(path[0])))
+		
 		if args.write_paths:
-			for i,p in enumerate(sorted_paths):
-				this_a = np.zeros(nx.adjacency_matrix(G).shape)
-				for e in range(len(p[0])-1):
-					x = identifiers.index(p[0][e])
-					y = identifiers.index(p[0][e+1])
-					this_a[x,y] = G[p[0][e]][p[0][e+1]]['weight']
-					this_a[y,x] = G[p[0][e+1]][p[0][e]]['weight']
-				np.savetxt("path_%d.dat" % (i+1) , this_a, fmt="%.1f")
+			# write paths as matrices
+			for index, path in enumerate(sorted_paths):
+				# for each path...
+				path_matrix = np.zeros(nx.adjacency_matrix(G).shape)
+				for node in range(len(path[0])-1):
+					# for each node in the path...
+					x = identifiers.index(path[0][node])
+					y = identifiers.index(path[0][node+1])
+					path_matrix[x,y] = \
+						G[path[0][node]][path[0][node+1]]["weight"]
+					path_matrix[y,x] = \
+						G[path[0][node+1]][path[0][node]]["weight"]
+				# save the matrix
+				matrix_file = "path{:s}.dat".format(index+1)
+				np.savetxt(matrix_file, path_matrix, fmt = "%.1f")
 
