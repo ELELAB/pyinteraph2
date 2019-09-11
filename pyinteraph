@@ -133,17 +133,6 @@ def parse_hbs_file(fname):
 LOGFMT = "%(levelname)s: %(message)s"
 
 
-############################ DEFAULT LISTS ############################
-
-# List of default hydrophobic residues
-hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
-
-# Residue list for potential calculation - all canonical but G
-kbp_residues_list = \
-    ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
-     "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"] 
-
-
 ######################## ENVIRONMENT VARIABLES ########################
 
 INSTALL_DIR = os.getenv('PYINTERAPH')
@@ -163,65 +152,365 @@ if not os.path.isdir(INSTALL_DIR):
 INSTALL_DIR += '/'
 sys.path.append(INSTALL_DIR)
 
+
+########################### ARGUMENT PARSER ###########################
+
+description = "Interaction calculator"
+parser = argparse.ArgumentParser(description = description)
+
+### Top/trajs ###
+
+s_helpstr = "Topology file"
+parser.add_argument("-s", "--top", \
+                    action = "store", \
+                    type = str, \
+                    dest = "top", \
+                    default = None, \
+                    help = s_helpstr)
+
+t_helpstr = "Trajectory file"
+parser.add_argument("-t", "--trj", \
+                    action = "store", \
+                    type = str, \
+                    dest = "trj", \
+                    default = None, \
+                    help = t_helpstr)
+
+r_helpstr = "Reference structure"
+parser.add_argument("-r", "--ref", \
+                    action = "store", \
+                    type = str, \
+                    dest = "ref", \
+                    default = None, \
+                    help = r_helpstr)
+
+
+### Analyses ###
+
+b_helpstr = "Analyze salt-bridges"
+parser.add_argument("-b", "--salt-bridges", \
+                    action = "store_true", \
+                    dest = "do_sb", \
+                    help = b_helpstr)
+
+f_helpstr = "Analyze hydrophobic clusters"
+parser.add_argument("-f","--hydrophobic", \
+                    action = "store_true", \
+                    dest = "do_hc", \
+                    help = f_helpstr)
+
+y_helpstr = "Analyze hydrogen bonds"
+parser.add_argument("-y","--hydrogen-bonds", \
+                    action = "store_true", \
+                    dest = "do_hb", \
+                    help = y_helpstr)
+
+p_helpstr = \
+    "Analyze interactions using the knowledge-based potential"
+parser.add_argument("-p","--potential", \
+                    action = "store_true", \
+                    dest = "do_kbp", \
+                    help = p_helpstr)
+
+
+### Salt bridges ###
+
+sbco_default = 4.5
+sbco_helpstr = \
+    "Distance cut-off for side-chain interaction (default: {:f})"
+parser.add_argument("--sb-co", "--sb-cutoff", \
+                    action = "store", \
+                    type = float, \
+                    dest = "sb_co", \
+                    default = sbco_default, \
+                    help = sbco_helpstr.format(sbco_default))
+
+sbperco_default = 0.0
+sbperco_helpstr = \
+    "Minimum persistence for interactions (default: {:f})"
+parser.add_argument("--sb-perco", "--sb-persistence-cutoff", \
+                    action = "store", \
+                    type = float, \
+                    dest = "sb_perco", \
+                    default = sbperco_default, \
+                    help = sbperco_helpstr.format(sbperco_default))
+
+sbdat_default = "salt-bridges.dat"
+sbdat_helpstr = \
+    "Name of the file where to store the list of " \
+    "salt bridges found (default: {:s})"
+parser.add_argument("--sb-dat", \
+                    action = "store", \
+                    type = str, \
+                    dest = "sb_dat", \
+                    default=, \
+                    help = sbdat_helpstr.format(sbdat_default))
+
+sbgraph_helpstr = \
+    "Name of the file where to store adjacency matrix " \
+    "for interaction graph (salt bridges)"
+parser.add_argument("--sb-graph", \
+                    action = "store", \
+                    type = str, \
+                    dest = "sb_graph", \
+                    default = None, \
+                    help = sbgraph_helpstr)
+
+sbcgfile_default = INSTALL_DIR + "charged_groups.ini"
+sbcgfile_helpstr = "Default charged groups file (default: {:s})"
+parser.add_argument("--sb-cg-file", \
+                    action = "store", \
+                    type = str, \
+                    dest = "cgs_file", \
+                    default = sbcgfile_default, \
+                    help = sbcgfile_helpstr.format(sbcgfile_default))
+
+sbmode_choices = ["different_charge", "same_charge", "all"]
+sbmode_default = "different_charge"
+sbmode_helpstr = \
+    "Electrostatic interactions mode. Accepted modes are {:s} " \
+    "(default: {:s})"
+parser.add_argument("--sb-mode", \
+                    action = "store", \
+                    type = str, \
+                    dest = "cgs_mode", \
+                    choices = sbmode_choices, \
+                    default = sbmode_default, \
+                    help = sbmode_helpstr.format(\
+                                ", ".join(sbmode_choices), \
+                                sbmode_default))
+
+
+### Hydrophobic clusters ###
+
+hcco_default = 5.0
+hcco_helpstr = \
+    "Distance cut-off for side-chain interaction (default: {:f})"
+parser.add_argument("--hc-co", "--hc-cutoff", \
+                    action = "store", \
+                    dest = "hc_co", \
+                    type = float, \
+                    default = hcco_default, \
+                    help = hcco_helpstr.format(hcco_default))
+
+hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
+hcres_helpstr = \
+    "Comma-separated list of hydrophobic residues (default: {:s})"
+parser.add_argument("--hc-residues", \
+                    action = "store", \
+                    nargs = "+", \
+                    type = str, \
+                    dest = "hc_reslist", \
+                    default = hc_reslist, \
+                    help = hcres_helpstr.format(\
+                            ", ".join(hc_reslist)))
+
+hcperco_default = 0.0
+hcperco_helpstr = "Minimum persistence for interactions (default: {:f})"
+parser.add_argument("--hc-perco", "--hc-persistence-cutoff", \
+                    action = "store", \
+                    type = float, \
+                    dest = "hc_perco", \
+                    default = 0.0, \
+                    help = hcperco_helpstr.format(hcperco_default))
+
+hcdat_default = "hydrophobic-clusters.dat"
+hcdat_helpstr = \
+    "Name of the file where to store the list of " \
+    "hydrophobic contacts found (default: {:s})"
+parser.add_argument("--hc-dat", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hc_dat", \
+                    default = hcdat_default, \
+                    help = hcdat_helpstr.format(hcdat_default))
+
+hcgraph_helpstr = \
+    "Name of the file where to store adjacency matrix " \
+    "for interaction graph (hydrophobic contacts)"
+parser.add_argument("--hc-graph", \
+                    action = "store", \
+                    dest = "hc_graph", \
+                    type = str, \
+                    default = None, \
+                    help = hcgraph_helpstr)
+
+
+### Hydrogen bonds ###
+
+hbco_default = 3.5
+hbco_helpstr = "Donor-acceptor distance cut-off (default: {:f})"
+parser.add_argument("--hb-co", "--hb-cutoff", \
+                    action = "store", \
+                    type = float, \
+                    dest = "hb_co", \
+                    default = hbco_default, \
+                    help = hbco_helpstr.format(hbco_default))
+
+hbang_default = 120.0
+hbang_helpstr = "Donor-acceptor angle cut-off (default: {:f})"
+parser.add_argument("--hb-ang", "--hb-angle", \
+                    action = "store", \
+                    type = float, \
+                    dest = "hb_angle", \
+                    default = hbang_default, \
+                    help = hbang_helpstr.format(hbang_default))
+
+hbdat_default = "hydrogen-bonds.dat"
+hbdat_helpstr = \
+    "Name of the file where to store the list of " \
+    "hydrogen bonds found (default: {:s})"
+parser.add_argument("--hb-dat", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hb_dat", \
+                    default = hbdat_default, \
+                    help = hbdat_helpstr.format(hbdat_default))
+
+hbgraph_helpstr = \
+    "Name of the file where to store adjacency matrix " \
+    "for interaction graph (hydrogen bonds)"
+parser.add_argument("--hb-graph", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hb_graph", \
+                    default = None, \
+                    help = hbgraph_helpstr)
+
+hbperco_default = 0.0
+hbperco_helpstr = \
+    "Minimum persistence for hydrogen bonds (default: {:f})"
+parser.add_argument("--hb-perco", \
+                    action = "store", \
+                    type = float, \
+                    dest = "hb_perco", \
+                    default = hbperco_default, \
+                    help = hbperco_helpstr.format(hbperco_default))
+
+hbclass_choices = ["all", "mc-mc", "mc-sc", "sc-sc", "custom"]
+hbclass_default = "all"
+hbclass_helpstr = \
+    "Class of hydrogen bonds to analyze. Accepted classes are {:s} " \
+    "(default: {:s})"
+parser.add_argument("--hb-class", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hb_class", \
+                    choices = hbclass_choices, \
+                    default = hbclass_default, \
+                    help = hbclass_helpstr.format(\
+                            ", ".join(hbclass_choices), \
+                            hbclass_default))
+
+hbadfile_default = INSTALL_DIR + "hydrogen_bonds.ini"
+hbadfile_helpstr = \
+    "File defining hydrogen bonds donor and acceptor atoms " \
+    "(default: {:s})"
+parser.add_argument("--hb-ad-file", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hbs_file", \
+                    default = hbadfile_default, \
+                    help = hbadfile_helpstr.format(hbadfile_default))
+
+hbcustom1_helpstr = "Custom group 1 for hydrogen bonds calculation"
+parser.add_argument("--hb-custom-group-1", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hb_group1", \
+                    default = None, \
+                    help = hbcustom1_helpstr)
+
+hbcustom2_helpstr = "Custom group 2 for hydrogen bonds calculation"
+parser.add_argument("--hb-custom-group-2", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hb_group2", \
+                    default = None, \
+                    help = hbcustom2_helpstr)
+
+
+### Statistical potential ###
+
+kbpff_default = INSTALL_DIR + "ff.S050.bin64"
+kbpff_helpstr = "Statistical potential definition file (default: {:s})"
+parser.add_argument("--kbp-ff", "--force-field", \
+                    action = "store", \
+                    type = str, \
+                    dest = "kbp_ff", \
+                    default = kbpff_default, \
+                    help = kbpff_helpstr.format(kbpff_default))
+
+kbpatom_default = INSTALL_DIR + "kbp_atomlist"
+kbpatom_helpstr = \
+    "Ordered, force-field specific list of atom names (default: {:s})"
+parser.add_argument("--kbp-atomlist", \
+                    action = "store", \
+                    type = str, \
+                    dest = "kbp_atomlist", \
+                    default = kbpatom_default, \
+                    help = kbpatom_helpstr.format(kbpatom_default))
+
+kbpdat_default = "kb-potential.dat"
+kbpdat_helpstr = \
+    "Name of the file where to store the results of " \
+    "the statistical potential analysis (default: {:s})"
+parser.add_argument("--kbp-dat", \
+                    action = "store", \
+                    type = str, \
+                    dest = "kbp_dat", \
+                    default = kbpdat_default, \
+                    help = kbpdat_helpstr.format(kbpdat_default))
+
+kbpgraph_helpstr = \
+    "Name of the file where to store adjacency matrix " \
+    "for interaction graph (statistical potential)"
+parser.add_argument('--kbp-graph', \
+                    action = "store", \
+                    type = str, \
+                    dest = "kbp_graph", \
+                    default = None, \
+                    help = kbpgraph_helpstr)
+
+kbpkbt_default = 1.0
+kbpkbt_helpstr = \
+    "kb*T value used in the inverse-Boltzmann relation " \
+    "for the knowledge-based potential (default: {:f})"
+parser.add_argument("--kbp-kbt", \
+                    action = "store", \
+                    type = float, \
+                    dest = "kbp_kbt", \
+                    default = kbpkbt_default, \
+                    help = kbpkbt_helpstr.format(kbpkbt_default))
+
+### Miscellaneous ###
+
 ff_masses_dir = "ff_masses"
 masses_dir = INSTALL_DIR + ff_masses_dir
 masses_files = os.listdir(masses_dir)
 
-# Command line parsing & stuff
+ffmasses_default = "charmm27"
+ffmasses_helpstr = \
+    "Force field to be used (for masses calculation only). " \
+    "Accepted force fields are {:s} (default: {:s})"
+parser.add_argument("--ff-masses", \
+                    action = "store", \
+                    type = str, \
+                    choices = masses_files, 
+                    dest = "ffmasses", \
+                    default = ffmasses_default, \
+                    help = ffmasses_helpstr.format(\
+                            ", ".join(masses_files), \
+                            ffmasses_default))
 
-parser = argparse.ArgumentParser(description='Interaction calculator')
-
-parser.add_argument('-v','--verbose', action='store_true', dest='verbose', help='Verbose mode')
-
-# Top/trajs
-parser.add_argument('-s', '--top', action='store', type=str, dest='top', default=None, help='Topology file')
-parser.add_argument('-t', '--trj', action='store', type=str, dest='trj', default=None, help='Trajectory file')
-parser.add_argument('-r', '--ref', action='store', type=str, dest='ref', default=None, help='Reference structure')
-
-# Analyses
-parser.add_argument('-b','--salt-bridges', action='store_true', help='Analyze salt-bridges', dest='do_sb')
-parser.add_argument('-f','--hydrophobic', action='store_true', help='Analyze hydrophobic clusters', dest='do_hc')
-parser.add_argument('-y','--hydrogen-bonds', action='store_true', help='Analyze hydrogen bonds', dest='do_hb')
-parser.add_argument('-p','--potential', action='store_true', help='Analyze interactions using the knowledge-based potential', dest='do_kbp')
-
-# Salt-bridges
-parser.add_argument('--sb-co','--sb-cutoff', action='store', type=float, help="Distance cut-off for side-chain interaction", dest='sb_co', default=4.5)
-parser.add_argument('--sb-perco','--sb-persistence-cutoff', action='store', type=float, help="Minimum persistence for interactions", dest='sb_perco', default=0.0)
-parser.add_argument('--sb-dat', action='store', type=str, default='salt-bridges.dat', dest='sb_dat')
-parser.add_argument('--sb-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", default=None, dest='sb_graph')
-parser.add_argument('--sb-cg-file', action='store', dest='cgs_file', type=str, default=INSTALL_DIR+'charged_groups.ini', help="default charged groups file")
-parser.add_argument('--sb-mode', action='store', dest='cgs_mode', type=str, choices=['different_charge','same_charge','all'], default="different_charge", help="Electrostatic interactions mode")
-
-# Hydrophobic clusters
-parser.add_argument('--hc-co','--hc-cutoff', action='store', type=float, help="Distance cut-off for side-chain interaction", dest='hc_co', default=5.0)
-parser.add_argument('--hc-residues', action='store', type=str, help="Comma-separated list of hydrophobic residues (default: %s)" % ",".join(hc_reslist), dest='hc_reslist', default=None)
-parser.add_argument('--hc-perco','--hc-persistence-cutoff', action='store', type=float, help="Minimum persistence for interactions", dest='hc_perco', default=0.0)
-parser.add_argument('--hc-dat', action='store', type=str, default='hydrophobic-clusters.dat', dest='hc_dat')
-parser.add_argument('--hc-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", dest='hc_graph', default=None)
-
-# Hydrogen bonds
-parser.add_argument('--hb-co','--hb-cutoff', action='store', type=float, help="Donor-acceptor distance cut-off", dest='hb_co', default=3.5)
-parser.add_argument('--hb-ang','--hb-angle', action='store', type=float, help="Donor-acceptor angle cut-off", dest='hb_angle', default=120.0)
-parser.add_argument('--hb-dat', action='store', type=str, default='hydrogen-bonds.dat', dest='hb_dat')
-parser.add_argument('--hb-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", dest='hb_graph', default=None)
-parser.add_argument('--hb-perco', action='store', type=float, help="Minimum persistence for hydrogen bonds", default=None, dest="hb_perco")
-parser.add_argument('--hb-class', action='store', type=str, choices=['all','mc-mc','mc-sc','sc-sc','custom'], help = "Class of hydrogen bonds to analyse", default='all')
-parser.add_argument('--hb-ad-file', action='store', type=str, dest='hbs_file', default=INSTALL_DIR+'hydrogen_bonds.ini',  help = "File defining hydrogen bonds donor and acceptor atoms")
-parser.add_argument('--hb-custom-group-1', action='store', type=str, dest='hb_group1', help='Custom group 1 for hydrogen bonds calculation', default=None)
-parser.add_argument('--hb-custom-group-2', action='store', type=str, dest='hb_group2',help='Custom group 2 for hydrogen bonds calculation', default=None)
-
-# Statistical potential
-parser.add_argument('--kbp-ff','--force-field', action='store', type=str, dest='kbp_ff', default=INSTALL_DIR+'ff.S050.bin64', help='Statistical potential definition file')
-parser.add_argument('--kbp-atomlist', action='store', type=str, default=INSTALL_DIR+'kbp_atomlist', dest='kbp_atomlist', help='Ordered, force-field specific list of atom names')
-parser.add_argument('--kbp-dat', action='store', type=str, default='kb-potential.dat', dest='kbp_dat')
-parser.add_argument('--kbp-graph', action='store', type=str, help="Store adjacency matrix for interaction graph", dest='kbp_graph', default=None)
-parser.add_argument('--kbp-kbt', action='store', type=float, help="kb*T value used in the inverse-boltzmann relation for the knowledge-based potential", dest='kbp_kbt', default=1.0)
-
-# Miscellaneous
-#parser.add_argument('--np', action='store', type=int, help="Maximum number of cores to use (default: as the number of analyses", dest='np')
-parser.add_argument('--ff-masses', action='store', type=str, choices=masses_files, help="Force field to be used (for masses calculation only)", dest="ffmasses", default='charmm27')
+v_helpstr = "Verbose mode"
+parser.add_argument("-v", "--verbose", \
+                    action = "store_true", \
+                    dest = "verbose", \
+                    help = v_helpstr)
 
 args = parser.parse_args()
+
 
 #########################################
 ### set logging level
@@ -252,7 +541,10 @@ except ValueError:
     log.error("Could not read one of the input files, or trajectory and topology are not compatible.")
     exit(1)
 
-
+# Residue list for potential calculation - all canonical but G
+kbp_residues_list = \
+    ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
+     "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"] 
 
 ######################################### 
 ### Hydrophobic clusters analysis
