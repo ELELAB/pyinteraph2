@@ -19,6 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import os.path
 import sys
 import logging as log
 
@@ -518,67 +519,58 @@ else:
     log.basicConfig(level = log.WARNING, format = LOGFMT)
 
 
-######################################### 
-### Input sanity check
+############################ CHECK INPUTS #############################
+
+top = args.top
+trj = args.trj
+ref = args.ref
+ffmasses = os.path.join(masses_dir, args.ffmasses)
+
 
 # top and trj must be present
-if not args.top or not args.trj:
+if top is None or trj is None:
     log.error("Topology and trajectory are required.")
-    exit()
+    exit(1)
 
 # if no reference, topology is reference
-if not args.ref:
-    args.ref = args.top
+if ref is None:
+    ref = top
     log.info("Using topology as reference structure")
-
-args.ffmasses = masses_dir+'/'+args.ffmasses
 
 # Load systems
 try:
-    pdb,uni = li.loadsys(args.ref, args.top, args.trj)
+    pdb, uni = li.loadsys(ref, top, trj)
 except ValueError:
-    log.error("Could not read one of the input files, or trajectory and topology are not compatible.")
+    logstr = \
+        "Could not read one of the input files, or trajectory " \
+        "and topology are not compatible."
+    log.error(logstr)
     exit(1)
 
-# Residue list for potential calculation - all canonical but G
-kbp_residues_list = \
-    ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
-     "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"] 
 
-######################################### 
-### Hydrophobic clusters analysis
-
+######################## HYDROPHOBIC CONTACTS #########################
 
 if args.do_hc:
-    
-    if args.hc_reslist:
-        hc_reslist = args.hc_reslist.strip().split(",")
-        for i in range(len(hc_reslist)):
-            hc_reslist[i] = hc_reslist[i].strip()
-
-
-    # Get on with it
-    if args.hc_graph:
+    fullmatrix = None
+    if args.hc_graph is not None:
         fullmatrix = li.SCFullmatrix
-    else:
-        fullmatrix = None
 
     str_out, hc_mat_out = li.dointeract(li.generateSCIdentifiers,
-                                     pdb = pdb,
-                                     uni = uni,
-                                     co = args.hc_co, 
-                                     perco = args.hc_perco,
-                                     ffmasses = args.ffmasses, 
-                                     fullmatrix = fullmatrix, 
-                                     reslist = hc_reslist,
-                                     mindist = False)
+                                        pdb = pdb,
+                                        uni = uni,
+                                        co = args.hc_co, 
+                                        perco = args.hc_perco,
+                                        ffmasses = args.ffmasses, 
+                                        fullmatrix = fullmatrix, 
+                                        reslist = hc_reslist,
+                                        mindist = False)
 
     # Save .dat
     str2file(str_out, args.hc_dat)
 
     # Save .mat (if available)
-    if hc_mat_out != None:
-        np.savetxt(args.hc_graph, hc_mat_out, fmt="%.1f")
+    if hc_mat_out is not None:
+        np.savetxt(args.hc_graph, hc_mat_out, fmt = "%.1f")
 
 
 ######################################### 
@@ -719,6 +711,11 @@ oups. (see options --hb-custom-group1 and hb-custom-group2)")
 ### Statistical Potential Calculation
 
 if args.do_kbp:
+
+    # Residue list for potential calculation - all canonical but G
+    kbp_residues_list = \
+        ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
+         "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
     
     kbp_atomlist = li.parse_atomlist(args.kbp_atomlist)
 
