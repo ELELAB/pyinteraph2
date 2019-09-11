@@ -550,6 +550,8 @@ hb_co = args.hb_co
 hb_perco = args.hb_perco
 hb_dat = args.hb_dat
 
+do_kbp = args.do_kbp
+
 
 # top and trj must be present
 if top is None or trj is None:
@@ -733,10 +735,9 @@ if args.do_hb:
         np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
 
 
-######################################### 
-### Statistical Potential Calculation
+######################## STATISTICAL POTENTIAL ########################
 
-if args.do_kbp:
+if do_kbp:
 
     # Residue list for potential calculation - all canonical but G
     kbp_residues_list = \
