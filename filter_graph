@@ -168,6 +168,9 @@ parser.add_argument("-n", \
 
 options = parser.parse_args()
 
+
+########################### CHECK INPUTS ##############################
+
 if options.datfiles is None:
     logging.error("Input file(s) must be provided.")
     exit(1)
@@ -197,8 +200,8 @@ for fname in fnames:
         exit(1)
 
 shapes = []
-for i in matrices:  
-    shapes.extend(i.shape)
+for matrix in matrices:  
+    shapes.extend(matrix.shape)
 
 if len(set(shapes)) != 1:
     logging.error("Matrices do not have the same shape.")
@@ -218,23 +221,37 @@ for fname, matrix in zip(fnames, matrices):
     np.fill_diagonal(matrix, 0.0)
 
 
-vals = np.arange(options.lower, options.upper, options.step)
+####################### MAXIMUM CLUSTER SIZES #########################
 
-maxclustsize = []
+interval = np.arange(options.lower, options.upper, options.step)
+maxclustsizes = []
+for val in interval:
+    # boolean matrices indicating where the original
+    # matrices exceed val       
+    boolmatrices = [matrix > val for matrix in matrices]
+    # there will be only one boolean matrix if only one
+    # input matrix was provided
+    allmatrix = boolmatrices[0]
+    if len(boolmatrices) > 1:
+        # in case more there was more than one input matrix,
+        # the final matrix will be a matrix resulting from an
+        # element-wise logical OR applied to all matrices
+        for i in range(1, len(boolmatrices)):
+            allmatrix = np.logical_or(allmatrix, boolmatrices[i])
 
-for val in vals:       
-    boolmats = [i>val for i in matrices]
-    allmat = boolmats[0]
-    if len(boolmats) > 1:
-        for i in range (1,len(boolmats)):
-            allmat = np.logical_or(allmat, boolmats[i])
+    # build a graph from the final boolean matrix
+    G = nx.Graph(allmatrix)
+    # get the maximum cluster size from the graph
+    maxclustsizes.append(\
+        len(max(list(\
+            nx.algorithms.components.connected_components(G)), \
+        key = len)))
 
-    G=nx.Graph(allmat)
-    maxclustsize.append(len(max(list(nx.algorithms.components.connected_components(G)), key=len)))
 
-x = vals
-y = maxclustsize
+############################## FITTING ################################
 
+x = interval
+y = maxclustsizes
 args = None
 flex = None
 
