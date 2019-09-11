@@ -354,20 +354,29 @@ if options.out_plot is not None:
     plt.savefig(options.out_plot)
 
 
+########################### OUTPUT CLUSTERS ###########################
+
 if options.out_clusters is not None:
     try:
         fh = open(options.out_clusters, 'w')
-        fh.write("P_min\tSize of biggest cluster\n")
     except:
-        logging.error("Could not write clusters file.")
-    exit(1)
+        logging.error(\
+            "Could not write clusters file.", \
+            exc_info = True)
+        exit(1)
+    
+    fh.write("P_min\tSize of biggest cluster\n")
     for i, xi in enumerate(x):
-        fh.write("%.3f\t%d\n" % (xi, y[i]))
+        fh.write("{:.3f}\t{:d}\n".format(xi, y[i]))
+    
     fh.close()
+
+
+############################# OUTPUT DAT ##############################
 
 if options.out_dat is not None:
     if len(matrices) == 1:         
-        mask = matrices[0] <= options.filter
+        mask = (matrices[0] <= options.filter)
         out_matrix = np.ma.masked_array(data=matrices[0], mask = mask, fill_value=0.0).filled()
     else:
         boolmats = [i > options.filter for i in matrices]
