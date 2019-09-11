@@ -525,7 +525,7 @@ top = args.top
 trj = args.trj
 ref = args.ref
 ffmasses = os.path.join(masses_dir, args.ffmasses)
-
+cgs_file = args.cgs_file
 
 # top and trj must be present
 if top is None or trj is None:
@@ -573,27 +573,17 @@ if args.do_hc:
         np.savetxt(args.hc_graph, hc_mat_out, fmt = "%.1f")
 
 
-######################################### 
-### Salt-bridges analysis
+############################ SALT BRIDGES #############################
 
 if args.do_sb:
+    cgs = parse_cgs_file(cgs_file)
+    if args.cgs_mode == "same_charge":
+        cgs_mode = "same"
+    elif args.cgs_mode == "different_charge":
+        cgs_mode = "diff"
+    elif args.cgs_mode == "all":
+        cgs_mode = "both"
 
-    # Load charged groups
-    #try:
-    if True:
-        default_cgs = parse_cgs_file(args.cgs_file)
-    #except:
-    #    log.error("Error parsing the charged groups file!")
-    #    exit(1)
-    if args.cgs_mode == 'same_charge':
-        cgs_mode = 'same'
-    if args.cgs_mode == 'different_charge':
-        cgs_mode = 'diff'
-    if args.cgs_mode == 'all':
-        cgs_mode = 'both'
-    
-
-    # Get on with it
     fullmatrix = None
     if args.sb_graph:
         fullmatrix = li.CGFullmatrix
@@ -613,8 +603,8 @@ if args.do_sb:
     str2file(str_out, args.sb_dat)
 
     # Save .mat (if available)
-    if sb_mat_out != None:
-        np.savetxt(args.sb_graph, sb_mat_out, fmt="%.1f")
+    if sb_mat_out is not None:
+        np.savetxt(args.sb_graph, sb_mat_out, fmt = "%.1f")
 
 
 ######################################### 
