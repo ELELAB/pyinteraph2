@@ -39,6 +39,7 @@ else:
     import configparser as cp
 
 import numpy as np
+from libinteract import libinteract as li
 
 
 ########################## HELPER FUNCTIONS ###########################
@@ -77,8 +78,8 @@ def parse_cgs_file(fname):
     
     for i in (charged_groups + default_charged):
         group_definitions[i] = cfg.get(grps_str, i).split(",")
-	for j in range(len(group_definitions[i])):
-	    group_definitions[i][j] = group_definitions[i][j].strip()
+    for j in range(len(group_definitions[i])):
+        group_definitions[i][j] = group_definitions[i][j].strip()
 
     try:
         for i in residues:
@@ -125,35 +126,45 @@ def parse_hbs_file(fname):
 
     return dict(ACCEPTORS = acceptors, DONORS = donors)
 
-# List of default hydrophobic residues
-hc_reslist = ['ALA', 'VAL', 'LEU', 'ILE', 'PHE', 'PRO', 'TRP', 'MET'] 
 
-# Residue list for potential calculation - all canonical but G
-kbp_residues_list = ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL"] 
+############################ LOGGER SETUP #############################
 
 # Logging format
 LOGFMT = "%(levelname)s: %(message)s"
 
-#####
 
-# Check env. variables
+############################ DEFAULT LISTS ############################
+
+# List of default hydrophobic residues
+hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
+
+# Residue list for potential calculation - all canonical but G
+kbp_residues_list = \
+    ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
+     "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"] 
+
+
+######################## ENVIRONMENT VARIABLES ########################
+
 INSTALL_DIR = os.getenv('PYINTERAPH')
 
 if not INSTALL_DIR:
-    log.warn("PYINTERAPH system variable should contain the path to the PYINTERAPH installation directory! Defaulting to local dir")
-    INSTALL_DIR='./'
+    log.warn(\
+        "PYINTERAPH system variable should contain the path to the " \
+        "PYINTERAPH installation directory! Defaulting to local dir")
+    INSTALL_DIR = './'
 
 if not os.path.isdir(INSTALL_DIR):
-    log.warn("The path specified by system variable PYINTERAPH does not exist. Defaulting to local dir")
-    INSTALL_DIR='./'
+    log.warn(\
+        "The path specified by system variable PYINTERAPH does not " \
+        "exist. Defaulting to local dir")
+    INSTALL_DIR = './'
 
 INSTALL_DIR += '/'
 sys.path.append(INSTALL_DIR)
 
-from libinteract import libinteract as li
-
-ff_masses_dir = 'ff_masses'
-masses_dir = INSTALL_DIR+ff_masses_dir
+ff_masses_dir = "ff_masses"
+masses_dir = INSTALL_DIR + ff_masses_dir
 masses_files = os.listdir(masses_dir)
 
 # Command line parsing & stuff
