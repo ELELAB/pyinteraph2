@@ -19,10 +19,19 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+import sys
+import logging as log
+
+major, minor, patch  = sys.version_info
+if major < 2 or (major == 2 and minor < 7):
+    errstr = \
+        "Your Python version is {:s}, but only " \
+        "versions >= 2.7 are supported."
+    log.error(errstr.format(sys.version))
+    exit(1)
 
 import argparse
 import re
-import logging
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -173,18 +182,18 @@ options = parser.parse_args()
 ########################### CHECK INPUTS ##############################
 
 if options.datfiles is None:
-    logging.error("Input file(s) must be provided.")
+    log.error("Input file(s) must be provided.")
     exit(1)
 
 if options.upper <= options.lower:
-    logging.error("Maximum range value must be higher than minimum.")
+    log.error("Maximum range value must be higher than minimum.")
     exit(1)
 
 if options.step > (options.upper - options.lower):
     logstr = \
         "Step value must be lower than or equal to " \
         "[upper_value - lower_value]"
-    logging.error(logstr)
+    log.error(logstr)
     exit(1)
 
 fnames = options.datfiles
@@ -195,9 +204,9 @@ for fname in fnames:
         matrices.append(matrix)
     except:
         # catch numpy errors and include the traceback when
-        # logging
+        # log
         logstr = "Could not open file {:s}, or file in wrong format"
-        logging.error(logstr.format(fname, exc_info = True))
+        log.error(logstr.format(fname, exc_info = True))
         exit(1)
 
 shapes = []
@@ -205,17 +214,17 @@ for matrix in matrices:
     shapes.extend(matrix.shape)
 
 if len(set(shapes)) != 1:
-    logging.error("Matrices do not have the same shape.")
+    log.error("Matrices do not have the same shape.")
     exit(1)
 
 for fname, matrix in zip(fnames, matrices):
     if matrix.shape[0] != matrix.shape[1]:
         logstr = "Matrix {:s} is not square"
-        logging.error(logstr.format(fname))
+        log.error(logstr.format(fname))
         exit(1)
     if not np.allclose(matrix, matrix.T):
         logstr = "Matrix {:s} is not symmetric"
-        logging.error(logstr.format(fname))
+        log.error(logstr.format(fname))
         exit(1)
 
     # all diagonal elements must be zero
@@ -261,7 +270,7 @@ if options.do_fit:
         '"""\nFitting data points to functional form: ' \
         'y = m / (1 + exp(k*(x-x0))) + n\nStarting parameters:\n' \
         'x0 = {:3.2f}\nk =  {:3.2f}\nm =  {:3.2f}\nn =  {:3.2f}\n"""'
-    logging.info(\
+    log.info(\
         logstr.format(options.x0, options.k, options.m, options.n))
 
     # will be None unless the fitting completes successfully
@@ -278,21 +287,21 @@ if options.do_fit:
     
     except ValueError:
         # as per scipy.optimize.curve_fit documentation
-        logging.error(\
+        log.error(\
             "Please check input data and options provided for " \
             "the fitting", \
             exc_info = True)
 
     except RuntimeError:
         # as per scipy.optimize.curve_fit documentation
-        logging.error(\
+        log.error(\
             "Could not complete fitting since the least-squares ", \
             "minimization failed"
             exc_info = True)
 
     except:
         # something else happened (should not happen)
-        logging.error(\
+        log.error(\
             "Could not complete fitting", \
             exc_info = True)
 
@@ -303,13 +312,13 @@ if options.do_fit:
         logstr = \
             '"""\nDone! Calculated parameters:\nx0 = {:3.5f}\n' \
             'k  = {:3.5f}\nl  = {:3.5f}\nm  = {:3.5f}\n"""'
-        logging.info(logstr.format(*args))
+        log.info(logstr.format(*args))
 
-        logging.info(\
+        log.info(\
             "Looking for central point of inflection (f''(x) = 0) ...")
 
         solvestart = options.x0
-        logging.info("Starting from: {:3.5f} ...".format(solvestart))
+        log.info("Starting from: {:3.5f} ...".format(solvestart))
 
         # will be None unless the calculation completes successfully
         flex = None
@@ -321,12 +330,12 @@ if options.do_fit:
         except:
             # inform the user that something went wrong during
             # the calculation and include traceback
-            logging.error(\
+            log.error(\
                 "Could not complete the calculation", \
                 exc_info = True)
 
         if flex is not None:
-            logging.info("Flexus point at {:3.2f}".format(flex))
+            log.info("Flexus point at {:3.2f}".format(flex))
 
 
 ############################## PLOTTING ###############################
@@ -361,7 +370,7 @@ if options.out_clusters is not None:
     try:
         fh = open(options.out_clusters, 'w')
     except:
-        logging.error(\
+        log.error(\
             "Could not write clusters file.", \
             exc_info = True)
         exit(1)
@@ -399,13 +408,13 @@ if options.out_dat is not None:
         try:
             weights = np.loadtxt(options.weights)
         except:
-            logging.error(\
+            log.error(\
                 "Could not read weights matrix.", \
                 exc_info = True)
             exit(1)
          
         if weights.shape != out_matrix.shape:
-            logging.error(\
+            log.error(\
                 "Output and weight matrix have different shapes.")
             exit(1)
 
