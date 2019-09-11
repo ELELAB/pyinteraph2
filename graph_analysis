@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 import sys
+import logging as log
+import argparse
 
 major, minor, patch  = sys.version_info
 if major < 2 or (major == 2 and minor < 7):
@@ -29,8 +31,6 @@ if major < 2 or (major == 2 and minor < 7):
     log.error(errstr.format(sys.version))
     exit(1)
 
-import argparse
-import logging as log
 import numpy as np
 import networkx as nx
 import MDAnalysis as mda
