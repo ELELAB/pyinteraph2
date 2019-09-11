@@ -83,11 +83,11 @@ parser.add_argument("-t", "--filter-threshold", \
                     type = float, \
                     default = t_default)
 
-p_helpstr = "Plot clusters"
+p_helpstr = "Name of the file where to plot clusters"
 parser.add_argument("-p", "--plot", \
-                    dest = "plot", \
-                    action = "store_true", \
-                    help = p_helpstr)
+                    dest = "out_plot", \
+                    help = p_helpstr, \
+                    default = None)
 
 f_helpstr = \
     "Try to fit the plot to a sigmoid y = m / (1 + exp(k*(x-x0))) + n"
@@ -327,25 +327,34 @@ if options.do_fit:
         if flex is not None:
             logging.info("Flexus point at {:3.2f}".format(flex))
 
-if options.plot:
-    plt.plot(x, y, 'o')
 
+############################## PLOTTING ###############################
+
+if options.out_plot is not None:
+    plt.plot(x = x, y = y, fmt = "o")
     plt.xlim((options.lower, options.upper))
     plt.xlabel("$p_{min}$")
     plt.ylabel("Size of the biggest cluster")
-    if args:
-        xplot = np.linspace(max(x),min(x))
+    
+    if args is not None:
+        xplot = np.linspace(max(x), min(x))
         yplot = sigmoid(xplot, *popt)
-        plt.plot(xplot, yplot, label='Fitting')
+        plt.plot(x = xplot, y = yplot, label = "Fitting")
          
-    if flex:
-        plt.plot(flex,sigmoid(flex,*popt),'o',label = 'Critical value', color = 'red')
-        plt.axvline(x=flex)
+    if flex is not None:
+        plt.plot(x = flex, \
+                 y = sigmoid(flex, *popt),\
+                 fmt = "o", \
+                 label = "Critical value", \
+                 color = "red")
+        
+        plt.axvline(x = flex)
 
-    plt.legend(loc='best')
-    plt.savefig(options.plot)
+    plt.legend(loc = "best")
+    plt.savefig(options.out_plot)
 
-if options.out_clusters:
+
+if options.out_clusters is not None:
     try:
         fh = open(options.out_clusters, 'w')
         fh.write("P_min\tSize of biggest cluster\n")
@@ -356,7 +365,7 @@ if options.out_clusters:
         fh.write("%.3f\t%d\n" % (xi, y[i]))
     fh.close()
 
-if options.out_dat:
+if options.out_dat is not None:
     if len(matrices) == 1:         
         mask = matrices[0] <= options.filter
         out_matrix = np.ma.masked_array(data=matrices[0], mask = mask, fill_value=0.0).filled()
