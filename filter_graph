@@ -257,9 +257,9 @@ flex = None
 
 if options.do_fit:
     logstr = \
-        '"""Fitting data points to functional form: ' \
+        '"""\nFitting data points to functional form: ' \
         'y = m / (1 + exp(k*(x-x0))) + n\nStarting parameters:\n' \
-        'x0 = %3.2f\nk =  %3.2f\nm =  %3.2f\nn =  %3.2f'
+        'x0 = {:3.2f}\nk =  {:3.2f}\nm =  {:3.2f}\nn =  {:3.2f}\n"""'
     logging.info(\
         logstr.format(options.x0, options.k, options.m, options.n))
 
@@ -295,30 +295,37 @@ if options.do_fit:
             "Could not complete fitting", \
             exc_info = True)
 
-    flex = None
+
+    ####################### SECOND DERIVATIVE #########################
     
     if args is not None:
-        logging.info("""
-Done!
-Calculated parameters: 
-    x0 = %3.5f
-    k  = %3.5f
-    l  = %3.5f
-    m  = %3.5f""" % (args[0],args[1],args[2],args[3]))
+        logstr = \
+            '"""\nDone! Calculated parameters:\nx0 = {:3.5f}\n' \
+            'k  = {:3.5f}\nl  = {:3.5f}\nm  = {:3.5f}\n"""'
+        logging.info(logstr.format(*args))
 
-        logging.info("Looking for central point of inflection (f''(x) = 0) ...")
+        logging.info(\
+            "Looking for central point of inflection (f''(x) = 0) ...")
 
         solvestart = options.x0
+        logging.info("Starting from: {:3.5f} ...".format(solvestart))
 
-        logging.info("Starting from: %3.5f ..." % solvestart) 
-
+        # will be None unless the calculation completes successfully
+        flex = None
         try:
-           flex = fsolve(seconddevsigmoid,solvestart,args=args,maxfev=5000)    
+           flex = fsolve(func = seconddevsigmoid, \
+                         x0 = solvestart, \
+                         args = args, \
+                         maxfev = 5000)    
         except:
-           flex = None
+            # inform the user that something went wrong during
+            # the calculation and include traceback
+            logging.error(\
+                "Could not complete the calculation", \
+                exc_info = True)
 
-        if flex:
-            print "Flexus point at %3.2f" % flex
+        if flex is not None:
+            logging.info("Flexus point at {:3.2f}".format(flex))
 
 if options.plot:
     plt.plot(x, y, 'o')
