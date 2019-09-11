@@ -208,6 +208,61 @@ parser.add_argument("-p","--potential", \
                     help = p_helpstr)
 
 
+### Hydrophobic clusters ###
+
+hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
+hcres_helpstr = \
+    "Comma-separated list of hydrophobic residues (default: {:s})"
+parser.add_argument("--hc-residues", \
+                    action = "store", \
+                    nargs = "+", \
+                    type = str, \
+                    dest = "hc_reslist", \
+                    default = hc_reslist, \
+                    help = hcres_helpstr.format(\
+                            ", ".join(hc_reslist)))
+
+hcco_default = 5.0
+hcco_helpstr = \
+    "Distance cut-off for side-chain interaction (default: {:f})"
+parser.add_argument("--hc-co", "--hc-cutoff", \
+                    action = "store", \
+                    dest = "hc_co", \
+                    type = float, \
+                    default = hcco_default, \
+                    help = hcco_helpstr.format(hcco_default))
+
+hcperco_default = 0.0
+hcperco_helpstr = "Minimum persistence for interactions (default: {:f})"
+parser.add_argument("--hc-perco", "--hc-persistence-cutoff", \
+                    action = "store", \
+                    type = float, \
+                    dest = "hc_perco", \
+                    default = 0.0, \
+                    help = hcperco_helpstr.format(hcperco_default))
+
+hcdat_default = "hydrophobic-clusters.dat"
+hcdat_helpstr = \
+    "Name of the file where to store the list of " \
+    "hydrophobic contacts found (default: {:s})"
+parser.add_argument("--hc-dat", \
+                    action = "store", \
+                    type = str, \
+                    dest = "hc_dat", \
+                    default = hcdat_default, \
+                    help = hcdat_helpstr.format(hcdat_default))
+
+hcgraph_helpstr = \
+    "Name of the file where to store adjacency matrix " \
+    "for interaction graph (hydrophobic contacts)"
+parser.add_argument("--hc-graph", \
+                    action = "store", \
+                    dest = "hc_graph", \
+                    type = str, \
+                    default = None, \
+                    help = hcgraph_helpstr)
+
+
 ### Salt bridges ###
 
 sbco_default = 4.5
@@ -274,61 +329,6 @@ parser.add_argument("--sb-mode", \
                     help = sbmode_helpstr.format(\
                                 ", ".join(sbmode_choices), \
                                 sbmode_default))
-
-
-### Hydrophobic clusters ###
-
-hcco_default = 5.0
-hcco_helpstr = \
-    "Distance cut-off for side-chain interaction (default: {:f})"
-parser.add_argument("--hc-co", "--hc-cutoff", \
-                    action = "store", \
-                    dest = "hc_co", \
-                    type = float, \
-                    default = hcco_default, \
-                    help = hcco_helpstr.format(hcco_default))
-
-hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
-hcres_helpstr = \
-    "Comma-separated list of hydrophobic residues (default: {:s})"
-parser.add_argument("--hc-residues", \
-                    action = "store", \
-                    nargs = "+", \
-                    type = str, \
-                    dest = "hc_reslist", \
-                    default = hc_reslist, \
-                    help = hcres_helpstr.format(\
-                            ", ".join(hc_reslist)))
-
-hcperco_default = 0.0
-hcperco_helpstr = "Minimum persistence for interactions (default: {:f})"
-parser.add_argument("--hc-perco", "--hc-persistence-cutoff", \
-                    action = "store", \
-                    type = float, \
-                    dest = "hc_perco", \
-                    default = 0.0, \
-                    help = hcperco_helpstr.format(hcperco_default))
-
-hcdat_default = "hydrophobic-clusters.dat"
-hcdat_helpstr = \
-    "Name of the file where to store the list of " \
-    "hydrophobic contacts found (default: {:s})"
-parser.add_argument("--hc-dat", \
-                    action = "store", \
-                    type = str, \
-                    dest = "hc_dat", \
-                    default = hcdat_default, \
-                    help = hcdat_helpstr.format(hcdat_default))
-
-hcgraph_helpstr = \
-    "Name of the file where to store adjacency matrix " \
-    "for interaction graph (hydrophobic contacts)"
-parser.add_argument("--hc-graph", \
-                    action = "store", \
-                    dest = "hc_graph", \
-                    type = str, \
-                    default = None, \
-                    help = hcgraph_helpstr)
 
 
 ### Hydrogen bonds ###
@@ -478,6 +478,7 @@ parser.add_argument("--kbp-kbt", \
                     default = kbpkbt_default, \
                     help = kbpkbt_helpstr.format(kbpkbt_default))
 
+
 ### Miscellaneous ###
 
 ff_masses_dir = "ff_masses"
@@ -527,6 +528,7 @@ ref = args.ref
 ffmasses = os.path.join(masses_dir, args.ffmasses)
 
 do_hc = args.do_hc
+hc_reslist = args.hc_reslist
 hc_graph = args.hc_graph
 hc_co = args.hc_co
 hc_perco = args.hc_perco
@@ -548,10 +550,15 @@ hb_class = args.hb_class
 hb_graph = args.hb_graph
 hb_co = args.hb_co
 hb_perco = args.hb_perco
+hb_angle = args.hb_angle
 hb_dat = args.hb_dat
 
 do_kbp = args.do_kbp
-
+kbp_atomlist = args.kbp_atomlist
+kbp_graph = args.kbp_graph
+kbp_ff = args.kbp_ff
+kbp_kbt = args.kbp_kbt
+kbp_dat = args.kbp_dat
 
 # top and trj must be present
 if top is None or trj is None:
@@ -720,9 +727,9 @@ if args.do_hb:
                                       sel2 = hb_group2,
                                       pdb = pdb,
                                       uni = uni,
-                                      distance = args.hb_co,
-                                      angle = args.hb_angle,
-                                      perco = args.hb_perco,
+                                      distance = hb_co,
+                                      angle = hb_angle,
+                                      perco = hb_perco,
                                       perresidue = perresidue,
                                       dofullmatrix = fullmatrix,
                                       other_hbs = hbs)                                    
@@ -744,27 +751,25 @@ if do_kbp:
         ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
          "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
     
-    kbp_atomlist = li.parse_atomlist(args.kbp_atomlist)
+    kbp_atomlist = li.parse_atomlist(kbp_atomlist)
 
     fullmatrix = False
-    if args.kbp_graph:
+    if kbp_graph is not None:
         fullmatrix = True
     
     kbp_seq_dist_co = 0
     str_out, mat_out = li.dopotential(kbp_atomlist, 
-                         residues_list = kbp_residues_list,
-                         potential_file = args.kbp_ff,
-                         seq_dist_co = kbp_seq_dist_co, 
-                         uni = uni,
-                         pdb = pdb,
-                         dofullmatrix = fullmatrix,
-                         kbT=args.kbp_kbt)
+                                      residues_list = kbp_residues_list,
+                                      potential_file = kbp_ff,
+                                      seq_dist_co = kbp_seq_dist_co, 
+                                      uni = uni,
+                                      pdb = pdb,
+                                      dofullmatrix = fullmatrix,
+                                      kbT = kbp_kbt)
 
     # Save .dat
-    str2file(str_out, args.kbp_dat)
+    str2file(str_out, kbp_dat)
     
     # Save .mat (if available)
-    if mat_out != None:
-        np.savetxt(args.kbp_graph, mat_out, fmt="%.3f")
-
-
+    if mat_out is not None:
+        np.savetxt(kbp_graph, mat_out, fmt = "%.3f")
