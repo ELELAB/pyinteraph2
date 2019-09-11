@@ -41,24 +41,26 @@ else:
 import numpy as np
 
 
-### Helper functions
+########################## HELPER FUNCTIONS ###########################
+
 def str2file(string, fname):
-    fhout = open(fname, 'w')
+    fhout = open(fname, "w")
     fhout.write(string)
     fhout.close()
 
 
 def parse_cgs_file(fname):
-    grps_str = 'CHARGED_GROUPS'
-    res_str = 'RESIDUES'
-    default_grps_str = 'default_charged_groups'
+    grps_str = "CHARGED_GROUPS"
+    res_str = "RESIDUES"
+    default_grps_str = "default_charged_groups"
 
     cfg = cp.ConfigParser()
     cfg.read(fname)
     try:
         cfg.read(fname)
-    except: 
-        log.error("file %s not readeable or not in the right format." % fname)
+    except:
+        logstr = "File {:s} not readeable or not in the right format."
+        log.error(logstr.format(fname), exc_info = True)
         exit(1)
 
     out = {}
@@ -66,14 +68,14 @@ def parse_cgs_file(fname):
 
     charged_groups = cfg.options(grps_str)
     charged_groups.remove(default_grps_str)
-    charged_groups = [ i.strip() for i in charged_groups ]
+    charged_groups = [i.strip() for i in charged_groups]
 
     default_charged = cfg.get(grps_str, default_grps_str).split(",")
-    default_charged = [ i.strip() for i in default_charged ]
+    default_charged = [i.strip() for i in default_charged]
 
     residues = cfg.options(res_str)
     
-    for i in charged_groups + default_charged:
+    for i in (charged_groups + default_charged):
         group_definitions[i] = cfg.get(grps_str, i).split(",")
 	for j in range(len(group_definitions[i])):
 	    group_definitions[i][j] = group_definitions[i][j].strip()
@@ -89,68 +91,42 @@ def parse_cgs_file(fname):
                 if j:
                     out[i][j] = group_definitions[j.lower()]
     except:
-        logging.error("could not parse the charged groups file. Are there any inconsistencies?")
+        logstr = \
+            "Could not parse the charged groups file. " \
+            "Are there any inconsistencies?"
+        logging.error(logstr)
+        exit(1)
     
     return out
 
+
 def parse_hbs_file(fname):
-    hbs_str = 'HYDROGEN_BONDS'
-    acceptors_str = 'ACCEPTORS'
-    donors_str = 'DONORS'
+    hbs_str = "HYDROGEN_BONDS"
+    acceptors_str = "ACCEPTORS"
+    donors_str = "DONORS"
     cfg = cp.ConfigParser()
     
+    cfg = cp.ConfigParser()
+    cfg.read(fname)
     try:
         cfg.read(fname)
-    except: 
-        log.error("file %s not readeable or not in the right format." % fname)
+    except:
+        logstr = "File {:s} not readeable or not in the right format."
+        log.error(logstr.format(fname), exc_info = True)
         exit(1)
     
     acceptors = cfg.get(hbs_str, acceptors_str)
     tmp = acceptors.strip().split(",")
-    acceptors = [ i.strip() for i in tmp ]
+    acceptors = [i.strip() for i in tmp]
 
     donors = cfg.get(hbs_str, donors_str)
     tmp = donors.strip().split(",")
-    donors = [ i.strip() for i in tmp ]
+    donors = [i.strip() for i in tmp ]
 
-    return dict(ACCEPTORS=acceptors, DONORS=donors)
+    return dict(ACCEPTORS = acceptors, DONORS = donors)
 
 # List of default hydrophobic residues
 hc_reslist = ['ALA', 'VAL', 'LEU', 'ILE', 'PHE', 'PRO', 'TRP', 'MET'] 
-
-# List of default charged groups
-#cter=['C','O1','O2']
-#nter=['N','H1','H2','H3']
-
-# Default charged groups
-
-#default_cgs = {
-#    'ALA':{"cter":cter,"nter":nter},
-#    'ASN':{"cter":cter,"nter":nter},
-#    'ASP':{"cter":cter,"nter":nter,'sc.asp.COO':['OD1','OD2',"!HD1"]},
-#    'ARG':{"cter":cter,"nter":nter,'sc.arg.NCNN':['NE','NH1','NH2']},
-#    'CYS':{"cter":cter,"nter":nter},
-#    'CYSH':{"cter":cter,"nter":nter},
-#    'GLN':{"cter":cter,"nter":nter},
-#    'GLU':{"cter":cter,"nter":nter,'sc.glu.COO':['OE1','OE2',"!HE1"]},
-#    'GLY':{"cter":cter,"nter":nter},
-#    'HIS':{"cter":cter,"nter":nter,'sc.his.ED':['HD1','HE2']},
-#    'HISA':{"cter":cter,"nter":nter,'sc.his.ED':['HD1','HE2']},
-#    'HISB':{"cter":cter,"nter":nter,'sc.his.ED':['HD1','HE2']},
-#    'ILE':{"cter":cter,"nter":nter},
-#    'LEU':{"cter":cter,"nter":nter},
-#    'LYS':{"cter":cter,"nter":nter, 'sc.lys.NZ':['NZ','HZ1','HZ2']},
-#    'LYSH':{"cter":cter,"nter":nter,'sc.lys.NZ':['NZ','HZ1','HZ2']},
-#    'MET':{"cter":cter,"nter":nter},
-#    'PHE':{"cter":cter,"nter":nter},
-#    'PRO':{"cter":cter,"nter":nter},
-#    'SER':{"cter":cter,"nter":nter},
-#    'THR':{"cter":cter,"nter":nter},
-#    'TRP':{"cter":cter,"nter":nter},
-#    'TYR':{"cter":cter,"nter":nter},
-#    'VAL':{"cter":cter,"nter":nter},
-#    }
-
 
 # Residue list for potential calculation - all canonical but G
 kbp_residues_list = ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL"] 
@@ -307,8 +283,6 @@ if args.do_hc:
 ### Salt-bridges analysis
 
 if args.do_sb:
-    
-# sb = dointeract(gro, xtc, pdb, generateCGIdentifiers, co=co, ffmasses=ffmasses, fullmatrix=CGFullmatrix, perco=perco, cgs=defaultcharged, mindist=True, fulldata=False)
 
     # Load charged groups
     #try:
