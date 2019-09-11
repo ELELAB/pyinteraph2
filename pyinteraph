@@ -127,12 +127,6 @@ def parse_hbs_file(fname):
     return dict(ACCEPTORS = acceptors, DONORS = donors)
 
 
-############################ LOGGER SETUP #############################
-
-# Logging format
-LOGFMT = "%(levelname)s: %(message)s"
-
-
 ######################## ENVIRONMENT VARIABLES ########################
 
 INSTALL_DIR = os.getenv('PYINTERAPH')
@@ -512,12 +506,17 @@ parser.add_argument("-v", "--verbose", \
 args = parser.parse_args()
 
 
-#########################################
-### set logging level
+############################ LOGGER SETUP #############################
+
+# Logging format
+LOGFMT = "%(levelname)s: %(message)s"
+
+# Verbose mode?
 if args.verbose:
-    log.basicConfig(level=log.INFO,    format=LOGFMT)
+    log.basicConfig(level = log.INFO, format = LOGFMT)
 else:
-    log.basicConfig(level=log.WARNING, format=LOGFMT)
+    log.basicConfig(level = log.WARNING, format = LOGFMT)
+
 
 ######################################### 
 ### Input sanity check
