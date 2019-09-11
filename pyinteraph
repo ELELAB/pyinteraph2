@@ -525,7 +525,31 @@ top = args.top
 trj = args.trj
 ref = args.ref
 ffmasses = os.path.join(masses_dir, args.ffmasses)
+
+do_hc = args.do_hc
+hc_graph = args.hc_graph
+hc_co = args.hc_co
+hc_perco = args.hc_perco
+hc_dat = args.hc_dat
+
+do_sb = args.do_sb
 cgs_file = args.cgs_file
+cgs_mode = args.cgs_mode
+sb_graph = args.sb_graph
+sb_co = args.sb_co
+sb_perco = args.sb_perco
+sb_dat = args.sb_dat
+
+do_hb = args.do_hb
+hbs_file = args.hbs_file
+hb_group1 = args.hb_group1
+hb_group2 = args.hb_group2
+hb_class = args.hb_class
+hb_graph = args.hb_graph
+hb_co = args.hb_co
+hb_perco = args.hb_perco
+hb_dat = args.hb_dat
+
 
 # top and trj must be present
 if top is None or trj is None:
@@ -550,108 +574,98 @@ except ValueError:
 
 ######################## HYDROPHOBIC CONTACTS #########################
 
-if args.do_hc:
+if do_hc:
     fullmatrix = None
-    if args.hc_graph is not None:
+    if hc_graph is not None:
         fullmatrix = li.SCFullmatrix
 
     str_out, hc_mat_out = li.dointeract(li.generateSCIdentifiers,
                                         pdb = pdb,
                                         uni = uni,
-                                        co = args.hc_co, 
-                                        perco = args.hc_perco,
-                                        ffmasses = args.ffmasses, 
+                                        co = hc_co, 
+                                        perco = hc_perco,
+                                        ffmasses = ffmasses, 
                                         fullmatrix = fullmatrix, 
                                         reslist = hc_reslist,
                                         mindist = False)
 
     # Save .dat
-    str2file(str_out, args.hc_dat)
+    str2file(str_out, hc_dat)
 
     # Save .mat (if available)
     if hc_mat_out is not None:
-        np.savetxt(args.hc_graph, hc_mat_out, fmt = "%.1f")
+        np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
 
 
 ############################ SALT BRIDGES #############################
 
-if args.do_sb:
+if do_sb:
     cgs = parse_cgs_file(cgs_file)
-    if args.cgs_mode == "same_charge":
+    if cgs_mode == "same_charge":
         cgs_mode = "same"
-    elif args.cgs_mode == "different_charge":
+    elif cgs_mode == "different_charge":
         cgs_mode = "diff"
-    elif args.cgs_mode == "all":
+    elif cgs_mode == "all":
         cgs_mode = "both"
 
     fullmatrix = None
-    if args.sb_graph:
+    if sb_graph is not None:
         fullmatrix = li.CGFullmatrix
 
     str_out, sb_mat_out = li.dointeract(li.generateCGIdentifiers,
                                         pdb = pdb,
                                         uni = uni,
-                                        co = args.sb_co, 
-                                        perco = args.sb_perco,
-                                        ffmasses = args.ffmasses, 
+                                        co = sb_co, 
+                                        perco = sb_perco,
+                                        ffmasses = ffmasses, 
                                         fullmatrix = fullmatrix, 
                                         mindist = True,
                                         mindist_mode = cgs_mode,
-                                        cgs = default_cgs)
+                                        cgs = cgs)
 
     # Save .dat
-    str2file(str_out, args.sb_dat)
+    str2file(str_out, sb_dat)
 
     # Save .mat (if available)
     if sb_mat_out is not None:
-        np.savetxt(args.sb_graph, sb_mat_out, fmt = "%.1f")
+        np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
 
 
-######################################### 
-### Hydrogen bonds analysis
+########################### HYDROGEN BONDS ############################
 
 if args.do_hb:
+
+    # Handle hb groups for main chain and side chain
+    mc_sel = \
+        "backbone or name H or name H1 or name H2 or name H3 " \
+        "or name O1 or name O2 or name OXT"
     
-# sb = dointeract(gro, xtc, pdb, generateCGIdentifiers, co=co, ffmasses=ffmasses, fullmatrix=CGFullmatrix, perco=perco, cgs=defaultcharged, mindist=True, fulldata=False)
+    sc_sel = "protein and not ({:s})".format(mc_sel)
 
-# Handle hb groups
+    if (hb_group1 is not None and hb_group2 is not None) \
+    and hb_class != "custom":
+        warnstr = \
+            "Hydrogen bond custom groups have been specified; " \
+            "they will be used. Please use --hb-class=custom to " \
+            "get rid of this warning!"
+        log.warning(warnstr)    
+        hb_class = "custom"
 
-    mc_sel = 'backbone or name H or name H1 or name H2 or name H3 or name O1 or name O2 or name \
-OXT'
-    sc_sel = 'protein and not (%s)' % mc_sel
-
-    if (args.hb_group1 and args.hb_group2) and not args.hb_class == 'custom':
-        log.warning("Hydrogen bond custom groups have been specified; they will be used. Please \
-use --hb-class=custom to get rid of this warning.!")
-        args.hb_class = 'custom'
-
-    if args.hb_class == 'all':
-        hb_group1 = 'protein'
-        hb_group2 = 'protein'
-    elif args.hb_class == 'mc-mc':
-        hb_group1 = mc_sel
-        hb_group2 = mc_sel
-    elif args.hb_class == 'sc-sc':
-        hb_group1 = sc_sel
-        hb_group2 = sc_sel
-    elif args.hb_class == 'mc-sc':
-        hb_group1 = mc_sel
-        hb_group2 = sc_sel
-    elif args.hb_class == 'custom':
-        if not args.hb_group1 or not args.hb_group2:
-            log.error("Hydrogen bond class 'custom' requires the definition of two interation gr\
-oups. (see options --hb-custom-group1 and hb-custom-group2)")
+    if hb_class == "custom":
+        if hb_group1 is None or hb_group2 is None:
+            errstr = \
+                "Hydrogen bond class 'custom' requires the " \
+                "definition of two interation groups. (see " 
+                "options --hb-custom-group1 and hb-custom-group2)"
+            log.error(errstr)
             exit(1)
-        else:
-            hb_group1 = args.hb_group1
-            hb_group2 = args.hb_group2
 
-    if args.hb_class == 'custom':
         try:
             hb_sel1 = uni.selectAtoms(hb_group1)
         except:
             log.error("Error: hydrogen bonds group one is not valid.")
             exit(1)
+        
         try:
             hb_sel2 = uni.selectAtoms(hb_group2)
         except:
@@ -659,42 +673,64 @@ oups. (see options --hb-custom-group1 and hb-custom-group2)")
             exit(1)
 
         if len(hb_sel1) == 0:
-            log.error("No atoms were found in selection group 1 for hydrogen bonds analysis.")
+            log.error(\
+                "No atoms were found in selection group 1 for " \
+                "hydrogen bonds analysis.")
             exit(1)
+        
         if len(hb_sel2) == 0:
-            log.error("No atoms were found in selection group 2 for hydrogen bonds analysis.")
+            log.error(\
+                "No atoms were found in selection group 2 for " \
+                "hydrogen bonds analysis.")
             exit(1)
 
-    try:
+    elif hb_class == "all":
+        hb_group1 = "protein"
+        hb_group2 = "protein"
+    
+    elif hb_class == "mc-mc":
+        hb_group1 = mc_sel
+        hb_group2 = mc_sel
+    
+    elif hb_class == "sc-sc":
+        hb_group1 = sc_sel
+        hb_group2 = sc_sel
+    
+    elif hb_class == "mc-sc":
+        hb_group1 = mc_sel
+        hb_group2 = sc_sel
+    
 
-        hbs = parse_hbs_file(args.hbs_file)
+    # check the donors-acceptors file
+    try:
+        hbs = parse_hbs_file(hbs_file)
     except:
-        log.error("Error parsing the hydrogen bonds definition file!")
+        log.error(\
+            "Error parsing the hydrogen bonds definition file!")
         exit(1)
 
-    # Get on with it
     fullmatrix = False
     perresidue = False
-    if args.hb_graph:
+    if hb_graph is not None:
         fullmatrix = True
     
     str_out, hb_mat_out = li.dohbonds(sel1 = hb_group1,
-                                   sel2 = hb_group2,
-                                   pdb = pdb,
-                                   uni = uni,
-                                   distance = args.hb_co,
-                                   angle = args.hb_angle,
-                                   perco=args.hb_perco,
-                                   perresidue = perresidue,
-                                   dofullmatrix = fullmatrix,
-                                   other_hbs = hbs)                                    
+                                      sel2 = hb_group2,
+                                      pdb = pdb,
+                                      uni = uni,
+                                      distance = args.hb_co,
+                                      angle = args.hb_angle,
+                                      perco = args.hb_perco,
+                                      perresidue = perresidue,
+                                      dofullmatrix = fullmatrix,
+                                      other_hbs = hbs)                                    
 
     # Save .dat
-    str2file(str_out, args.hb_dat)
+    str2file(str_out, hb_dat)
 
     # Save .mat (if available)
-    if hb_mat_out != None:
-        np.savetxt(args.hb_graph, hb_mat_out, fmt="%.1f")
+    if hb_mat_out is not None:
+        np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
 
 
 ######################################### 
