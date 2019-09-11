@@ -128,7 +128,8 @@ w_helpstr = \
 parser.add_argument("-w", "--weight-matrix", \
                     dest = "weights", \
                     help = w_helpstr, \
-                    type = str)
+                    type = str, \
+                    default = None)
 
 x_default = 20.0
 x_helpstr = \
@@ -377,23 +378,42 @@ if options.out_clusters is not None:
 if options.out_dat is not None:
     if len(matrices) == 1:         
         mask = (matrices[0] <= options.filter)
-        out_matrix = np.ma.masked_array(data=matrices[0], mask = mask, fill_value=0.0).filled()
+        out_matrix = np.ma.masked_array(data = matrices[0], \
+                                        mask = mask, \
+                                        fill_value = 0.0).filled()
     else:
-        boolmats = [i > options.filter for i in matrices]
-        out_matrix = boolmats[0]
-        for i in range (1,len(boolmats)):
-            out_matrix = np.logical_or(out_matrix, boolmats[i])
-    if options.weights:
+        # boolean matrices indicating where the original
+        # matrices exceed val  
+        boolmatrices = [matrix > options.filter for matrix in matrices]
+        # there will be only one boolean matrix if only one
+        # input matrix was provided
+        out_matrix = boolmatrices[0]
+        for i in range(1, len(boolmatrices)):
+            # in case more there was more than one input matrix,
+            # the final matrix will be a matrix resulting from an
+            # element-wise logical OR applied to all matrices
+            out_matrix = np.logical_or(out_matrix, boolmatrices[i])
+    
+    if options.weights is not None:
+        # if a matrix of weights was provided
         try:
             weights = np.loadtxt(options.weights)
         except:
-            logging.error("Could not read weights matrix.")
-            exit()
+            logging.error(\
+                "Could not read weights matrix.", \
+                exc_info = True)
+            exit(1)
          
         if weights.shape != out_matrix.shape:
-            logging.error("Output and weight matrix have different shapes.")
+            logging.error(\
+                "Output and weight matrix have different shapes.")
+            exit(1)
 
-        np.savetxt(options.out_dat, np.ma.masked_array(data=weights, mask=out_matrix > 0.0, fill_value = 0.0).filled(), fmt="%3.2f")
+        weighted = np.ma.masked_array(data = weights, \
+                                      mask = out_matrix > 0.0, \
+                                      fill_value = 0.0).filled()
+
+        np.savetxt(options.out_dat, weighted, fmt = "%3.2f")
 
     else:
-        np.savetxt(options.out_dat, out_matrix,fmt="%3.2f")
+        np.savetxt(options.out_dat, out_matrix, fmt = "%3.2f")
