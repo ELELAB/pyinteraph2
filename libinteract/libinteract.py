@@ -575,23 +575,32 @@ def assignffmasses(ffmasses, idxs, chosenselections):
                                            atom.name))   
 
 
-def generateCustomIdentifiers(pdb,uni,**kwargs):
+def generateCustomIdentifiers(pdb, uni, **kwargs):
     selstrings = kwargs["selections"]
     names = kwargs["names"]
-    assert len(names) == len(selstrings)
+    if len(names) != len(selstrings):
+        errstr = "names and selections must have the same lenght."
+        raise ValueError(errstr)
+    
     chosenselections = []
     identifiers = []
     idxs = []
     for i in range(len(selstrings)):
         try:
-            chosenselections.append(uni.selectAtoms(selstrings[i]))
-            identifiers.append( ( names[i],"","","") )
-            idxs.append( ( names[i], names[i], "", "", "" ) )
-            print "Selection \"%s\" found with %d atoms" % (names[i], len(chosenselections[-1]))
+            chosenselections.append(uni.select_atoms(selstrings[i]))
+            identifiers.append((names[i], "", "", ""))
+            idxs.append((names[i], names[i], "", "", ""))
+
+            logstr = "Selection \"{:s}\" found with {:d} atoms."
+            sys.stdout.write(logstr.format(names[i], \
+                                           len(chosenselections[-1])))
         except:
-            print "Warning: could not select \"%s\". Selection will be skipped." % names[i]
-            continue
-    return identifiers,idxs,chosenselections
+            warnstr = \
+                "Could not select \"{:s}\". Selection will be skipped."
+            log.warning(names[i])
+    
+    return identifiers, idxs, chosenselections
+
 
 def generateCGIdentifiers(pdb,uni,**kwargs):
     cgs = kwargs['cgs']
