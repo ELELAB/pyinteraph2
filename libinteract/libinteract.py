@@ -1,13 +1,48 @@
-import MDAnalysis as mda
-from MDAnalysis.analysis.distances import distance_array
-import numpy as np
-import json
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#    PyInteraph, a software suite to analyze interactions and interaction 
+#    network in structural ensembles.
+#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, 
+#    Gaetano Invernizzi, Yuval Inbar, Matteo Lambrughi, Gideon Schreiber,
+#    Elena Papaleo <elena.papaleo@unimib.it> <elena.papaleo@bio.ku.dk>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program.
+#   If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import absolute_import
 import sys
 import logging as log
+
+major, minor, patch  = sys.version_info
+if major < 2 or (major == 2 and minor < 7):
+    errstr = \
+        "Your Python version is {:s}, but only " \
+        "versions >= 2.7 are supported."
+    log.error(errstr.format(sys.version))
+    exit(1)
+
+import json
+import struct
+
+import numpy as np
+import MDAnalysis as mda
+from MDAnalysis.analysis.distances import distance_array
+
 from itertools import chain
 from innerloops import LoopDistances
 
-from struct import * 
 
 class LoopBreak(Exception):
     pass
@@ -56,14 +91,14 @@ kbp_reslist= ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS","ILE","LEU",
 
 def parse_sparse(ff):
     header_fmt  = '400i'
-    header_struct = Struct(header_fmt)
-    header_size = calcsize(header_fmt)
+    header_struct = struct.Struct(header_fmt)
+    header_size = struct.calcsize(header_fmt)
     sparse_fmt  = '=iiiiiidddidxxxx'
-    sparse_size = calcsize(sparse_fmt)
-    sparse_struct = Struct(sparse_fmt)
+    sparse_size = struct.calcsize(sparse_fmt)
+    sparse_struct = struct.Struct(sparse_fmt)
     bin_fmt     = '4cf'
-    bin_size    = calcsize(bin_fmt)
-    bin_struct = Struct(bin_fmt)
+    bin_size    = struct.calcsize(bin_fmt)
+    bin_struct = struct.Struct(bin_fmt)
     pointer = 0
     sparses = []
 
