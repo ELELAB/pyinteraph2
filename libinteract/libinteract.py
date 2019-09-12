@@ -367,12 +367,23 @@ def load_gmxff(jsonfile):
     return json.load(_jsonfile)
 
 
-def distmatrix(uni,idxs,chosenselections,co,mindist=False, mindist_mode=None, type1char='p',type2char='n'):
-    numframes = uni.trajectory.numframes
-    final_percmat = np.zeros((len(chosenselections),len(chosenselections)))
-    log.info("Distance matrix will be %dx%d (%d elements)" % (len(idxs),len(idxs),len(idxs)**2))
-    a=1
-    distmats=[]
+def distmatrix(uni, \
+               idxs, \
+               chosenselections, \
+               co, \
+               mindist = False, \
+               mindist_mode = None, \
+               type1char = "p", \
+               type2char = "n"):
+    
+    numframes = len(uni.trajectory)
+    final_percmat = \
+        np.zeros((len(chosenselections), len(chosenselections)))
+    
+    logstr = "Distance matrix will be {:d}x{:d} ({:d} elements)"
+    log.info(logstr.format(len(idxs), len(idxs), len(idxs)**2))
+
+    distmats = []
 
     if mindist:
         P = []
@@ -392,88 +403,144 @@ def distmatrix(uni,idxs,chosenselections,co,mindist=False, mindist_mode=None, ty
                 Nidxs.append(idxs[i])
                 Nsizes.append(len(chosenselections[i]))
             else: 
-                raise
+                errstr = \
+                    "Accepted values are either 'n' or 'p', " \
+                    "but {:s} was found."
+                raise ValueError(errstr.format(idxs[i][3][-1]))
 
-        Nsizes = np.array(Nsizes, dtype=np.int)
-        Psizes = np.array(Psizes, dtype=np.int)
+        Nsizes = np.array(Nsizes, dtype = np.int)
+        Psizes = np.array(Psizes, dtype = np.int)
 
-	if mindist_mode == "diff":
+	    if mindist_mode == "diff":
             sets = [(P,N)]
-            sets_idxs = [(Pidxs,Nidxs)]
-            sets_sizes = [(Psizes,Nsizes)]
+            sets_idxs = [(Pidxs, Nidxs)]
+            sets_sizes = [(Psizes, Nsizes)]
         elif mindist_mode == "same":
             sets = [(P,P),(N,N)]
-            sets_idxs = [(Pidxs,Pidxs),(Nidxs,Nidxs)]
-            sets_sizes = [(Psizes,Psizes),(Nsizes,Nsizes)]
+            sets_idxs = [(Pidxs,Pidxs), (Nidxs,Nidxs)]
+            sets_sizes = [(Psizes,Psizes), (Nsizes,Nsizes)]
         elif mindist_mode == "both":
             sets = [(chosenselections, chosenselections)]
             sets_idxs = [(idxs, idxs)]
             sizes =  [len(s) for s in chosenselections]
-            sets_sizes = [(sizes,sizes)]
-                
-        else: raise
+            sets_sizes = [(sizes,sizes)]               
+        else:
+            choices = ["diff", "same", "both"]
+            errstr = \
+                "Accepted values for mindist_mode are {:s}, " \
+                "but you provided {:s}."
+            raise ValueError(errstr.format(", ".join(choices), \
+                                           mindist_mode))
 
         percmats = []
-        coords = []
-        for s in sets:
-            coords.append([[],[]])
+        coords = [([[], []]) for s in sets]
 
+        numframe = 1
         for ts in uni.trajectory:
-            sys.stdout.write( "Caching coordinates: frame %d / %d (%3.1f%%)\r" % (a,numframes,float(a)/float(numframes)*100.0) )
+            logstr = \
+                "Caching coordinates: frame {:d} / {:d} ({:3.1f}%)\r"
+            sys.stdout.write(logstr.format(\
+                                numframe, \
+                                numframes, \
+                                float(numframe)/float(numframes)*100.0))
             sys.stdout.flush()
-            a+=1
-            for si,s in enumerate(sets):
-                if s[0] == s[1]: # triangular case
+            numframe += 1
+            
+            for set_index, s in enumerate(sets):
+                if s[0] == s[1]:
+                    # triangular case
                     log.info("Caching coordinates...")
                     for group in s[0]:
-                        coords[si][0].append(group.coordinates())
-                        coords[si][1].append(group.coordinates())
-                else: # square case
+                        coords[set_index][0].append(group.positions)
+                        coords[set_index][1].append(group.positions)
+                else:
+                    # square case
                     log.info("Caching coordinates...")
                     for group in s[0]:
-                        coords[si][0].append(group.coordinates())
+                        coords[set_index][0].append(group.positions)
                     for group in s[1]:
-                        coords[si][1].append(group.coordinates())
+                        coords[set_index][1].append(group.positions)
 
-        for si,s in enumerate(sets): # recover the final matrix
+        for set_index, s in enumerate(sets):
+            # recover the final matrix
             if s[0] == s[1]:
-                this_coords = np.array(np.concatenate(coords[si][0]),dtype=np.float64)
+                # triangular case
+                this_coords = \
+                    np.array(\
+                        np.concatenate(coords[si][0]), \
+                        dtype = np.float64)
 
                 inner_loop = LoopDistances(this_coords, this_coords, co)
-                percmats.append(inner_loop.run_triangular_mindist(sets_sizes[si][0]))
+                percmats.append(\
+                    inner_loop.run_triangular_mindist(\
+                        sets_sizes[set_index][0]))
 
             else:
-                this_coords1 = np.array(np.concatenate(coords[si][0]),dtype=np.float64)
-                this_coords2 = np.array(np.concatenate(coords[si][1]),dtype=np.float64)
+                # square case
+                this_coords1 = \
+                    np.array(\
+                        np.concatenate(coords[set_index][0]), \
+                        dtype = np.float64)
+                
+                this_coords2 = \
+                    np.array(\
+                        np.concatenate(coords[set_index][1]), \
+                        dtype = np.float64)
                 
                 inner_loop = LoopDistances(this_coords1, this_coords2, co)
+                percmats.append(\
+                    inner_loop.run_square_mindist(\
+                        sets_sizes[set_index][0], \
+                        sets_sizes[set_index][1]))
 
-                percmats.append( inner_loop.run_square_mindist(sets_sizes[si][0], sets_sizes[si][1]))
-
-        for si,s in enumerate(sets): # recover the final matrix
+        for set_index, s in enumerate(sets): 
+            # recover the final matrix
             Pidxs = sets_idxs[si][0]
             Nidxs = sets_idxs[si][1]
-            if s[0] == s[1]: # triangular case
+            if s[0] == s[1]:
+                # triangular case
                 for j in range(len(s[0])):
                     for k in range(0,j):
-                        final_percmat[idxs.index(Pidxs[j]), idxs.index(Pidxs[k])] = percmats[si][j,k]
-                        final_percmat[idxs.index(Pidxs[k]), idxs.index(Pidxs[j])] = percmats[si][j,k]
-            else: # square case
+                        final_percmat[idxs.index(Pidxs[j]), \
+                                                 idxs.index(Pidxs[k])] = \
+                                            percmats[si][j,k]
+                        
+                        final_percmat[idxs.index(Pidxs[k]), \
+                                                 idxs.index(Pidxs[j])] = \
+                                            percmats[si][j,k]
+            else: 
+                # square case
                 for j in range(len(s[0])):
                     for k in range(len(s[1])):
-                        final_percmat[idxs.index(Pidxs[j]), idxs.index(Nidxs[k])] = percmats[si][j,k]
-                        final_percmat[idxs.index(Nidxs[k]), idxs.index(Pidxs[j])] = percmats[si][j,k]
+                        final_percmat[idxs.index(Pidxs[j]), \
+                                                 idxs.index(Nidxs[k])] = \
+                                            percmats[si][j,k]
+                        
+                        final_percmat[idxs.index(Nidxs[k]), \
+                                                cidxs.index(Pidxs[j])] = \
+                                            percmats[si][j,k]
  
-        final_percmat = np.array(final_percmat, dtype=np.float)/numframes*100.0
+        final_percmat = \
+            np.array(final_percmat, dtype = np.float)/numframes*100.0
                      
     else:
         all_coms = []
+        numframe = 1
         for ts in uni.trajectory:
-            sys.stdout.write( "now analyzing: frame %d / %d (%3.1f%%)\r" % (a,numframes,float(a)/float(numframes)*100.0) )
+            logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
+            sys.stdout.write(logstr.format(\
+                                numframe, \
+                                numframes, \
+                                float(numframe)/float(numframes)*100.0))
             sys.stdout.flush()
-            a+=1
-            distmat = np.zeros((len(chosenselections),len(chosenselections)))
+            
+            numframe += 1
+            distmat = \
+                np.zeros((len(chosenselections), len(chosenselections)))
+            
+            # empty matrices of centers of mass
             coms = np.zeros([len(chosenselections),3])
+            # fill the matrix
             for j in range(len(chosenselections)):
                 coms[j,:] = chosenselections[j].centerOfMass()
             all_coms.append(coms)
@@ -481,11 +548,10 @@ def distmatrix(uni,idxs,chosenselections,co,mindist=False, mindist_mode=None, ty
         all_coms = np.concatenate(all_coms)
         inner_loop = LoopDistances(all_coms, all_coms, co)
         percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
-        distmats = []
         final_percmat = np.array(percmat, dtype=np.float)/numframes*100.0
 
 
-    return (final_percmat,distmats)
+    return (final_percmat, distmats)
 
 def loadsys(pdb,gro,xtc):
     
