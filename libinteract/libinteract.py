@@ -548,28 +548,32 @@ def distmatrix(uni, \
         all_coms = np.concatenate(all_coms)
         inner_loop = LoopDistances(all_coms, all_coms, co)
         percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
-        final_percmat = np.array(percmat, dtype=np.float)/numframes*100.0
+        final_percmat = np.array(percmat, dtype = np.float)/numframes*100.0
+
+    return final_percmat, distmats
 
 
-    return (final_percmat, distmats)
-
-def loadsys(pdb,gro,xtc):
-    
-    
-    uni = mda.Universe(gro,xtc)
-        
+def loadsys(pdb, gro, xtc):    
+    uni = mda.Universe(gro, xtc)       
     pdb = mda.Universe(pdb)
-    return pdb,uni
+    return pdb, uni
 
-def assignffmasses(ffmasses,idxs,chosenselections):
+
+def assignffmasses(ffmasses, idxs, chosenselections):
     ffdata = load_gmxff(ffmasses)
     for i in range(len(idxs)):
-        for j in chosenselections[i]:
+        for atom in chosenselections[i]:
             try:                
-                j.mass = ffdata[1][j.residue.name][j.name]
+                atom.mass = ffdata[1][atom.residue.resname][atom.name]
             except:
-                log.warning("atom type not recognized (resid %s, atom %s). Atomic mass will be guessed." % (j.residue.name, j.name))
-                pass    
+                warnstr = \
+                    "Atom type not recognized (resid {:d}, " \
+                    "resname {:s}, atom {:s}). " \
+                    "Atomic mass will be guessed."
+                log.warning(warnstr.format(atom.residue.resid, \
+                                           atom.residue.resname, \
+                                           atom.name))   
+
 
 def generateCustomIdentifiers(pdb,uni,**kwargs):
     selstrings = kwargs["selections"]
