@@ -327,34 +327,45 @@ def dopotential(kbp_atomlist, \
     return (outstr, dm)
 
 
-def calc_potential(distances, ordered_sparses, pdb, uni, distco, kbT=1.0):
+def calc_potential(distances, \
+                   ordered_sparses, \
+                   pdb, \
+                   uni, \
+                   distco, \
+                   kbT = 1.0):
 
-    general_cutoff=5.0
+    general_cutoff = 5.0  
+    tot = 0
+    done = 0
+    this_dist = np.zeros((2,2), dtype = np.float64)
+    scores = np.zeros((distances.shape[1]), dtype = np.float64)
     
-    tot=0
-    done=0
-    this_dist = np.zeros((2,2),dtype=np.float64)
-    scores=np.zeros((distances.shape[1]))
     for frame in distances:
-        for pn,this_dist in enumerate(frame):
-            if np.any(this_dist < general_cutoff): #or this_dist[1] < general_cutoff or this_dist[2] < general_cutoff or this_dist[3] < general_cutoff:
-                searchstring = ''.join([ chr(int(d * ordered_sparses[pn].step + 1.5)) for d in this_dist ])
+        for pn, this_dist in enumerate(frame):
+            if np.any(this_dist < general_cutoff):
+                searchstring = \
+                    "".join(\
+                        [chr(int(d * ordered_sparses[pn].step + 1.5)) \
+                         for d in this_dist])
                 try:
-                    probs = - kbT*ordered_sparses[pn].bins[searchstring]
+                    probs = \
+                        - kbT * ordered_sparses[pn].bins[searchstring]
+                
                 except KeyError:
                     probs = 0.0
-                    pass
+                
                 scores[pn] += probs
+            
             else:
                 scores[pn] += 0.0
+    
     return scores/distances.shape[0]
 
+
 def load_gmxff(jsonfile):
-    try:
-        _jsonfile = open(jsonfile,'r')
-    except: 
-	raise
+    _jsonfile = open(jsonfile,'r')
     return json.load(_jsonfile)
+
 
 def distmatrix(uni,idxs,chosenselections,co,mindist=False, mindist_mode=None, type1char='p',type2char='n'):
     numframes = uni.trajectory.numframes
