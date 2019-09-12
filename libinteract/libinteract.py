@@ -164,25 +164,43 @@ def parse_atomlist(fname):
     try:
         fh = open(fname)
     except:
-        log.error("could not open file %s. Exiting..."%fname)
+        errstr = "Could not open file {:s}. Exiting..."
+        log.error(errstr.format(fname), exc_info = True)
         exit(1)
+    
     data = {}
     for line in fh:
         tmp = line.strip().split(":")
         data[tmp[0].strip()] = [i.strip() for i in tmp[1].split(",")]
+    
     fh.close()
     return data    
-    
-def dopotential(kbp_atomlist, residues_list, potential_file, seq_dist_co = 0, grof = None, xtcf = None, pdbf = None, uni = None, pdb = None, dofullmatrix = True, kbT=1.0):
+
+
+def dopotential(kbp_atomlist, \
+                residues_list, \
+                potential_file, \
+                seq_dist_co = 0, \
+                grof = None, \
+                xtcf = None, \
+                pdbf = None, \
+                uni = None, \
+                pdb = None, \
+                dofullmatrix = True, \
+                kbT = 1.0):
 
     log.info("Loading potential definition . . .")
     sparses = parse_sparse(potential_file, residues_list)
     log.info("Loading input files...")
 
-    if not pdb or not uni:
-        if not pdbf or not grof or not xtcf:
-            raise ValueError
-        pdb,uni = loadsys(pdbf,grof,xtcf)
+    if pdb is None or uni is None:
+        if pdbf is None or grof is None or xtcf is None:
+            errstr =\
+                "If you do not pass 'pdb' or 'uni', you have to " \
+                "pass 'pdbf', 'grof' and 'xtcf'"
+            raise ValueError(errstr)
+        
+        pdb, uni = loadsys(pdbf, grof, xtcf)
 
     ok_residues = []
     discarded_residues = set()
@@ -191,71 +209,123 @@ def dopotential(kbp_atomlist, residues_list, potential_file, seq_dist_co = 0, gr
     ordered_sparses = []
     numframes = len(uni.trajectory)
 
-    for i in range(len(uni.residues)):
-        if uni.residues[i].name in residues_list:
-            ok_residues.append(i)
+    for res in uni.residues:
+        # check if the residue type is one of
+        # those included in the list
+        if res.resname in residues_list:
+            ok_residues.append(res)
         else:
-            discarded_residues.add(uni.residues[i])
+            discarded_residues.add(res)
             continue
-        for j in ok_residues[:-1]:
-            ii = i 
-            if not (abs(i-j) < seq_dist_co or uni.residues[ii].segment.name != uni.residues[j].segment.name): 
-                if uni.residues[j].name < uni.residues[ii].name:
+        
+        for secondres in ok_residues[:-1]:
+            firstres = res 
+            
+            if not (abs(res.ix - secondres.ix) < seq_dist_co \
+            or firstres.segment.segid != secondres.segment.segid):
+                # string comparison ?!
+                if secondres.resname < firstres.resname:
                     ii,j = j,ii
-                this_sparse = sparses[uni.residues[ii].name][uni.residues[j].name]
-                this_atoms = (kbp_atomlist[uni.residues[ii].name][this_sparse.p1_1],
-                              kbp_atomlist[uni.residues[ii].name][this_sparse.p1_2],
-                              kbp_atomlist[uni.residues[j].name][this_sparse.p2_1],
-                              kbp_atomlist[uni.residues[j].name][this_sparse.p2_2])
+                
+                this_sparse = sparses[firstres.resname][secondres.resname]
+                
+                atom0, atom1, atom2, atom3 = \
+                    (kbp_atomlist[firstres.resname][this_sparse.p1_1],
+                     kbp_atomlist[firstres.resname][this_sparse.p1_2],
+                     kbp_atomlist[secondres.resname][this_sparse.p2_1],
+                     kbp_atomlist[secondres.resname][this_sparse.p2_2])
+                
                 try:
-                    selected_atoms = mda.core.AtomGroup.AtomGroup((uni.residues[ii].atoms[uni.residues[ii].atoms.names().index(this_atoms[0])], 
-                                      uni.residues[ii].atoms[uni.residues[ii].atoms.names().index(this_atoms[1])],
-                                      uni.residues[j].atoms[uni.residues[j].atoms.names().index(this_atoms[2])],
-                                      uni.residues[j].atoms[uni.residues[j].atoms.names().index(this_atoms[3])]))
-                except: 
-                    log.warning("could not identify essential atoms for the analysis (%s%s, %s%s)" % ( uni.residues[ii].name, uni.residues[ii].id, uni.residues[j].name, uni.residues[j].id ))
+                    index_atom0 = \
+                        firstres.atoms.names.tolist().index(atom0)
+                    index_atom1 = \
+                        firstres.atoms.names.tolist().index(atom1)
+                    index_atom2 = \
+                        secondres.atoms.names.tolist().index(atom2)
+                    index_atom3 = \
+                        secondres.atoms.named.tolist().index(atom3)
+                    selected_atoms = \
+                        mda.core.groups.AtomGroup(\
+                             firstres.atoms[index_atom0],
+                             firstres.atoms[index_atom1],
+                             secondres.atoms[index_atom2],
+                             secondres.atoms[index_atom3])
+                except:
+                    warnstr = \
+                        "Could not identify essential atoms " \
+                        "for the analysis ({:s}{:d}, {:s}{:d})"
+                    log.warning(\
+                        warnstr.format(firstres.resname, \
+                                       firstres.resid, \
+                                       secondres.resname, \
+                                       secondres.resid))
+                    
                     continue
-                residue_pairs.append((ii,j))
+                
+                residue_pairs.append((firstres, secondres))
                 atom_selections.append(selected_atoms)
                 ordered_sparses.append(this_sparse)
 
-    scores = np.zeros((len(residue_pairs)), dtype=float)
-
-    a=0    
-    
+    scores = np.zeros((len(residue_pairs)), dtype = float)  
     coords = None
     
     for ts in uni.trajectory:
-        tmp_coords = []
-        sys.stdout.write( "now analyzing: frame %d / %d (%3.1f%%)\r" % (a,numframes,float(a)/float(numframes)*100.0) )
-        sys.stdout.flush()
-        a+=1
-        for sel in atom_selections:    
-    	    tmp_coords.append(sel.coordinates())
-        coords = np.array(np.concatenate(tmp_coords),dtype=np.float64)
+        logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
+        sys.stdout.write(logstr.format(a, \
+                                       numframes, \
+                                       float(a)/float(numframes)*100.0))
+        sys.stdout.flush()       
+   
+        coords = np.array(\
+            np.concatenate(\
+                [sel.positions for sel in atom_selections]), \
+            dtype = np.float64)
 
         inner_loop = LoopDistances(coords, coords, None)
+        distances = \
+            inner_loop.run_potential_distances(\
+                len(atom_selections), 4, 1)
 
-        distances = inner_loop.run_potential_distances(len(atom_selections), 4, 1)
-
-        scores += calc_potential(distances, ordered_sparses, pdb, uni, seq_dist_co, kbT=kbT)
+        scores += \
+            calc_potential(distances = distances, \
+                           ordered_sparses = ordered_sparses, \
+                           pdb = pdb, \
+                           uni = uni, \
+                           distco = seq_dist_co, \
+                           kbT = kbT)
     
+    # divide the scores for the lenght of the trajectory
     scores /= float(len(uni.trajectory))
     outstr = ""
-
-    for i,s in enumerate(scores):
-        if abs(s) > 0.000001:
-            outstr += "%s-%s%s:%s-%s%s\t%.3f\n" % (pdb.residues[residue_pairs[i][0]].segment.name, pdb.residues[residue_pairs[i][0]].name, pdb.residues[residue_pairs[i][0]].id, pdb.residues[residue_pairs[i][1]].segment.name, pdb.residues[residue_pairs[i][1]].name, pdb.residues[residue_pairs[i][1]].id, s)
-        
-    dm = None
+    outstr_fmt = "{:s}-{:s}{:s}:{:s}-{:s}{:s}\t{:.3f}\n"
+    for i, score in enumerate(scores):
+        if abs(score) > 0.000001:
+            outstr +=  \
+                outstr_fmt.format(\
+                    pdb.residues[residue_pairs[i][0]].segment.segname, \
+                    pdb.residues[residue_pairs[i][0]].resname, \
+                    pdb.residues[residue_pairs[i][0]].resid, \
+                    pdb.residues[residue_pairs[i][1]].segment.segname, \
+                    pdb.residues[residue_pairs[i][1]].resname, \
+                    pdb.residues[residue_pairs[i][1]].resid, \
+                    score)
     
+    # inizialize the matrix to None  
+    dm = None   
     if dofullmatrix:
+        # if requested, create the matrix
         dm = np.zeros((len(pdb.residues), len(pdb.residues)))
-        for i,k in enumerate(residue_pairs):
-            dm[k[0],k[1]] = scores[i]
-            dm[k[1],k[0]] = scores[i]           
+        # use numpy "fancy indexing" to fill the matrix
+        # with scores at the corresponding residues pairs
+        # positions
+        pair_firstelems = [pair[0] for pair in residue_pairs]
+        pairs_secondelems = [pair[1] for pair in residue_pairs]
+        dm[pair_firstelems, pairs_secondelems] = scores
+        dm[pairs_secondelems, pair_firstelems] = scores           
     
+    # return the output string and the matrix
     return (outstr, dm)
+
 
 def calc_potential(distances, ordered_sparses, pdb, uni, distco, kbT=1.0):
 
