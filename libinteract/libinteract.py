@@ -93,54 +93,72 @@ class Sparse:
     def binN(self):
         return len(self.bins)
 
-kbp_reslist=  ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL"]
 
-def parse_sparse(ff):
+def parse_sparse(potential_file, residues_list):
     header_fmt  = '400i'
     header_struct = struct.Struct(header_fmt)
     header_size = struct.calcsize(header_fmt)
     sparse_fmt  = '=iiiiiidddidxxxx'
     sparse_size = struct.calcsize(sparse_fmt)
     sparse_struct = struct.Struct(sparse_fmt)
-    bin_fmt     = '4cf'
-    bin_size    = struct.calcsize(bin_fmt)
+    bin_fmt = '4cf'
+    bin_size  = struct.calcsize(bin_fmt)
     bin_struct = struct.Struct(bin_fmt)
     pointer = 0
     sparses = []
 
-    fh   = open(ff)
+    fh = open(potential_file)
     data = fh.read()
     fh.close()
 
-    isparse  = header_struct.unpack(data[pointer : pointer+header_size])
+    isparse = \
+        header_struct.unpack(data[pointer : pointer + header_size])
     pointer += header_size
-    log.info("found %d residue-residue interaction definitions." % (len([i for i in isparse if i >0])))
+
+    logstr = "Found {:d} residue-residue interaction definitions."
+    log.info(logstr.format(len([i for i in isparse if i > 0])))
 
     for i in isparse:
         sparses.append([])
         if i == 0:
             continue
+        
         for j in range(i):
-            this_sparse = Sparse(sparse_struct.unpack(data[pointer : pointer+sparse_size]))
+            this_sparse = \
+                Sparse(sparse_struct.unpack(\
+                    data[pointer : pointer + sparse_size]))
             pointer += sparse_size
-            for k in range(this_sparse.num): # for every bin....
-                this_sparse.addBin(bin_struct.unpack(data[pointer : pointer+bin_size]))
+            
+            # for every bin ...
+            for k in range(this_sparse.num):
+                this_sparse.addBin(\
+                    bin_struct.unpack(\
+                        data[pointer : pointer + bin_size]))
                 pointer += bin_size
             sparses[-1].append(this_sparse)
-            
-    assert pointer == len(data), "Error: could not completely parse the file (%d bytes read, %d expected)"%(pointer,len(data))
+    
+    if pointer != len(data):
+        errstr = \
+            "Error: could not completely parse the file {:s}" \
+            " ({:d} bytes read, {:d} expected)"
+        log.error(errstr.format(potential_file, pointer, len(data)))
+        exit(1)
 
     sparses_dict = {}
-    for i in range(len(kbp_reslist)):
-        sparses_dict[kbp_reslist[i]] = {}
+    for i in range(len(residues_list)):
+        sparses_dict[residues_list[i]] = {}
         for j in range(i):            
-            sparses_dict[kbp_reslist[i]][kbp_reslist[j]] = {}
+            sparses_dict[residues_list[i]][residues_list[j]] = {}
             
     for s in sparses:
         if s:
-            sparses_dict[ kbp_reslist[ s[0].r1 ] ][ kbp_reslist[ s[0].r2 ] ] = s[0]
-    print "Done!"
+            sparses_dict[residues_list[s[0].r1]][residues_list[s[0].r2]] = s[0]
+    
+    logstr = "Done parsing file {:s}!"
+    sys.stodout.write(logstr.format(potential_file))
+    
     return sparses_dict
+
 
 def parse_atomlist(fname):
     try:
@@ -157,10 +175,8 @@ def parse_atomlist(fname):
     
 def dopotential(kbp_atomlist, residues_list, potential_file, seq_dist_co = 0, grof = None, xtcf = None, pdbf = None, uni = None, pdb = None, dofullmatrix = True, kbT=1.0):
 
-    residues_list = ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","HIS", "ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL"] # Residues for which the potential is defined: all except G 
-
     log.info("Loading potential definition . . .")
-    sparses = parse_sparse(potential_file)
+    sparses = parse_sparse(potential_file, residues_list)
     log.info("Loading input files...")
 
     if not pdb or not uni:
@@ -675,7 +691,7 @@ def dohbonds(sel1, sel2, grof=None ,xtcf=None, pdbf=None, pdb=None, uni=None, up
                 atom2 = identifiers[uni_identifiers.index(hbond[1])]
  
                 outstr += "%s-%d%s_%s:%s-%d%s_%s\t\t%3.2f\n" % ( atom1[0], atom1[1], atom1[2], table[i][4], atom2[0], atom2[1], atom2[2], table[i][8], table[i][-1]*100.0 )
-                
+
     return (outstr, fullmatrix)
     
     
