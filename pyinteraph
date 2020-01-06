@@ -54,9 +54,9 @@ def parse_cgs_file(fname):
     grps_str = "CHARGED_GROUPS"
     res_str = "RESIDUES"
     default_grps_str = "default_charged_groups"
-
-    cfg = cp.ConfigParser()
-    cfg.read(fname)
+    
+    # create the config parser and read the config file
+    cfg = cp.ConfigParser()   
     try:
         cfg.read(fname)
     except:
@@ -64,38 +64,43 @@ def parse_cgs_file(fname):
         log.error(logstr.format(fname), exc_info = True)
         exit(1)
 
-    out = {}
-    group_definitions = {}
+    charged_groups = \
+        [i.strip() for i \
+         in cfg.options(grps_str).remove(default_grps_str)]
 
-    charged_groups = cfg.options(grps_str)
-    charged_groups.remove(default_grps_str)
-    charged_groups = [i.strip() for i in charged_groups]
-
-    default_charged = cfg.get(grps_str, default_grps_str).split(",")
-    default_charged = [i.strip() for i in default_charged]
+    default_charged = \
+        [i.strip() for i \
+         in cfg.get(grps_str, default_grps_str).split(",")]
 
     residues = cfg.options(res_str)
-    
-    for i in (charged_groups + default_charged):
-        group_definitions[i] = cfg.get(grps_str, i).split(",")
-    for j in range(len(group_definitions[i])):
-        group_definitions[i][j] = group_definitions[i][j].strip()
 
+    group_definitions = \
+        {i : \
+            [item.strip() for item in cfg.get(grps_str, i).split(",")] \
+         for i in (charged_groups + default_charged)}
+
+    out = {}
     try:
-        for i in residues:
-            i = i.upper()
-            out[i] = {}
-            for j in default_charged:
-                out[i][j] = group_definitions[j]
-            this_cgs = cfg.get(res_str, i).split(",")
-            for j in this_cgs:
-                if j:
-                    out[i][j] = group_definitions[j.lower()]
+        for res in residues:
+            # convert the residue name into all uppercase
+            res = res.upper()
+            # default charged groups
+            def_charged_dict = \
+                {def_charged : group_definitions[def_charged] \
+                 for def_charged in default_charged}
+            # other charged groups
+            charged_groups_dict = \
+                {item : group_definitions[item.lower()] \
+                 for item in cfg.get(res_str, res).split(",") \
+                 if item in list(group_definitions.keys())}
+
+            out[res] = {**def_charged_dict, **charged_groups_dict}
+
     except:
         logstr = \
-            "Could not parse the charged groups file. " \
+            "Could not parse the charged groups file {:s}. " \
             "Are there any inconsistencies?"
-        logging.error(logstr)
+        log.error(logstr.format(fname))
         exit(1)
     
     return out
