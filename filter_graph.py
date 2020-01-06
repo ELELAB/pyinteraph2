@@ -54,375 +54,378 @@ def seconddevsigmoid(x, x0, k, l, m):
     
     return y    
 
-########################## ARGUMENT PARSER ############################
 
-description = "Find persistence critical value"
-parser = argparse.ArgumentParser(description = description)
+if __name__ == "__main__":
 
-d_helpstr = \
-    ".dat file matrices (multiple: -d file.dat -d file2.dat ...)"
-parser.add_argument("-d", "--input-dat", \
-                    dest = "datfiles", \
-                    help = d_helpstr, \
-                    action = "append", \
-                    default = None)
+    ########################## ARGUMENT PARSER ############################
 
-o_helpstr = "Output .dat file matrix"
-parser.add_argument("-o", "--output-dat", \
-                    dest = "out_dat", \
-                    help = o_helpstr, \
-                    action = "store", \
-                    type = str, \
-                    default = None)
+    description = "Find persistence critical value"
+    parser = argparse.ArgumentParser(description = description)
 
-c_helpstr = "Output clusters file"
-parser.add_argument("-c", "--output-clusters", \
-                    dest = "out_clusters", \
-                    help = c_helpstr, \
-                    action = "store", \
-                    type = str, \
-                    default = None)
+    d_helpstr = \
+        ".dat file matrices (multiple: -d file.dat -d file2.dat ...)"
+    parser.add_argument("-d", "--input-dat", \
+                        dest = "datfiles", \
+                        help = d_helpstr, \
+                        action = "append", \
+                        default = None)
 
-t_default = 0.0
-t_helpstr = \
-    "Filter input matrices according to this threshold (default: {:f})"
-parser.add_argument("-t", "--filter-threshold", \
-                    dest = "filter", \
-                    help = t_helpstr.format(t_default), \
-                    type = float, \
-                    default = t_default)
+    o_helpstr = "Output .dat file matrix"
+    parser.add_argument("-o", "--output-dat", \
+                        dest = "out_dat", \
+                        help = o_helpstr, \
+                        action = "store", \
+                        type = str, \
+                        default = None)
 
-p_helpstr = "Name of the file where to plot clusters"
-parser.add_argument("-p", "--plot", \
-                    dest = "out_plot", \
-                    help = p_helpstr, \
-                    default = None)
+    c_helpstr = "Output clusters file"
+    parser.add_argument("-c", "--output-clusters", \
+                        dest = "out_clusters", \
+                        help = c_helpstr, \
+                        action = "store", \
+                        type = str, \
+                        default = None)
 
-f_helpstr = \
-    "Try to fit the plot to a sigmoid y = m / (1 + exp(k*(x-x0))) + n"
-parser.add_argument("-f", "--fit", \
-                    dest = "do_fit", \
-                    help = f_helpstr, \
-                    action = "store_true")
+    t_default = 0.0
+    t_helpstr = \
+        "Filter input matrices according to this threshold (default: {:f})"
+    parser.add_argument("-t", "--filter-threshold", \
+                        dest = "filter", \
+                        help = t_helpstr.format(t_default), \
+                        type = float, \
+                        default = t_default)
 
-u_default = 100.0
-u_helpstr = \
-    "Maxium range value to be considered (default: {:f})"
-parser.add_argument("-u", "--range-upper", \
-                    dest = "upper", \
-                    help = u_helpstr.format(u_default), \
-                    type = float, \
-                    default = u_default)
+    p_helpstr = "Name of the file where to plot clusters"
+    parser.add_argument("-p", "--plot", \
+                        dest = "out_plot", \
+                        help = p_helpstr, \
+                        default = None)
 
-l_default = 0.0
-l_helpstr = "Minimum range value to be considered (default: {:f})"
-parser.add_argument("-l", "--range-lower", \
-                    dest = "lower", \
-                    help = l_helpstr.format(l_default), \
-                    type = float, \
-                    default = l_default)
+    f_helpstr = \
+        "Try to fit the plot to a sigmoid y = m / (1 + exp(k*(x-x0))) + n"
+    parser.add_argument("-f", "--fit", \
+                        dest = "do_fit", \
+                        help = f_helpstr, \
+                        action = "store_true")
 
-s_default = 5.0
-s_helpstr = \
-    "Step range value to be considered (default: {:f})"
-parser.add_argument("-s", "--range-step", \
-                    dest = "step", \
-                    help = s_helpstr.format(s_default), \
-                    type = float, \
-                    default = s_default)
+    u_default = 100.0
+    u_helpstr = \
+        "Maxium range value to be considered (default: {:f})"
+    parser.add_argument("-u", "--range-upper", \
+                        dest = "upper", \
+                        help = u_helpstr.format(u_default), \
+                        type = float, \
+                        default = u_default)
 
-w_helpstr = \
-    "Use values in this matrix as weights for the output " \
-    "adjacency matrix"
-parser.add_argument("-w", "--weight-matrix", \
-                    dest = "weights", \
-                    help = w_helpstr, \
-                    type = str, \
-                    default = None)
+    l_default = 0.0
+    l_helpstr = "Minimum range value to be considered (default: {:f})"
+    parser.add_argument("-l", "--range-lower", \
+                        dest = "lower", \
+                        help = l_helpstr.format(l_default), \
+                        type = float, \
+                        default = l_default)
 
-x_default = 20.0
-x_helpstr = \
-    "Starting x0 parameter for sigmoid fitting (default: {:f})"
-parser.add_argument("-x", "--x0", \
-                    dest = "x0", \
-                    help = x_helpstr.format(x_default), \
-                    type = float, \
-                    default = x_default)
+    s_default = 5.0
+    s_helpstr = \
+        "Step range value to be considered (default: {:f})"
+    parser.add_argument("-s", "--range-step", \
+                        dest = "step", \
+                        help = s_helpstr.format(s_default), \
+                        type = float, \
+                        default = s_default)
 
-k_default = 2.0
-k_helpstr = \
-    "Starting k parameter for sigmoid fitting (default: {:f})"
-parser.add_argument("-k", \
-                    dest = "k", \
-                    help = k_helpstr.format(k_default),
-                    type = float, \
-                    default = k_default)
+    w_helpstr = \
+        "Use values in this matrix as weights for the output " \
+        "adjacency matrix"
+    parser.add_argument("-w", "--weight-matrix", \
+                        dest = "weights", \
+                        help = w_helpstr, \
+                        type = str, \
+                        default = None)
 
-m_default = 20.0
-m_helpstr = \
-    "Starting m parameter for sigmoid fitting (default: {:f})"
-parser.add_argument("-m", \
-                    dest = "m", \
-                    help = m_helpstr.format(m_default), \
-                    type = float, \
-                    default = m_default)
+    x_default = 20.0
+    x_helpstr = \
+        "Starting x0 parameter for sigmoid fitting (default: {:f})"
+    parser.add_argument("-x", "--x0", \
+                        dest = "x0", \
+                        help = x_helpstr.format(x_default), \
+                        type = float, \
+                        default = x_default)
 
-n_default = 10.0
-n_helpstr = \
-    "Starting n parameter for sigmoid fitting (default: {:f})"
-parser.add_argument("-n", \
-                    dest = "n", \
-                    help = n_helpstr.format(n_default), \
-                    type = float, \
-                    default = n_default)
+    k_default = 2.0
+    k_helpstr = \
+        "Starting k parameter for sigmoid fitting (default: {:f})"
+    parser.add_argument("-k", \
+                        dest = "k", \
+                        help = k_helpstr.format(k_default),
+                        type = float, \
+                        default = k_default)
 
-options = parser.parse_args()
+    m_default = 20.0
+    m_helpstr = \
+        "Starting m parameter for sigmoid fitting (default: {:f})"
+    parser.add_argument("-m", \
+                        dest = "m", \
+                        help = m_helpstr.format(m_default), \
+                        type = float, \
+                        default = m_default)
+
+    n_default = 10.0
+    n_helpstr = \
+        "Starting n parameter for sigmoid fitting (default: {:f})"
+    parser.add_argument("-n", \
+                        dest = "n", \
+                        help = n_helpstr.format(n_default), \
+                        type = float, \
+                        default = n_default)
+
+    options = parser.parse_args()
 
 
-########################### CHECK INPUTS ##############################
+    ########################### CHECK INPUTS ##############################
 
-if options.datfiles is None:
-    log.error("Input file(s) must be provided.")
-    exit(1)
-
-if options.upper <= options.lower:
-    log.error("Maximum range value must be higher than minimum.")
-    exit(1)
-
-if options.step > (options.upper - options.lower):
-    logstr = \
-        "Step value must be lower than or equal to " \
-        "[upper_value - lower_value]"
-    log.error(logstr)
-    exit(1)
-
-fnames = options.datfiles
-matrices = []
-for fname in fnames:
-    try:
-        matrix = np.loadtxt(fname)
-        matrices.append(matrix)
-    except:
-        # catch numpy errors and include the traceback when
-        # log
-        logstr = "Could not open file {:s}, or file in wrong format"
-        log.error(logstr.format(fname, exc_info = True))
+    if options.datfiles is None:
+        log.error("Input file(s) must be provided.")
         exit(1)
 
-shapes = []
-for matrix in matrices:  
-    shapes.extend(matrix.shape)
-
-if len(set(shapes)) != 1:
-    log.error("Matrices do not have the same shape.")
-    exit(1)
-
-for fname, matrix in zip(fnames, matrices):
-    if matrix.shape[0] != matrix.shape[1]:
-        logstr = "Matrix {:s} is not square"
-        log.error(logstr.format(fname))
-        exit(1)
-    if not np.allclose(matrix, matrix.T):
-        logstr = "Matrix {:s} is not symmetric"
-        log.error(logstr.format(fname))
+    if options.upper <= options.lower:
+        log.error("Maximum range value must be higher than minimum.")
         exit(1)
 
-    # all diagonal elements must be zero
-    np.fill_diagonal(matrix, 0.0)
-
-
-####################### MAXIMUM CLUSTER SIZES #########################
-
-interval = np.arange(options.lower, options.upper, options.step)
-maxclustsizes = []
-for val in interval:
-    # boolean matrices indicating where the original
-    # matrices exceed val       
-    boolmatrices = [matrix > val for matrix in matrices]
-    # there will be only one boolean matrix if only one
-    # input matrix was provided
-    allmatrix = boolmatrices[0]
-    if len(boolmatrices) > 1:
-        # in case more there was more than one input matrix,
-        # the final matrix will be a matrix resulting from an
-        # element-wise logical OR applied to all matrices
-        for i in range(1, len(boolmatrices)):
-            allmatrix = np.logical_or(allmatrix, boolmatrices[i])
-
-    # build a graph from the final boolean matrix
-    G = nx.Graph(allmatrix)
-    # get the maximum cluster size from the graph
-    maxclustsizes.append(\
-        len(max(list(\
-            nx.algorithms.components.connected_components(G)), \
-        key = len)))
-
-
-############################## FITTING ################################
-
-x = interval
-y = maxclustsizes
-args = None
-flex = None
-
-if options.do_fit:
-    logstr = \
-        '"""\nFitting data points to functional form: ' \
-        'y = m / (1 + exp(k*(x-x0))) + n\nStarting parameters:\n' \
-        'x0 = {:3.2f}\nk =  {:3.2f}\nm =  {:3.2f}\nn =  {:3.2f}\n"""'
-    log.info(\
-        logstr.format(options.x0, options.k, options.m, options.n))
-
-    # will be None unless the fitting completes successfully
-    args = None
-    try:
-        popt, pcov = \
-            curve_fit(f = sigmoid, \
-                      xdata = x, \
-                      ydata = y, \
-                      maxfev = 100000, \
-                      p0 = (options.x0, options.k, options.m, options.n))
-        
-        args = (popt[0], popt[1], popt[2], popt[3])
-    
-    except ValueError:
-        # as per scipy.optimize.curve_fit documentation
-        log.error(\
-            "Please check input data and options provided for " \
-            "the fitting", \
-            exc_info = True)
-
-    except RuntimeError:
-        # as per scipy.optimize.curve_fit documentation
-        log.error(\
-            "Could not complete fitting since the least-squares ", \
-            "minimization failed"
-            exc_info = True)
-
-    except:
-        # something else happened (should not happen)
-        log.error(\
-            "Could not complete fitting", \
-            exc_info = True)
-
-
-    ####################### SECOND DERIVATIVE #########################
-    
-    if args is not None:
+    if options.step > (options.upper - options.lower):
         logstr = \
-            '"""\nDone! Calculated parameters:\nx0 = {:3.5f}\n' \
-            'k  = {:3.5f}\nl  = {:3.5f}\nm  = {:3.5f}\n"""'
-        log.info(logstr.format(*args))
-
-        log.info(\
-            "Looking for central point of inflection (f''(x) = 0) ...")
-
-        solvestart = options.x0
-        log.info("Starting from: {:3.5f} ...".format(solvestart))
-
-        # will be None unless the calculation completes successfully
-        flex = None
-        try:
-           flex = fsolve(func = seconddevsigmoid, \
-                         x0 = solvestart, \
-                         args = args, \
-                         maxfev = 5000)    
-        except:
-            # inform the user that something went wrong during
-            # the calculation and include traceback
-            log.error(\
-                "Could not complete the calculation", \
-                exc_info = True)
-
-        if flex is not None:
-            log.info("Flexus point at {:3.2f}".format(flex))
-
-
-############################## PLOTTING ###############################
-
-if options.out_plot is not None:
-    plt.plot(x = x, y = y, fmt = "o")
-    plt.xlim((options.lower, options.upper))
-    plt.xlabel("$p_{min}$")
-    plt.ylabel("Size of the biggest cluster")
-    
-    if args is not None:
-        xplot = np.linspace(max(x), min(x))
-        yplot = sigmoid(xplot, *popt)
-        plt.plot(x = xplot, y = yplot, label = "Fitting")
-         
-    if flex is not None:
-        plt.plot(x = flex, \
-                 y = sigmoid(flex, *popt),\
-                 fmt = "o", \
-                 label = "Critical value", \
-                 color = "red")
-        
-        plt.axvline(x = flex)
-
-    plt.legend(loc = "best")
-    plt.savefig(options.out_plot)
-
-
-########################### OUTPUT CLUSTERS ###########################
-
-if options.out_clusters is not None:
-    try:
-        fh = open(options.out_clusters, 'w')
-    except:
-        log.error(\
-            "Could not write clusters file.", \
-            exc_info = True)
+            "Step value must be lower than or equal to " \
+            "[upper_value - lower_value]"
+        log.error(logstr)
         exit(1)
-    
-    fh.write("P_min\tSize of biggest cluster\n")
-    for i, xi in enumerate(x):
-        fh.write("{:.3f}\t{:d}\n".format(xi, y[i]))
-    
-    fh.close()
+
+    fnames = options.datfiles
+    matrices = []
+    for fname in fnames:
+        try:
+            matrix = np.loadtxt(fname)
+            matrices.append(matrix)
+        except:
+            # catch numpy errors and include the traceback when
+            # log
+            logstr = "Could not open file {:s}, or file in wrong format"
+            log.error(logstr.format(fname, exc_info = True))
+            exit(1)
+
+    shapes = []
+    for matrix in matrices:  
+        shapes.extend(matrix.shape)
+
+    if len(set(shapes)) != 1:
+        log.error("Matrices do not have the same shape.")
+        exit(1)
+
+    for fname, matrix in zip(fnames, matrices):
+        if matrix.shape[0] != matrix.shape[1]:
+            logstr = "Matrix {:s} is not square"
+            log.error(logstr.format(fname))
+            exit(1)
+        if not np.allclose(matrix, matrix.T):
+            logstr = "Matrix {:s} is not symmetric"
+            log.error(logstr.format(fname))
+            exit(1)
+
+        # all diagonal elements must be zero
+        np.fill_diagonal(matrix, 0.0)
 
 
-############################# OUTPUT DAT ##############################
+    ####################### MAXIMUM CLUSTER SIZES #########################
 
-if options.out_dat is not None:
-    if len(matrices) == 1:         
-        mask = (matrices[0] <= options.filter)
-        out_matrix = np.ma.masked_array(data = matrices[0], \
-                                        mask = mask, \
-                                        fill_value = 0.0).filled()
-    else:
+    interval = np.arange(options.lower, options.upper, options.step)
+    maxclustsizes = []
+    for val in interval:
         # boolean matrices indicating where the original
-        # matrices exceed val  
-        boolmatrices = [matrix > options.filter for matrix in matrices]
+        # matrices exceed val       
+        boolmatrices = [matrix > val for matrix in matrices]
         # there will be only one boolean matrix if only one
         # input matrix was provided
-        out_matrix = boolmatrices[0]
-        for i in range(1, len(boolmatrices)):
+        allmatrix = boolmatrices[0]
+        if len(boolmatrices) > 1:
             # in case more there was more than one input matrix,
             # the final matrix will be a matrix resulting from an
             # element-wise logical OR applied to all matrices
-            out_matrix = np.logical_or(out_matrix, boolmatrices[i])
-    
-    if options.weights is not None:
-        # if a matrix of weights was provided
+            for i in range(1, len(boolmatrices)):
+                allmatrix = np.logical_or(allmatrix, boolmatrices[i])
+
+        # build a graph from the final boolean matrix
+        G = nx.Graph(allmatrix)
+        # get the maximum cluster size from the graph
+        maxclustsizes.append(\
+            len(max(list(\
+                nx.algorithms.components.connected_components(G)), \
+            key = len)))
+
+
+    ############################## FITTING ################################
+
+    x = interval
+    y = maxclustsizes
+    args = None
+    flex = None
+
+    if options.do_fit:
+        logstr = \
+            '"""\nFitting data points to functional form: ' \
+            'y = m / (1 + exp(k*(x-x0))) + n\nStarting parameters:\n' \
+            'x0 = {:3.2f}\nk =  {:3.2f}\nm =  {:3.2f}\nn =  {:3.2f}\n"""'
+        log.info(\
+            logstr.format(options.x0, options.k, options.m, options.n))
+
+        # will be None unless the fitting completes successfully
+        args = None
         try:
-            weights = np.loadtxt(options.weights)
+            popt, pcov = \
+                curve_fit(f = sigmoid, \
+                          xdata = x, \
+                          ydata = y, \
+                          maxfev = 100000, \
+                          p0 = (options.x0, options.k, options.m, options.n))
+            
+            args = (popt[0], popt[1], popt[2], popt[3])
+        
+        except ValueError:
+            # as per scipy.optimize.curve_fit documentation
+            log.error(\
+                "Please check input data and options provided for " \
+                "the fitting", \
+                exc_info = True)
+
+        except RuntimeError:
+            # as per scipy.optimize.curve_fit documentation
+            log.error(\
+                "Could not complete fitting since the least-squares ", \
+                "minimization failed", \
+                exc_info = True)
+
+        except:
+            # something else happened (should not happen)
+            log.error(\
+                "Could not complete fitting", \
+                exc_info = True)
+
+
+        ####################### SECOND DERIVATIVE #########################
+        
+        if args is not None:
+            logstr = \
+                '"""\nDone! Calculated parameters:\nx0 = {:3.5f}\n' \
+                'k  = {:3.5f}\nl  = {:3.5f}\nm  = {:3.5f}\n"""'
+            log.info(logstr.format(*args))
+
+            log.info(\
+                "Looking for central point of inflection (f''(x) = 0) ...")
+
+            solvestart = options.x0
+            log.info("Starting from: {:3.5f} ...".format(solvestart))
+
+            # will be None unless the calculation completes successfully
+            flex = None
+            try:
+               flex = fsolve(func = seconddevsigmoid, \
+                             x0 = solvestart, \
+                             args = args, \
+                             maxfev = 5000)    
+            except:
+                # inform the user that something went wrong during
+                # the calculation and include traceback
+                log.error(\
+                    "Could not complete the calculation", \
+                    exc_info = True)
+
+            if flex is not None:
+                log.info("Flexus point at {:3.2f}".format(flex))
+
+
+    ############################## PLOTTING ###############################
+
+    if options.out_plot is not None:
+        plt.plot(x = x, y = y, fmt = "o")
+        plt.xlim((options.lower, options.upper))
+        plt.xlabel("$p_{min}$")
+        plt.ylabel("Size of the biggest cluster")
+        
+        if args is not None:
+            xplot = np.linspace(max(x), min(x))
+            yplot = sigmoid(xplot, *popt)
+            plt.plot(x = xplot, y = yplot, label = "Fitting")
+             
+        if flex is not None:
+            plt.plot(x = flex, \
+                     y = sigmoid(flex, *popt),\
+                     fmt = "o", \
+                     label = "Critical value", \
+                     color = "red")
+            
+            plt.axvline(x = flex)
+
+        plt.legend(loc = "best")
+        plt.savefig(options.out_plot)
+
+
+    ########################### OUTPUT CLUSTERS ###########################
+
+    if options.out_clusters is not None:
+        try:
+            fh = open(options.out_clusters, 'w')
         except:
             log.error(\
-                "Could not read weights matrix.", \
+                "Could not write clusters file.", \
                 exc_info = True)
             exit(1)
-         
-        if weights.shape != out_matrix.shape:
-            log.error(\
-                "Output and weight matrix have different shapes.")
-            exit(1)
+        
+        fh.write("P_min\tSize of biggest cluster\n")
+        for i, xi in enumerate(x):
+            fh.write("{:.3f}\t{:d}\n".format(xi, y[i]))
+        
+        fh.close()
 
-        weighted = np.ma.masked_array(data = weights, \
-                                      mask = out_matrix > 0.0, \
-                                      fill_value = 0.0).filled()
 
-        np.savetxt(options.out_dat, weighted, fmt = "%3.2f")
+    ############################# OUTPUT DAT ##############################
 
-    else:
-        np.savetxt(options.out_dat, out_matrix, fmt = "%3.2f")
+    if options.out_dat is not None:
+        if len(matrices) == 1:         
+            mask = (matrices[0] <= options.filter)
+            out_matrix = np.ma.masked_array(data = matrices[0], \
+                                            mask = mask, \
+                                            fill_value = 0.0).filled()
+        else:
+            # boolean matrices indicating where the original
+            # matrices exceed val  
+            boolmatrices = [matrix > options.filter for matrix in matrices]
+            # there will be only one boolean matrix if only one
+            # input matrix was provided
+            out_matrix = boolmatrices[0]
+            for i in range(1, len(boolmatrices)):
+                # in case more there was more than one input matrix,
+                # the final matrix will be a matrix resulting from an
+                # element-wise logical OR applied to all matrices
+                out_matrix = np.logical_or(out_matrix, boolmatrices[i])
+        
+        if options.weights is not None:
+            # if a matrix of weights was provided
+            try:
+                weights = np.loadtxt(options.weights)
+            except:
+                log.error(\
+                    "Could not read weights matrix.", \
+                    exc_info = True)
+                exit(1)
+             
+            if weights.shape != out_matrix.shape:
+                log.error(\
+                    "Output and weight matrix have different shapes.")
+                exit(1)
+
+            weighted = np.ma.masked_array(data = weights, \
+                                          mask = out_matrix > 0.0, \
+                                          fill_value = 0.0).filled()
+
+            np.savetxt(options.out_dat, weighted, fmt = "%3.2f")
+
+        else:
+            np.savetxt(options.out_dat, out_matrix, fmt = "%3.2f")
