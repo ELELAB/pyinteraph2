@@ -46,9 +46,8 @@ from libinteract import libinteract as li
 ########################## HELPER FUNCTIONS ###########################
 
 def str2file(string, fname):
-    fhout = open(fname, "w")
-    fhout.write(string)
-    fhout.close()
+    with open(fname, "w") as fhout:
+        fhout.write(string)
 
 
 def parse_cgs_file(fname):
