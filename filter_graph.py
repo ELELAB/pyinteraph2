@@ -31,13 +31,13 @@ if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
     exit(1)
 
 import argparse
-import re
 
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 import networkx as nx
+
 
 ########################## HELPER FUNCTIONS ###########################
 
@@ -52,7 +52,224 @@ def seconddevsigmoid(x, x0, k, l, m):
         (k**2 * l * np.exp(k*(x+x0)) * (np.exp(k*x)-np.exp(k*x0)))  \
         / (np.exp(k*x0) + np.exp(k*x))**3    
     
-    return y    
+    return y
+
+# Load matrix
+def load_matrix(fname):
+    try:
+        matrix = np.loadtxt(fname)
+        return matrix
+    except:
+        # catch numpy errors and include the traceback when
+        # log
+        logstr = "Could not open file {:s}, or file in wrong format"
+        log.error(logstr.format(fname, exc_info = True))
+        exit(1)       
+
+
+# Process matrices
+def process_matrices(fnames) 
+    matrices = [load_matrix(fname) for fname in fnames]
+    shapes = [matrix.shape for matrix in matrices]
+
+    if len(set(shapes)) != 1:
+        log.error("Matrices do not have the same shape.")
+        exit(1)
+
+    for fname, matrix in zip(fnames, matrices):
+        if matrix.shape[0] != matrix.shape[1]:
+            logstr = "Matrix {:s} is not square"
+            log.error(logstr.format(fname))
+            exit(1)
+        if not np.allclose(matrix, matrix.T):
+            logstr = "Matrix {:s} is not symmetric"
+            log.error(logstr.format(fname))
+            exit(1)
+
+        # all diagonal elements must be zero
+        np.fill_diagonal(matrix, 0.0)
+
+    return matrices
+
+# Get maximum cluster sizes
+def get_maxclustsizes(matrices, interval)
+    maxclustsizes = []
+    for val in interval:
+        # boolean matrices indicating where the original
+        # matrices exceed val       
+        boolmatrices = [matrix > val for matrix in matrices]
+        # there will be only one boolean matrix if only one
+        # input matrix was provided
+        allmatrix = boolmatrices[0]
+        if len(boolmatrices) > 1:
+            # in case more there was more than one input matrix,
+            # the final matrix will be a matrix resulting from an
+            # element-wise logical OR applied to all matrices
+            for i in range(1, len(boolmatrices)):
+                allmatrix = np.logical_or(allmatrix, boolmatrices[i])
+
+        # build a graph from the final boolean matrix
+        G = nx.Graph(allmatrix)
+        # get the maximum cluster size from the graph
+        maxclustsizes.append(\
+            len(max(list(\
+                nx.algorithms.components.connected_components(G)), \
+            key = len)))
+
+    return maxclustsizes
+
+
+# Perform curve fitting
+def perform_fitting(f, xdata, ydata, maxfev, p0):
+    # args will be None unless the fitting completes successfully
+    args = None
+    try:
+        popt, pcov = \
+            curve_fit(f = f, \
+                      xdata = xdata, \
+                      ydata = ydata, \
+                      maxfev = maxfev, \
+                      p0 = p0)
+            
+        args = (popt[0], popt[1], popt[2], popt[3])
+        
+    except ValueError:
+        # as per scipy.optimize.curve_fit documentation
+        log.error(\
+            "Please check input data and options provided for " \
+            "the fitting", \
+            exc_info = True)
+
+    except RuntimeError:
+        # as per scipy.optimize.curve_fit documentation
+        log.error(\
+            "Could not complete fitting since the least-squares ", \
+            "minimization failed", \
+            exc_info = True)
+
+    except:
+        # something else happened (should not happen)
+        log.error(\
+            "Could not complete fitting", \
+            exc_info = True)
+
+    return args
+
+
+# Find point of inflexion
+def find_flex(func, x0, args, maxfev):
+    # flex will be None unless the calculation completes successfully
+    flex = None
+    try:
+        flex = fsolve(func = seconddevsigmoid, \
+                      x0 = x0, \
+                      args = args, \
+                      maxfev = maxfev)    
+    except:
+        # inform the user that something went wrong during
+        # the calculation and include traceback
+        log.error(\
+            "Could not complete the calculation", \
+            exc_info = True)
+
+    return flex
+
+
+# Plot
+def perform_plotting(x, \
+                     y, \
+                     lower, \
+                     upper, \
+                     out_plot, \
+                     args = None, \
+                     popt = None, \
+                     flex = None, \
+                     func_sigmoid = None):
+
+    plt.plot(x = x, y = y, fmt = "o")
+    plt.xlim((lower, upper))
+    plt.xlabel("$p_{min}$")
+    plt.ylabel("Size of the biggest cluster")
+        
+    if args is not None and popt is not None:
+        xplot = np.linspace(max(x), min(x))
+        yplot = sigmoid(xplot, *popt)
+        plt.plot(x = xplot, y = yplot, label = "Fitting")
+             
+    if flex is not None and func_sigmoid is not None:
+        plt.plot(x = flex, \
+                 y = func_sigmoid(flex, *popt),\
+                 fmt = "o", \
+                     label = "Critical value", \
+                 color = "red")
+            
+        plt.axvline(x = flex)
+
+    plt.legend(loc = "best")
+    plt.savefig(out_plot)
+
+
+# Write clusters to an output file
+def write_clusters(out_clusters, x):
+    try:
+        fh = open(out_clusters, "w")
+    except:
+        log.error(\
+            "Could not write clusters file.", \
+            exc_info = True)
+        exit(1)
+        
+    fh.write("P_min\tSize of biggest cluster\n")
+    for i, xi in enumerate(x):
+        fh.write("{:.3f}\t{:d}\n".format(xi, y[i]))
+        
+    fh.close()
+
+
+# Write matrices to a .dat file (logical OR applied if 
+# multiple input matrices provided)
+def write_dat(matrices, \
+              matrix_filter, \
+              out_dat, \
+              weights = None):
+    
+    if len(matrices) == 1:
+        # where the mask is True, the corresponding value 
+        # in the array is invalid    
+        mask = (matrices[0] <= matrix_filter)
+        out_matrix = np.ma.masked_array(data = matrices[0], \
+                                        mask = mask, \
+                                        fill_value = 0.0).filled()
+    else:
+        # boolean matrices indicating where the original
+        # matrices exceed val  
+        boolmatrices = [matrix > matrix_filter for matrix in matrices]
+        # in case more there was more than one input matrix,
+        # the final matrix will be a matrix resulting from an
+        # element-wise logical OR applied to all matrices
+        out_matrix = np.logical_or.reduce(boolmatrices)
+        
+    if weights is not None:
+        # if a matrix of weights was provided
+        try:
+            weights_matrix = np.loadtxt(weights)
+        except:
+            log.error(\
+                "Could not read weights matrix.", \
+                exc_info = True)
+            exit(1)
+             
+        if weights_matrix.shape != out_matrix.shape:
+            log.error(\
+                "Output and weight matrix have different shapes.")
+            exit(1)
+
+        out_matrix = np.ma.masked_array(data = weights_matrix, \
+                                        mask = out_matrix > 0.0, \
+                                        fill_value = 0.0).filled()
+
+    np.savetxt(out_dat, out_matrix, fmt = "%3.2f")
+
 
 
 if __name__ == "__main__":
@@ -199,66 +416,14 @@ if __name__ == "__main__":
         log.error(logstr)
         exit(1)
 
-    fnames = options.datfiles
-    matrices = []
-    for fname in fnames:
-        try:
-            matrix = np.loadtxt(fname)
-            matrices.append(matrix)
-        except:
-            # catch numpy errors and include the traceback when
-            # log
-            logstr = "Could not open file {:s}, or file in wrong format"
-            log.error(logstr.format(fname, exc_info = True))
-            exit(1)
-
-    shapes = []
-    for matrix in matrices:  
-        shapes.extend(matrix.shape)
-
-    if len(set(shapes)) != 1:
-        log.error("Matrices do not have the same shape.")
-        exit(1)
-
-    for fname, matrix in zip(fnames, matrices):
-        if matrix.shape[0] != matrix.shape[1]:
-            logstr = "Matrix {:s} is not square"
-            log.error(logstr.format(fname))
-            exit(1)
-        if not np.allclose(matrix, matrix.T):
-            logstr = "Matrix {:s} is not symmetric"
-            log.error(logstr.format(fname))
-            exit(1)
-
-        # all diagonal elements must be zero
-        np.fill_diagonal(matrix, 0.0)
+    matrices = process_matrices(fnames = options.datfiles)
 
 
     ####################### MAXIMUM CLUSTER SIZES #########################
 
     interval = np.arange(options.lower, options.upper, options.step)
-    maxclustsizes = []
-    for val in interval:
-        # boolean matrices indicating where the original
-        # matrices exceed val       
-        boolmatrices = [matrix > val for matrix in matrices]
-        # there will be only one boolean matrix if only one
-        # input matrix was provided
-        allmatrix = boolmatrices[0]
-        if len(boolmatrices) > 1:
-            # in case more there was more than one input matrix,
-            # the final matrix will be a matrix resulting from an
-            # element-wise logical OR applied to all matrices
-            for i in range(1, len(boolmatrices)):
-                allmatrix = np.logical_or(allmatrix, boolmatrices[i])
-
-        # build a graph from the final boolean matrix
-        G = nx.Graph(allmatrix)
-        # get the maximum cluster size from the graph
-        maxclustsizes.append(\
-            len(max(list(\
-                nx.algorithms.components.connected_components(G)), \
-            key = len)))
+    maxclustsizes = get_maxclustsizes(matrices = matrices, \
+                                      interval = interval)
 
 
     ############################## FITTING ################################
@@ -276,37 +441,13 @@ if __name__ == "__main__":
         log.info(\
             logstr.format(options.x0, options.k, options.m, options.n))
 
-        # will be None unless the fitting completes successfully
-        args = None
-        try:
-            popt, pcov = \
-                curve_fit(f = sigmoid, \
-                          xdata = x, \
-                          ydata = y, \
-                          maxfev = 100000, \
-                          p0 = (options.x0, options.k, options.m, options.n))
-            
-            args = (popt[0], popt[1], popt[2], popt[3])
-        
-        except ValueError:
-            # as per scipy.optimize.curve_fit documentation
-            log.error(\
-                "Please check input data and options provided for " \
-                "the fitting", \
-                exc_info = True)
-
-        except RuntimeError:
-            # as per scipy.optimize.curve_fit documentation
-            log.error(\
-                "Could not complete fitting since the least-squares ", \
-                "minimization failed", \
-                exc_info = True)
-
-        except:
-            # something else happened (should not happen)
-            log.error(\
-                "Could not complete fitting", \
-                exc_info = True)
+        # args will be None unless the fitting completes successfully
+        args = perform_fitting(f = sigmoid, \
+                               xdata = x, \
+                               ydata = y, \
+                               maxfev = 100000, \
+                               p0 = (options.x0, options.k, \
+                                     options.m, options.n))
 
 
         ####################### SECOND DERIVATIVE #########################
@@ -323,109 +464,44 @@ if __name__ == "__main__":
             solvestart = options.x0
             log.info("Starting from: {:3.5f} ...".format(solvestart))
 
-            # will be None unless the calculation completes successfully
-            flex = None
-            try:
-               flex = fsolve(func = seconddevsigmoid, \
+            # flex will be None unless the calculation completes
+            # successfully
+            flex = find_flex(func = seconddevsigmoid, \
                              x0 = solvestart, \
                              args = args, \
-                             maxfev = 5000)    
-            except:
-                # inform the user that something went wrong during
-                # the calculation and include traceback
-                log.error(\
-                    "Could not complete the calculation", \
-                    exc_info = True)
+                             maxfev = 5000)
 
             if flex is not None:
-                log.info("Flexus point at {:3.2f}".format(flex))
+                log.info("Flex at {:3.2f}".format(flex))
+            else:
+                log.info("No flex found")
 
 
     ############################## PLOTTING ###############################
 
     if options.out_plot is not None:
-        plt.plot(x = x, y = y, fmt = "o")
-        plt.xlim((options.lower, options.upper))
-        plt.xlabel("$p_{min}$")
-        plt.ylabel("Size of the biggest cluster")
-        
-        if args is not None:
-            xplot = np.linspace(max(x), min(x))
-            yplot = sigmoid(xplot, *popt)
-            plt.plot(x = xplot, y = yplot, label = "Fitting")
-             
-        if flex is not None:
-            plt.plot(x = flex, \
-                     y = sigmoid(flex, *popt),\
-                     fmt = "o", \
-                     label = "Critical value", \
-                     color = "red")
-            
-            plt.axvline(x = flex)
-
-        plt.legend(loc = "best")
-        plt.savefig(options.out_plot)
+        perform_plotting(x = x, \
+                         y = y, \
+                         lower = options.lower, \
+                         upper = options.upper, \
+                         out_plot = options.out_plot, \
+                         args = args, \
+                         popt = popt, \
+                         flex = flex, \
+                         func_sigmoid = sigmoid)
 
 
     ########################### OUTPUT CLUSTERS ###########################
 
     if options.out_clusters is not None:
-        try:
-            fh = open(options.out_clusters, 'w')
-        except:
-            log.error(\
-                "Could not write clusters file.", \
-                exc_info = True)
-            exit(1)
-        
-        fh.write("P_min\tSize of biggest cluster\n")
-        for i, xi in enumerate(x):
-            fh.write("{:.3f}\t{:d}\n".format(xi, y[i]))
-        
-        fh.close()
+        write_clusters(out_clusters = options.out_clusters, \
+                       x = x)
 
 
     ############################# OUTPUT DAT ##############################
 
     if options.out_dat is not None:
-        if len(matrices) == 1:         
-            mask = (matrices[0] <= options.filter)
-            out_matrix = np.ma.masked_array(data = matrices[0], \
-                                            mask = mask, \
-                                            fill_value = 0.0).filled()
-        else:
-            # boolean matrices indicating where the original
-            # matrices exceed val  
-            boolmatrices = [matrix > options.filter for matrix in matrices]
-            # there will be only one boolean matrix if only one
-            # input matrix was provided
-            out_matrix = boolmatrices[0]
-            for i in range(1, len(boolmatrices)):
-                # in case more there was more than one input matrix,
-                # the final matrix will be a matrix resulting from an
-                # element-wise logical OR applied to all matrices
-                out_matrix = np.logical_or(out_matrix, boolmatrices[i])
-        
-        if options.weights is not None:
-            # if a matrix of weights was provided
-            try:
-                weights = np.loadtxt(options.weights)
-            except:
-                log.error(\
-                    "Could not read weights matrix.", \
-                    exc_info = True)
-                exit(1)
-             
-            if weights.shape != out_matrix.shape:
-                log.error(\
-                    "Output and weight matrix have different shapes.")
-                exit(1)
-
-            weighted = np.ma.masked_array(data = weights, \
-                                          mask = out_matrix > 0.0, \
-                                          fill_value = 0.0).filled()
-
-            np.savetxt(options.out_dat, weighted, fmt = "%3.2f")
-
-        else:
-            np.savetxt(options.out_dat, out_matrix, fmt = "%3.2f")
+        write_dat(matrices = matrices, \
+                  matrix_filter = options.filter, \
+                  out_dat = options.out_dat, \
+                  weights = options.weights)
