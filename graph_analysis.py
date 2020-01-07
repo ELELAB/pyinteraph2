@@ -36,109 +36,6 @@ import networkx as nx
 import MDAnalysis as mda
 from Bio import PDB
 
-########################### ARGUMENT PARSER ###########################
-
-description = "PyInteraph network analysis module."
-parser = argparse.ArgumentParser(description = description)
-
-r_helpstr = "Reference topology file"
-parser.add_argument("-r", "--reference", \
-                    metavar = "TOPOLOGY", \
-                    dest = "top", \
-                    type = str, \
-                    default = None, \
-                    help = r_helpstr)
-
-a_helpstr = "Input graph file"
-parser.add_argument("-a", "--adj-matrix", \
-                    metavar = "DAT", \
-                    dest = "dat", \
-                    type = str, \
-                    default = None, \
-                    help = a_helpstr)
-
-c_helpstr = "Calculate connected components"
-parser.add_argument("-c", "--components", \
-                    dest = "do_components", \
-                    action = "store_true", \
-                    default = False, \
-                    help = c_helpstr)
-
-u_helpstr = "Calculate hubs"
-parser.add_argument("-u", "--hubs", \
-                    dest = "do_hubs", \
-                    action = "store_true", \
-                    default = False, \
-                    help = u_helpstr)
-
-k_default = 3
-k_helpstr = "Minimum number of connections for hubs (default: {:d})"
-parser.add_argument("-k", "--hubs-cutoff", \
-                    dest = "hubs_cutoff", \
-                    default = k_default, \
-                    type = int, \
-                    help = k_helpstr.format(k_default))
-
-p_helpstr = "Calculate all simple paths between " \
-            "two residues in the graph"
-parser.add_argument("-p", "--all-paths", \
-                    dest = "do_paths", \
-                    action = "store_true", \
-                    default = False, \
-                    help = p_helpstr)
-
-r1_helpstr = "First residue for paths calculation (see option -p)"
-parser.add_argument("-r1", "--source", \
-                    dest = "source", \
-                    default = None, \
-                    help = r1_helpstr)
-
-r2_helpstr = "Last residue for paths calculation (see option -p)"
-parser.add_argument("-r2", "--target", \
-                    dest = "target", \
-                    default = None, \
-                    help = r2_helpstr)
-
-l_helpstr = "Maximum path length (see option -p) (default: {:d})"
-parser.add_argument("-l", "--maximum-path-length", \
-                    dest = "maxl", \
-                    default = 10, \
-                    type = int, \
-                    help = )
-
-s_choices = ["length", "cumulative_weight", "avg_weight"]
-s_default = "lenght"
-s_helpstr = \
-    "How to sort pathways in output. Possible choices are {:s}" \
-    " (default: {:s})"
-parser.add_argument("-s", "--sort-paths", \
-                    dest = "sort_paths_by", \
-                    choices = s_choices, \
-                    default = "length", \
-                    help = \
-                        s_helpstr.format(", ".join(s_choices), s_default))
-
-cb_helpstr = "Save connected components ID in PDB file"
-parser.add_argument("-cb", "--components-pdb", \
-                    dest = "components_pdb", \
-                    default = None, \
-                    help = cb_helpstr)
-
-ub_helpstr = "Save hub degrees in PDB file"
-parser.add_argument("-ub", "--hubs-pdb", \
-                    dest = "hubs_pdb", \
-                    default = None, \
-                    help = cb_helpstr)
-
-d_helpstr = "Write the paths found as matrices"
-parser.add_argument("-d", "--write-paths", \
-                    dest = "write_paths", \
-                    default = False, \
-                    action = "store_true", \
-                    help = d_helpstr)
-
-args = parser.parse_args()
-
 
 ############################## FUNCTIONS ##############################
 
@@ -380,7 +277,7 @@ def get_paths(G, source, target, maxl, sort_paths_by):
         return sorted_paths
 
 
-def write_paths(paths, outfile = None)
+def write_paths(paths, outfile = None):
 
     # write the paths found to the output in a human-readable format
     if outfile is None:
@@ -415,7 +312,109 @@ def write_paths_matrices(identifiers, G, paths, fmt):
 
 if __name__ == "__main__":
 
-    ############################## MAIN ###############################
+    ######################### ARGUMENT PARSER #########################
+
+    description = "PyInteraph network analysis module."
+    parser = argparse.ArgumentParser(description = description)
+
+    r_helpstr = "Reference topology file"
+    parser.add_argument("-r", "--reference", \
+                        metavar = "TOPOLOGY", \
+                        dest = "top", \
+                        type = str, \
+                        default = None, \
+                        help = r_helpstr)
+
+    a_helpstr = "Input graph file"
+    parser.add_argument("-a", "--adj-matrix", \
+                        metavar = "DAT", \
+                        dest = "dat", \
+                        type = str, \
+                        default = None, \
+                        help = a_helpstr)
+
+    c_helpstr = "Calculate connected components"
+    parser.add_argument("-c", "--components", \
+                        dest = "do_components", \
+                        action = "store_true", \
+                        default = False, \
+                        help = c_helpstr)
+
+    u_helpstr = "Calculate hubs"
+    parser.add_argument("-u", "--hubs", \
+                        dest = "do_hubs", \
+                        action = "store_true", \
+                        default = False, \
+                        help = u_helpstr)
+
+    k_default = 3
+    k_helpstr = "Minimum number of connections for hubs (default: {:d})"
+    parser.add_argument("-k", "--hubs-cutoff", \
+                        dest = "hubs_cutoff", \
+                        default = k_default, \
+                        type = int, \
+                        help = k_helpstr.format(k_default))
+
+    p_helpstr = "Calculate all simple paths between " \
+                "two residues in the graph"
+    parser.add_argument("-p", "--all-paths", \
+                        dest = "do_paths", \
+                        action = "store_true", \
+                        default = False, \
+                        help = p_helpstr)
+
+    r1_helpstr = "First residue for paths calculation (see option -p)"
+    parser.add_argument("-r1", "--source", \
+                        dest = "source", \
+                        default = None, \
+                        help = r1_helpstr)
+
+    r2_helpstr = "Last residue for paths calculation (see option -p)"
+    parser.add_argument("-r2", "--target", \
+                        dest = "target", \
+                        default = None, \
+                        help = r2_helpstr)
+
+    l_default = 10
+    l_helpstr = "Maximum path length (see option -p) (default: {:d})"
+    parser.add_argument("-l", "--maximum-path-length", \
+                        dest = "maxl", \
+                        default = l_default, \
+                        type = int, \
+                        help = l_helpstr.format(l_default))
+
+    s_choices = ["length", "cumulative_weight", "avg_weight"]
+    s_default = "lenght"
+    s_helpstr = \
+        "How to sort pathways in output. Possible choices are {:s}" \
+        " (default: {:s})"
+    parser.add_argument("-s", "--sort-paths", \
+                        dest = "sort_paths_by", \
+                        choices = s_choices, \
+                        default = "length", \
+                        help = \
+                            s_helpstr.format(", ".join(s_choices), s_default))
+
+    cb_helpstr = "Save connected components ID in PDB file"
+    parser.add_argument("-cb", "--components-pdb", \
+                        dest = "components_pdb", \
+                        default = None, \
+                        help = cb_helpstr)
+
+    ub_helpstr = "Save hub degrees in PDB file"
+    parser.add_argument("-ub", "--hubs-pdb", \
+                        dest = "hubs_pdb", \
+                        default = None, \
+                        help = cb_helpstr)
+
+    d_helpstr = "Write the paths found as matrices"
+    parser.add_argument("-d", "--write-paths", \
+                        dest = "write_paths", \
+                        default = False, \
+                        action = "store_true", \
+                        help = d_helpstr)
+
+    args = parser.parse_args()
 
     if args.dat is None:
         # Exit if the adjacency matrix was not speficied
@@ -460,7 +459,7 @@ if __name__ == "__main__":
                 ccs = ccs, \
                 top = args.top, \
                 components_pdb = args.components_pdb, \
-                conversion_func = replace_bfac_column):
+                conversion_func = replace_bfac_column)
 
 
     ############################## HUBS ###############################
