@@ -22,6 +22,7 @@ from __future__ import absolute_import
 import sys
 import logging as log
 import argparse
+import re
 
 vinfo = sys.version_info
 if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
@@ -40,7 +41,11 @@ from Bio import PDB
 ############################## FUNCTIONS ##############################
 
 def resstring2resnum(x):
-    return int("".join(list(filter(str.isdigit, str(x)))))
+    # using re to get rid of the bug where residues having a number
+    # in their name (i.e. SP2) caused the resnum to include such number
+    # Here, only the first instance of consecutive digits is returned
+    # (the actual residue number)
+    return re.findall(r"\d+", x)[0]
 
 
 def replace_bfac_column(pdb, vals, pdb_out):
