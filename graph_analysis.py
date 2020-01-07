@@ -142,11 +142,11 @@ args = parser.parse_args()
 
 ############################## FUNCTIONS ##############################
 
-def residue_key(x):
+def resstring2resnum(x):
     return int("".join(list(filter(str.isdigit, str(x)))))
 
 
-def values_to_bfac(pdb, vals, pdb_out):
+def replace_bfac_column(pdb, vals, pdb_out):
     parser = PDB.PDBParser()
     structure = parser.get_structure("protein", pdb)
     io = PDB.PDBIO()
@@ -224,7 +224,7 @@ def write_connected_components(ccs, outfile = None):
             print(logstr.format(\
                     i + 1, \
                     len(cc), \
-                    ", ".join(sorted(cc, key = residue_key))))
+                    ", ".join(sorted(cc, key = resstring2resnum))))
 
     else:
         raise NotImplementedError
@@ -442,7 +442,7 @@ if __name__ == "__main__":
     logstr = "Node list: {:s}"
     log.info(\
         logstr.format(\
-            "\t".join([node for node in sorted(nodes, key = residue_key)])))
+            "\t".join([node for node in sorted(nodes, key = resstring2resnum)])))
 
 
     ###################### CONNECTED COMPONENTS #######################
@@ -460,7 +460,7 @@ if __name__ == "__main__":
                 ccs = ccs, \
                 top = args.top, \
                 components_pdb = args.components_pdb, \
-                conversion_func = values_to_bfac):
+                conversion_func = replace_bfac_column):
 
 
     ############################## HUBS ###############################
@@ -480,7 +480,7 @@ if __name__ == "__main__":
                 hubs = hubs, \
                 top = args.top, \
                 hubs_pdb = args.hubs_pdb, \
-                conversion_func = values_to_bfac)
+                conversion_func = replace_bfac_column)
 
 
     ############################## PATHS ##############################
