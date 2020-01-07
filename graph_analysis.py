@@ -41,83 +41,101 @@ from Bio import PDB
 description = "PyInteraph network analysis module."
 parser = argparse.ArgumentParser(description = description)
 
-parser.add_argument("-r","--reference", \
+r_helpstr = "Reference topology file"
+parser.add_argument("-r", "--reference", \
                     metavar = "TOPOLOGY", \
                     dest = "top", \
                     type = str, \
-                    help = "Reference topology file", \
-                    default = None)
+                    default = None, \
+                    help = r_helpstr)
 
-parser.add_argument("-a","--adj-matrix", \
+a_helpstr = "Input graph file"
+parser.add_argument("-a", "--adj-matrix", \
                     metavar = "DAT", \
                     dest = "dat", \
                     type = str, \
-                    help = "Input graph file", \
-                    default = None)
+                    default = None, \
+                    help = a_helpstr)
 
-parser.add_argument("-c","--components", \
+c_helpstr = "Calculate connected components"
+parser.add_argument("-c", "--components", \
                     dest = "do_components", \
                     action = "store_true", \
                     default = False, \
-                    help = "Calculate connected components")
+                    help = c_helpstr)
 
-parser.add_argument("-u","--hubs", \
+u_helpstr = "Calculate hubs"
+parser.add_argument("-u", "--hubs", \
                     dest = "do_hubs", \
                     action = "store_true", \
                     default = False, \
-                    help = "Calculate hubs")
+                    help = u_helpstr)
 
-parser.add_argument("-k","--hubs-cutoff", \
+k_default = 3
+k_helpstr = "Minimum number of connections for hubs (default: {:d})"
+parser.add_argument("-k", "--hubs-cutoff", \
                     dest = "hubs_cutoff", \
-                    default = 4, \
+                    default = k_default, \
                     type = int, \
-                    help = "Minimum number of connections for hubs")
+                    help = k_helpstr.format(k_default))
 
-parser.add_argument("-p","--all-paths", \
+p_helpstr = "Calculate all simple paths between " \
+            "two residues in the graph"
+parser.add_argument("-p", "--all-paths", \
                     dest = "do_paths", \
                     action = "store_true", \
                     default = False, \
-                    help = "Calculate all simple paths between " \
-                           "two residues in the graph")
+                    help = p_helpstr)
 
-parser.add_argument("-r1","--source", \
+r1_helpstr = "First residue for paths calculation (see option -p)"
+parser.add_argument("-r1", "--source", \
                     dest = "source", \
                     default = None, \
-                    help = "First residue for paths calculation " \
-                           "(see option -p)")
+                    help = r1_helpstr)
 
-parser.add_argument("-r2","--target", \
+r2_helpstr = "Last residue for paths calculation (see option -p)"
+parser.add_argument("-r2", "--target", \
                     dest = "target", \
                     default = None, \
-                    help = "Last residue for paths calculation " \
-                           "(see option -p)")
+                    help = r2_helpstr)
 
-parser.add_argument("-l","--maximum-path-length", \
+l_helpstr = "Maximum path length (see option -p) (default: {:d})"
+parser.add_argument("-l", "--maximum-path-length", \
                     dest = "maxl", \
-                    default = 3, \
+                    default = 10, \
                     type = int, \
-                    help = "Maximum path length (see option -p)")
+                    help = )
 
-parser.add_argument("-s","--sort-paths", \
+s_choices = ["length", "cumulative_weight", "avg_weight"]
+s_default = "lenght"
+s_helpstr = \
+    "How to sort pathways in output. Possible choices are {:s}" \
+    " (default: {:s})"
+parser.add_argument("-s", "--sort-paths", \
                     dest = "sort_paths_by", \
-                    choices = ["length", "cumulative_weight", "avg_weight"], \
+                    choices = s_choices, \
                     default = "length", \
-                    help = "How to sort pathways in output (default: length)")
+                    help = \
+                        s_helpstr.format(", ".join(s_choices), s_default))
 
-parser.add_argument("-cb","--components-pdb", \
+cb_helpstr = "Save connected components ID in PDB file"
+parser.add_argument("-cb", "--components-pdb", \
                     dest = "components_pdb", \
                     default = None, \
-                    help = "Save connected components ID in PDB file")
+                    help = cb_helpstr)
 
-parser.add_argument("-ub","--hubs-pdb", \
+ub_helpstr = "Save hub degrees in PDB file"
+parser.add_argument("-ub", "--hubs-pdb", \
                     dest = "hubs_pdb", \
                     default = None, \
-                    help = "Save hub degrees in PDB file")
+                    help = cb_helpstr)
 
-parser.add_argument("-d","--write-paths", \
+d_helpstr = "Write the paths found as matrices"
+parser.add_argument("-d", "--write-paths", \
                     dest = "write_paths", \
                     default = False, \
-                    action = "store_true")
+                    action = "store_true", \
+                    help = d_helpstr)
 
 args = parser.parse_args()
 
@@ -126,6 +144,23 @@ args = parser.parse_args()
 
 def residue_key(x):
     return int("".join(list(filter(str.isdigit, str(x)))))
+
+
+def values_to_bfac(pdb, vals, pdb_out):
+    parser = PDB.PDBParser()
+    structure = parser.get_structure("protein", pdb)
+    io = PDB.PDBIO()
+    chain_offset = 0
+    for model in structure:
+        for chain in model:
+            for i, residue in enumerate(chain):
+                for atom in residue:
+                    atom.set_bfactor(float(vals[i+chain_offset]))
+            chain_offset += len(chain)
+
+    io.set_structure(structure)
+    io.save(pdb_out)
+
 
 def build_graph(fname, pdb = None):
     try:
@@ -149,6 +184,7 @@ def build_graph(fname, pdb = None):
                 "object. Exiting..."
             # log the full MDAnalysis stack trace with exc_info
             log.error(errstr, exc_info = True)
+            exit(1)
         
         identifiers = \
             ["{:s}-{:d}{:s}".format(r.segment.segid, \
@@ -170,172 +206,156 @@ def build_graph(fname, pdb = None):
 
     return identifiers, G
 
+
 def get_connected_components(G):
-    return nx.connected_components(G)
+    return list(nx.connected_components(G))
 
-def get_hubs(G, min_k = 3):
-    return {node : k for node, k in G.degree() if k >= min_k}
 
-def get_all_paths(G, source, target, cutoff = None):
-    return nx.algorithms.simple_paths.all_simple_paths(G = G, \
-                                                       source = source, \
-                                                       target = target, \
-                                                       cutoff = cutoff)
+def write_connected_components(ccs, outfile = None):
     
-def values_to_bfac(pdb, vals, pdb_out):
-    parser = PDB.PDBParser()
-    structure = parser.get_structure("protein",pdb)
-    io = PDB.PDBIO()
-    chain_offset = 0
-    for model in structure:
-        for chain in model:
-            for i, residue in enumerate(chain):
-                for atom in residue:
-                    atom.set_bfactor(float(vals[i+chain_offset]))
-            chain_offset += len(chain)
+    # outfile = None makes it output to the console
+    # (PyInteraph 1 behavior)
 
-    io.set_structure(structure)
-    io.save(pdb_out)
-
-
-################################ MAIN #################################
-
-if args.dat is None:
-    # Exit if the adjacency matrix was not speficied
-    log.error("Graph adjacency matrix must be specified. Exiting...")
-    exit(1)
-
-if (args.components_pdb is None or args.hubs_pdb is None) \
-and args.top is None:
-    # Exit if the user requested the PDB files with connected
-    # components and hubs but did not provide a reference PDB
-    # file
-    log.error(\
-        "A PDB reference file must be supplied with options " \
-        "-cb and -ub. Exiting...")
-    exit(1)
-
-# build the graph
-identifiers, G = build_graph(args.dat, pdb = args.top)
-nodes = G.nodes()
-edges = G.edges()
-
-logstr = "Graph loaded! {:d} nodes, {:d} edges"
-log.info(logstr.format(len(nodes), len(edges)))
-logstr = "Node list: {:s}"
-log.info(\
-    logstr.format(\
-        "\t".join([node for node in sorted(nodes, key = residue_key)])))
-
-
-######################## CONNECTED COMPONENTS #########################
-
-if args.do_components:
-    # calculate the connected components
-    ccs = list(get_connected_components(G))
     logstr = "Connected component {:d}\n ({:d} elements) {:s}"
-    for i,cc in enumerate(ccs):
-        ### TODO: output to a file, not print
-        print(logstr.format(\
-                i + 1, \
-                len(cc), \
-                ", ".join(sorted(cc, key = residue_key))))
 
-    if args.components_pdb is not None:
-        conn_comp_array = np.array(identifiers)
+    if outfile is None:
         for i, cc in enumerate(ccs):
-            for res in cc:
-                conn_comp_array[identifiers.index(res)] = i+1
-        # write a PDB file identical to the reference PDB file
-        # but with the b-factor column filled with the number of
-        # the connected component a residue belongs to
-        values_to_bfac(pdb = args.top, \
-                       vals = conn_comp_array, \
-                       pdb_out = args.components_pdb)
+            ### TODO: output to a file, not print
+            print(logstr.format(\
+                    i + 1, \
+                    len(cc), \
+                    ", ".join(sorted(cc, key = residue_key))))
 
-
-################################ HUBS #################################
-        
-if args.do_hubs:
-    # calculate the hubs
-    hubs = get_hubs(G = G, min_k = args.hubs_cutoff)
-    if len(list(hubs.keys())) > 0:
-        sorted_hubs = \
-            sorted(hubs.items(), \
-                   key = lambda item: item[1], reverse = True)
-        ### TODO: output to a file, not print
-        print("Hubs:\n\tNode\tk{:s}")
-        for hub, k in sorted_hubs:
-            print("\t{:s}\t{:d}".format(hub, k))
     else:
+        raise NotImplementedError
+
+
+def write_connected_components_pdb(identifiers, \
+                                   ccs, \
+                                   top, \
+                                   components_pdb, \
+                                   conversion_func):
+    
+    conn_comp_array = np.array(identifiers)
+    for i, cc in enumerate(ccs):
+        for res in cc:
+            conn_comp_array[identifiers.index(res)] = i+1
+    # write a PDB file identical to the reference PDB file
+    # but with the b-factor column filled with the number of
+    # the connected component a residue belongs to
+    conversion_func(pdb = top, \
+                    vals = conn_comp_array, \
+                    pdb_out = components_pdb)
+
+
+def get_hubs(G, min_k = 3, sorting = None):
+    hubs = {node : k for node, k in G.degree() if k >= min_k}
+    
+    if len(list(hubs.keys())) == 0:
         # warn the user that no hubs have been found
         logstr = \
             "No hubs with connectivity >= {:d} have been found."
-        log.warning(logstr.format(args.hubs_cutoff))
-    
-    if args.hubs_pdb is not None:
-        hubs_array = np.zeros(len(identifiers))
-        hubs_dict = dict(sorted_hubs)
-        for index, node in enumerate(identifiers):
-            if node in set(hubs_dict.keys()):
-                # check if the node is a hub
-                # iterate and check over a set()
-                # of keys because it is faster than
-                # a list (keys() returns a list
-                # in python2)
-                hubs_array[index] = hubs_dict[node]
-        # write a PDB file identical to the reference PDB file
-        # but with the b-factor column filled with the degree of
-        # a residue if it is a hub, zero otherwise       
-        values_to_bfac(args.top, hubs_array, args.hubs_pdb)    
-
-
-################################ PATHS ################################
+        log.warning(logstr.format(min_k))
         
-if args.do_paths:
-    # calculate paths between a pair of residues
-    if args.source is None or args.target is None:
+        return hubs
+    
+    else:
+        if sorting is None:
+            sorted_hubs = hubs
+        elif sorting == "ascending":
+            sorted_hubs = \
+                sorted(hubs.items(), \
+                       key = lambda item: item[1], \
+                       reverse = False)
+        elif sorting == "descending":
+                sorted(hubs.items(), \
+                       key = lambda item: item[1], \
+                       reverse = True)
+
+        return dict(sorted_hubs)
+
+
+def write_hubs(hubs, outfile = None):
+
+    if outfile is None:
+        ### TODO: output to a file, not print
+        print("Hubs:\n\tNode\tk{:s}")
+        for hub, k in hubs:
+            print("\t{:s}\t{:d}".format(hub, k))
+
+    else:
+        raise NotImplementedError
+
+
+def write_hubs_pdb(identifiers, \
+                   hubs, \
+                   top, \
+                   hubs_pdb, \
+                   conversion_func):
+    
+    hubs_array = np.zeros(len(identifiers))
+    for index, node in enumerate(identifiers):
+        if node in set(hubs.keys()):
+            # check if the node is a hub
+            # iterate and check over a set()
+            # of keys because it is faster than
+            # a list (keys() returns a list
+            # in python2)
+            hubs_array[index] = hubs[node]
+    # write a PDB file identical to the reference PDB file
+    # but with the b-factor column filled with the degree of
+    # a residue if it is a hub, zero otherwise       
+    conversion_func(pdb = args.top, \
+                    vals = hubs_array, \
+                    pdb_out = args.hubs_pdb) 
+
+
+def get_paths(G, source, target, maxl, sort_paths_by):
+    if source is None or target is None:
         log.error(\
             "You must specify source and target residues. Exiting...")
         exit(1)
-    
-    if not args.source in G.nodes() or not args.target in G.nodes():
+        
+    if not source in G.nodes() or not target in G.nodes():
         # maybe logstring should reflect better the error?
         log.error(\
             "Source or target residues have been badly specified. " \
             "Exiting...")
         exit(1)
-    
+        
     try:
         shortest = nx.algorithms.shortest_path(G = G, \
-                                               source = args.source, \
-                                               target = args.target)
+                                                source = source, \
+                                                target = target)
     except nx.NetworkXNoPath:
         log.warning("No paths exist between selected residues.")
         exit(1)
 
-    if len(shortest) > args.maxl:
+    if len(shortest) > maxl:
         warnstr = \
             "No paths were found between the given nodes at the " \
             "given cut-off. Shortest path length between these two " \
             "nodes is {:d}"
         log.warning(warnstr.format(len(shortest)))
-    
+        exit(1)
+        
     else:
         # calculate all the paths
-        paths = list(get_all_paths(G = G, \
-                                   source = args.source, \
-                                   target = args.target, \
-                                   cutoff = args.maxl))
+        paths = \
+            list(nx.algorithms.simple_paths.all_simple_paths(\
+                                                    G = G, \
+                                                    source = source, \
+                                                    target = target, \
+                                                    cutoff = maxl))
 
         lengths = [len(p) for p in paths]
-        
+            
         # calculate the sum of their weights
         sum_weights = \
             [np.sum([G[p[i]][p[i+1]]["weight"] \
                     for i in range(len(p)-1)]) \
             for p in paths]
-        
+            
         # calculate the average of their weights
         avg_weights = \
             [np.average([G[p[i]][p[i+1]]["weight"] \
@@ -345,41 +365,140 @@ if args.do_paths:
         # sort the paths
         full_paths = zip(paths, lengths, sum_weights, avg_weights)        
         reverse = True        
-        if args.sort_paths_by == "length":
+        if sort_paths_by == "length":
             key = lambda x: x[1]
             reverse = False            
-        elif args.sort_paths_by == "cumulative_weight":
+        elif sort_paths_by == "cumulative_weight":
             key = lambda x: x[2]
-        elif args.sort_paths_by == "avg_weight":
+        elif sort_paths_by == "avg_weight":
             key = lambda x: x[3]
 
         sorted_paths = sorted(full_paths, \
                               key = key, \
                               reverse = reverse)
 
-        # write the paths found to the output in a human-readable
-        # format    
+        return sorted_paths
+
+
+def write_paths(paths, outfile = None)
+
+    # write the paths found to the output in a human-readable format
+    if outfile is None:
         print("Path #\tLength\tSum of weights\tAverage weight\tPath")
         pathfmt_str = "{:d}\t{:d}\t{:.1f}\t\t{:.1f}\t\t{:s}"
-        for index, path in enumerate(sorted_paths):
+        for index, path in enumerate(paths):
             print(\
                 pathfmt_str.format(\
                     index+1, path[1], path[2], path[3], ",".join(path[0])))
+
+    else:
+        raise NotImplementedError
+
+
+def write_paths_matrices(identifiers, G, paths, fmt):
+    for index, path in enumerate(paths):
+        # for each path...
+        path_matrix = np.zeros(nx.adjacency_matrix(G).shape)
+        for node in range(len(path[0])-1):
+            # for each node in the path...
+            x = identifiers.index(path[0][node])
+            y = identifiers.index(path[0][node+1])
+            path_matrix[x,y] = \
+                G[path[0][node]][path[0][node+1]]["weight"]
+            path_matrix[y,x] = \
+                G[path[0][node+1]][path[0][node]]["weight"]
+        # save the matrix
+        matrix_file = "path{:s}.dat".format(index+1)
+        np.savetxt(matrix_file, path_matrix, fmt = fmt)
+    
+
+
+if __name__ == "__main__":
+
+    ############################## MAIN ###############################
+
+    if args.dat is None:
+        # Exit if the adjacency matrix was not speficied
+        log.error("Graph adjacency matrix must be specified. Exiting...")
+        exit(1)
+
+    if (args.components_pdb is None or args.hubs_pdb is None) \
+    and args.top is None:
+        # Exit if the user requested the PDB files with connected
+        # components and hubs but did not provide a reference PDB
+        # file
+        log.error(\
+            "A PDB reference file must be supplied with options " \
+            "-cb and -ub. Exiting...")
+        exit(1)
+
+    # build the graph
+    identifiers, G = build_graph(args.dat, pdb = args.top)
+    nodes = G.nodes()
+    edges = G.edges()
+
+    logstr = "Graph loaded! {:d} nodes, {:d} edges"
+    log.info(logstr.format(len(nodes), len(edges)))
+    logstr = "Node list: {:s}"
+    log.info(\
+        logstr.format(\
+            "\t".join([node for node in sorted(nodes, key = residue_key)])))
+
+
+    ###################### CONNECTED COMPONENTS #######################
+
+    if args.do_components:
+        # calculate the connected components
+        ccs = get_connected_components(G)
+        # write the connected components
+        write_connected_components(ccs = ccs, outfile = None)
+
+        if args.components_pdb is not None:
+            # write PDB file with B-factor column replaced
+            write_connected_components_pdb(\
+                identifiers = identifiers, \
+                ccs = ccs, \
+                top = args.top, \
+                components_pdb = args.components_pdb, \
+                conversion_func = values_to_bfac):
+
+
+    ############################## HUBS ###############################
+            
+    if args.do_hubs:
+        # calculate the hubs
+        hubs = get_hubs(G = G, \
+                        min_k = args.hubs_cutoff, \
+                        sorting = "descending")
+        # write the hubs
+        write_hubs(hubs = hubs, outfile = None)
         
+        if args.hubs_pdb is not None:
+            # write PDB file with B-factor column replaced
+            write_hubs_pdb(\
+                identifiers = identifiers, \
+                hubs = hubs, \
+                top = args.top, \
+                hubs_pdb = args.hubs_pdb, \
+                conversion_func = values_to_bfac)
+
+
+    ############################## PATHS ##############################
+            
+    if args.do_paths:
+        # calculate paths between a pair of residues
+        paths = get_paths(G = G, \
+                          source = args.source, \
+                          target = args.target, \
+                          max = args.maxl, \
+                          sort_paths_by = args.sort_paths_by)
+        # write the paths
+        write_paths(paths = paths, outfile = None)
+            
         if args.write_paths:
             # write paths as matrices
-            for index, path in enumerate(sorted_paths):
-                # for each path...
-                path_matrix = np.zeros(nx.adjacency_matrix(G).shape)
-                for node in range(len(path[0])-1):
-                    # for each node in the path...
-                    x = identifiers.index(path[0][node])
-                    y = identifiers.index(path[0][node+1])
-                    path_matrix[x,y] = \
-                        G[path[0][node]][path[0][node+1]]["weight"]
-                    path_matrix[y,x] = \
-                        G[path[0][node+1]][path[0][node]]["weight"]
-                # save the matrix
-                matrix_file = "path{:s}.dat".format(index+1)
-                np.savetxt(matrix_file, path_matrix, fmt = "%.1f")
+            write_paths_matrices(identifiers = identifiers, \
+                                 G = G, \
+                                 paths = paths, \
+                                 fmt = "%.1f")
 
