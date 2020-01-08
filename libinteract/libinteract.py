@@ -637,13 +637,15 @@ def generate_cgi_identifiers(pdb, uni, **kwargs):
                 condition_to_keep = \
                     atoms_to_keep.issubset(setcurnames) \
                     and not bool(cg[False] & setcurnames)
+                
                 if condition_to_keep:
                     idxs.append((segid, resid, resname, cgname))
                     selstring = \
-                        "resid {:d} and (name ".format(resid) + \
-                        " or name ".join(atoms_to_keep) + ")"
+                        "segid {:s} and resid {:d} and (name {:s})"
                         
-                    chosenselections.append(uni.select_atoms(selstring))
+                    chosenselections.append(\
+                        uni.select_atoms(selstring.format(\
+                            segid, resid, " or name ".join(atoms_to_keep))))
 
                     log.info(\
                         "{:s} {:s} ({:s})".format(\
@@ -666,20 +668,41 @@ def generate_sci_identifiers(pdb, uni, **kwargs):
     excluded_atoms = \
         ["CA", "C", "O", "N", "H", "H1", "H2", \
          "H3", "O1", "O2", "OXT", "OT1", "OT2"]
-    identifiers=[]
-    chosenselections=[]
-    idxs=[]
-    for i in range(len(pdb.segments)):
-        resids = pdb.segments[i].resids()
-        identifiers.extend( [ ( pdb.segments[i].name, resids[j], pdb.segments[i].residues[j].name, "sidechain" ) for j in range(len(resids)) ] ) 
+
+    chosenselections = []
+    idxs = []
+    identifiers = \
+        [(res.segid, res.resid, res.resname, "sidechain") \
+         for res in uni.residues]
+
     log.info("Chosen selections:")
-    for i in reslist:
-        idxs.extend( [ identifiers[j] for j in range(len(identifiers)) if identifiers[j][2] == i[0:3] ] )        
-        for j in uni.residues:
-            if j.name[0:3] == i:
-                chosenselections.append( mda.core.AtomGroup.AtomGroup([ k for k in j.atoms if k.name not in excluded_atoms ]) )
-                log.info("%s %s (%s)" % (j.resids()[0], j.name, ", ".join([ k.name for k in j.atoms if k.name not in excluded_atoms ])))
-    return identifiers,idxs,chosenselections
+    
+    for resname_in_list in reslist:
+        idxs.extend(\
+            [identifiers[j] for j in range(len(identifiers)) \
+             if identifiers[j][2] == resname_in_list[0:3]])
+
+        for res_in_uni in uni.residues:
+            if res_in_uni.resname[0:3] == resname_in_list:
+                resid = res_in_uni.resid
+                segid = res_in_uni.segid
+                
+                kept_atoms = \
+                    [a for a in res_in_uni.atoms \
+                     if a.name not in excluded_atoms]
+                kept_atoms_names = [a.name for a in kept_atoms]
+                
+                selstring = \
+                    "segid {:s} and resid {:d} and (name {:s})"
+                
+                chosenselections.append(\
+                    uni.select_atoms(selstring.format(\
+                        segid, resid, " or name ".join(kept_atoms_names))))
+
+                log.info("{:s} {:s} ({:s})".format(\
+                    resid, resname, ", ".join(kept_atoms_names)))
+
+    return (identifiers, idxs, chosenselections)
     
      
 def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
