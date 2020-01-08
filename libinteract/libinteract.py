@@ -920,33 +920,49 @@ def do_hbonds(sel1, \
     
     if not pdb or not uni:
         if not pdbf or not grof or not xtcf:
-            raise ValueError
-        pdb,uni = load_sys(pdbf,grof,xtcf)
-
+            logstr = \
+                "You have to provide either the mda.Universe " \
+                "objects or the PDB, GRO and XTC files"
+            raise ValueError(logstr)
+        
+        pdb, uni = load_sys(pdbf, grof, xtcf)
+        logstr = "mda.Universe objects generated from {:s}"
+        log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
 
     hb_basenum = 1
     
     try:
-        sel1atoms = uni.selectAtoms(sel1)
+        sel1atoms = uni.select_atoms(sel1)
     except:
         log.error("ERROR: selection 1 is invalid")
     try:
-        sel2atoms = uni.selectAtoms(sel2)
+        sel2atoms = uni.select_atoms(sel2)
     except:
-        log.error("ERROR: selection 2 is invalid")
-        
+        log.error("ERROR: selection 2 is invalid")     
     
-    if other_hbs:  # custom names
-        class Custom_HydrogenBondAnalysis(hbonds.HydrogenBondAnalysis):
-            DEFAULT_DONORS = {"customFF":other_hbs['DONORS']}
-            DEFAULT_ACCEPTORS = {"customFF":other_hbs['ACCEPTORS']}
-        hb_ff = "customFF"
-    else:
-        class Custom_HydrogenBondAnalysis(hbonds.HydrogenBondAnalysis):
+
+    if other_hbs is None:
+        class Custom_HydrogenBondAnalysis(hbond_analysis.HydrogenBondAnalysis):
             pass
         hb_ff = "CHARMM27"
+
+    else:  
+        # custom names
+        class Custom_HydrogenBondAnalysis(hbond_analysis.HydrogenBondAnalysis):
+            DEFAULT_DONORS = {"customFF" : other_hbs["DONORS"]}
+            DEFAULT_ACCEPTORS = {"customFF" : other_hbs["ACCEPTORS"]}
+        hb_ff = "customFF"
+
     
-    h = Custom_HydrogenBondAnalysis(uni, sel1, sel2, distance=distance, angle=angle, forcefield=hb_ff)
+    h = Custom_HydrogenBondAnalysis(universe = uni, \
+                                    selection1 = sel1, \
+                                    selection2 = sel2, \
+                                    distance = distance, \
+                                    angle = angle, \
+                                    forcefield = hb_ff, \
+                                    update_selection1 = update_selection1, \
+                                    update_selection2 = update_selection2, \
+                                    filter_first = filter_first)
     
     log.info("Will use acceptors: %s" %  ", ".join(h.DEFAULT_ACCEPTORS[hb_ff]))
     log.info("Will use donors:    %s" %  ", ".join(h.DEFAULT_DONORS[hb_ff]))
