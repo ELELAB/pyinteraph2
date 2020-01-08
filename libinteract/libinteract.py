@@ -25,8 +25,8 @@ from __future__ import absolute_import
 import sys
 import logging as log
 
-major, minor, patch  = sys.version_info
-if major < 2 or (major == 2 and minor < 7):
+vinfo = sys.version_info
+if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
     errstr = \
         "Your Python version is {:s}, but only " \
         "versions >= 2.7 are supported."
