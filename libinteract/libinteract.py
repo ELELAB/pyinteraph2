@@ -741,17 +741,19 @@ def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
 
     return fullmatrix
 
-
+"""
 def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-    lastsize=0
-    stopsize=0  
-    clashes=[]
-    origidxs=list(idxs)
-    assert percmat.shape[0] == percmat.shape[1] ## this better be true, or we really fucked up 
-    assert percmat.shape[0] != lastsize         ## avoid infinite looping in case something goes wrong
+    lastsize = 0
+    stopsize = 0  
+    clashes = []
+    origidxs = list(idxs)
+    if percmat.shape[0] != percmat.shape[1]:
+        logstr = "percmat must be square"
+        raise ValueError(logstr)
+    if percmat.shape[0] == lastsize:
+        raise ValueError("percmat must have dimensions != 0")
     lastsize = percmat.shape[0]
-    stopsize = 0
     corrected_percmat = percmat.copy()
     i=0
     while i < percmat.shape[0]:
@@ -775,7 +777,8 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
                 fullmatrix[j,i] = corrected_percmat[corrected_idxs.index(identifiers[i]), corrected_idxs.index(identifiers[j])]
     
     return fullmatrix
-    
+"""
+   
 def do_interact(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, co=5.0, perco=0.0, ffmasses=None, fullmatrix=None, mindist=False, mindist_mode=None, **identargs ):
 
     outstr = ""
