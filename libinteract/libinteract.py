@@ -368,13 +368,13 @@ def load_gmxff(jsonfile):
 
 
 def calc_dist_matrix(uni, \
-               idxs, \
-               chosenselections, \
-               co, \
-               mindist = False, \
-               mindist_mode = None, \
-               type1char = "p", \
-               type2char = "n"):
+                     idxs, \
+                     chosenselections, \
+                     co, \
+                     mindist = False, \
+                     mindist_mode = None, \
+                     type1char = "p", \
+                     type2char = "n"):
     
     numframes = len(uni.trajectory)
     final_percmat = \
@@ -773,7 +773,8 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
                         thisclash = percmat[k][l]
             corrected_percmat[i,j] = thisclash
     
-    corrected_idxs = [idxs[list(i)[0]][0:3] + ('',) for i in list(clashes)]
+    corrected_idxs = \
+        [idxs[list(i)[0]][0:3] + ('',) for i in list(clashes)]
 
     # create an empty matrix of length identifiers x identifiers
     fullmatrix = np.zeros((len(identifiers), len(identifiers)))
@@ -801,7 +802,8 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
 
     # unpack all pairs of i,j coordinates in lists of i 
     # indexes and j indexes
-    i_fullmatrix, j_fullmatrix = zip(*positions_identifiers_in_fullmatrix)
+    i_fullmatrix, j_fullmatrix = \
+        zip(*positions_identifiers_in_fullmatrix)
     i_corrected_percmat, j_corrected_percmat = \
         zip(*positions_idxs_in_corrected_percmat)
 
@@ -812,7 +814,6 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix[j_fullmatrix, i_fullmatrix] = \
         corrected_percmat[i_corrected_percmat, j_corrected_percmat]
 
-    
     return fullmatrix
 
 
@@ -850,37 +851,72 @@ def do_interact(identfunc, \
     identifiers, idxs, chosenselections = \
         identfunc(pdb, uni, **identargs)
 
-    if ffmasses is not None:
-        try:
-            assign_ff_masses(ffmasses,idxs,chosenselections)
-        except IOError as (errno, strerror):
-            log.warning("force field file not found or not readable. Masses will be guessed.")
-            pass
-    else:
+    if ffmasses is None:
         log.info("No force field assigned: masses will be guessed.")
+    else:
+        try:
+            assign_ff_masses(ffmasses, idxs, chosenselections)
+        except IOError as (errno, strerror):
+            logstr = \
+                "force field file not found or not readable. " \
+                "Masses will be guessed."
+            log.warning(logstr)     
 
-    percmat,distmats = calc_dist_matrix(uni, idxs,chosenselections, co, mindist=mindist, mindist_mode=mindist_mode)
+    percmat, distmats = \
+        calc_dist_matrix(uni = uni, \
+                         idxs = idxs,\
+                         chosenselections = chosenselections, \
+                         co = co, \
+                         mindist = mindist, \
+                         mindist_mode = mindist_mode)
 
-    short_idxs = [ i[0:3] for i in idxs ]
-    short_identifiers = [ i[0:3] for i in identifiers ]
+    short_idxs = [i[0:3] for i in idxs]
+    short_identifiers = [i[0:3] for i in identifiers]
+    outstr_toformat = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{3.1f}\n"
 
     for i in range(len(percmat)):
-        for j in range(0,i):
+        for j in range(0, i):
             if percmat[i,j] > perco:
-                this1 = short_identifiers[short_identifiers.index(short_idxs[i])]
-                this2 = short_identifiers[short_identifiers.index(short_idxs[j])]
-                outstr+= "%s-%d%s_%s:%s-%d%s_%s\t%3.1f\n" % (this1[0], this1[1], this1[2], idxs[i][3], this2[0], this2[1], this2[2], idxs[j][3], percmat[i,j])
+                res1 = short_identifiers[short_identifiers.index(short_idxs[i])]
+                segid1, resid1, resname1 = res1
+                res2 = short_identifiers[short_identifiers.index(short_idxs[j])]
+                segid2, resid2, resname2 = res2
+                outstr += \
+                    outstr_toformat.format(\
+                        segid1, resid1, resname1, idxs[i][3], \
+                        segid2, resid2, resname2, idxs[j][3], \
+                        percmat[i,j])
 
-    if fullmatrix:
-        return (outstr, fullmatrixfunc(identifiers, idxs, percmat, perco))
+    if fullmatrixfunc is not None:
+        return (outstr, \
+                fullmatrixfunc(identifiers = identifiers, \
+                               idxs = idxs, \
+                               percmat = percmat, \
+                               perco = perco))
 
     return (outstr, None)
 
-def do_hbonds(sel1, sel2, grof=None ,xtcf=None, pdbf=None, pdb=None, uni=None, update_selection1=True, update_selection2=True, filter_first=False, distance=3.0, angle=120, perco=0.0, perresidue=False, dofullmatrix=False, other_hbs=None):
+
+def do_hbonds(sel1, \
+              sel2, \
+              grof = None, \
+              xtcf = None, \
+              pdbf = None, \
+              pdb = None, \
+              uni = None, \
+              update_selection1 = True, \
+              update_selection2 = True, \
+              filter_first = False, \
+              distance = 3.0, \
+              angle = 120, \
+              perco = 0.0, \
+              perresidue = False, \
+              dofullmatrix = False, \
+              other_hbs = None):
     
-    outstr=""
+    outstr = ""
     
-    from MDAnalysis.analysis import hbonds
+    from MDAnalysis.analysis.hbonds import hbond_analysis
     
     if not pdb or not uni:
         if not pdbf or not grof or not xtcf:
