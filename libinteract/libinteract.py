@@ -741,7 +741,7 @@ def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
 
     return fullmatrix
 
-"""
+
 def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix = np.zeros((len(identifiers),len(identifiers)))
     lastsize = 0
@@ -755,12 +755,15 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
         raise ValueError("percmat must have dimensions != 0")
     lastsize = percmat.shape[0]
     corrected_percmat = percmat.copy()
-    i=0
+    i = 0
     while i < percmat.shape[0]:
-        rescgs = map(idxs.index,filter(lambda x: x[0:3] == idxs[i][0:3], idxs))
-        i+=len(rescgs)
+        rescgs = \
+            list(map(idxs.index, \
+                    filter(lambda x: x[0:3] == idxs[i][0:3], idxs)))
+        i += len(rescgs)
         clashes.append(frozenset(rescgs)) # possibly clashing residues
-    corrected_percmat = np.zeros( (len(clashes),len(clashes)) )
+    
+    corrected_percmat = np.zeros((len(clashes),len(clashes)))
     for i in range(len(clashes)):
         for j in range(i):
             thisclash = 0.0
@@ -769,17 +772,63 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
                     if percmat[k][l] > thisclash:
                         thisclash = percmat[k][l]
             corrected_percmat[i,j] = thisclash
-    corrected_idxs = [ idxs[list(i)[0]][0:3]+('',) for i in list(clashes)]
-    for i in range(len(identifiers)):
-        for j in range(0,i):
-            if identifiers[i] in corrected_idxs and identifiers[j] in corrected_idxs:
-                fullmatrix[i,j] = corrected_percmat[corrected_idxs.index(identifiers[i]), corrected_idxs.index(identifiers[j])]
-                fullmatrix[j,i] = corrected_percmat[corrected_idxs.index(identifiers[i]), corrected_idxs.index(identifiers[j])]
+    
+    corrected_idxs = [idxs[list(i)[0]][0:3] + ('',) for i in list(clashes)]
+
+    # create an empty matrix of length identifiers x identifiers
+    fullmatrix = np.zeros((len(identifiers), len(identifiers)))
+
+    # get where (index) the elements of corrected_idxs are in identifiers
+    where_idxs_in_identifiers = \
+        [identifiers.index(item) for item in corrected_idxs]
+
+    # get where (index) each element of corrected_idxs 
+    # is in corrected_idxs
+    where_idxs_in_idxs = \
+        [i for i, item in enumerate(corrected_idxs)]
+
+    # get where (i,j coordinates) each element of corrected_idxs
+    # is in the matrix having dimensions 
+    # len(identifiers) x len(identifiers) - fullmatrix
+    positions_identifiers_in_fullmatrix = \
+        itertools.combinations(where_idxs_in_identifiers, 2)
+
+    # get where (i,j coordinates) each element of corrected_idxs
+    # is in the matrix having dimensions 
+    # len(corrected_idxs) x len(corrected_idxs) - corrected_percmat
+    positions_idxs_in_corrected_percmat = \
+        itertools.combinations(where_idxs_in_idxs, 2)
+
+    # unpack all pairs of i,j coordinates in lists of i 
+    # indexes and j indexes
+    i_fullmatrix, j_fullmatrix = zip(*positions_identifiers_in_fullmatrix)
+    i_corrected_percmat, j_corrected_percmat = \
+        zip(*positions_idxs_in_corrected_percmat)
+
+    # use numpy "fancy indexing" to fill fullmatrix with the
+    # values in percmat corresponding to each pair of elements
+    fullmatrix[i_fullmatrix, j_fullmatrix] = \
+        corrected_percmat[i_corrected_percmat, j_corrected_percmat]
+    fullmatrix[j_fullmatrix, i_fullmatrix] = \
+        corrected_percmat[i_corrected_percmat, j_corrected_percmat]
+
     
     return fullmatrix
-"""
-   
-def do_interact(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, co=5.0, perco=0.0, ffmasses=None, fullmatrix=None, mindist=False, mindist_mode=None, **identargs ):
+
+
+def do_interact(identfunc, \
+                grof = None, \
+                xtcf = None, \
+                pdbf = None, \
+                pdb = None, \
+                uni = None, \
+                co = 5.0, \
+                perco = 0.0, \
+                ffmasses = None, \
+                fullmatrixfunc = None, \
+                mindist = False, \
+                mindist_mode = None, \
+                **identargs):
 
     outstr = ""
 
@@ -789,10 +838,17 @@ def do_interact(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, 
     
     if not pdb or not uni:
         if not pdbf or not grof or not xtcf:
-            raise ValueError
-        pdb,uni = load_sys(pdbf,grof,xtcf)
+            logstr = \
+                "You have to provide either the mda.Universe " \
+                "objects or the PDB, GRO and XTC files"
+            raise ValueError(logstr)
+        
+        pdb, uni = load_sys(pdbf, grof, xtcf)
+        logstr = "mda.Universe objects generated from {:s}"
+        log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
     
-    identifiers,idxs,chosenselections = identfunc(pdb,uni,**identargs)
+    identifiers, idxs, chosenselections = \
+        identfunc(pdb, uni, **identargs)
 
     if ffmasses is not None:
         try:
@@ -816,7 +872,7 @@ def do_interact(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, 
                 outstr+= "%s-%d%s_%s:%s-%d%s_%s\t%3.1f\n" % (this1[0], this1[1], this1[2], idxs[i][3], this2[0], this2[1], this2[2], idxs[j][3], percmat[i,j])
 
     if fullmatrix:
-        return (outstr, fullmatrix(identifiers, idxs, percmat, perco))
+        return (outstr, fullmatrixfunc(identifiers, idxs, percmat, perco))
 
     return (outstr, None)
 
