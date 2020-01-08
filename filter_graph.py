@@ -68,7 +68,7 @@ def load_matrix(fname):
 
 
 # Process matrices
-def process_matrices(fnames) 
+def process_matrices(fnames):
     matrices = [load_matrix(fname) for fname in fnames]
     shapes = [matrix.shape for matrix in matrices]
 
@@ -92,7 +92,7 @@ def process_matrices(fnames)
     return matrices
 
 # Get maximum cluster sizes
-def get_maxclustsizes(matrices, interval)
+def get_maxclustsizes(matrices, interval):
     maxclustsizes = []
     for val in interval:
         # boolean matrices indicating where the original
