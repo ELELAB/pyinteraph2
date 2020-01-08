@@ -44,7 +44,7 @@ from itertools import chain
 from innerloops import LoopDistances
 
 
-class LoopBreak(Exception):
+class LoopBreakError(Exception):
     pass
 
 class Sparse:
@@ -53,7 +53,7 @@ class Sparse:
             "<Sparse r1={:d} ({:d},{:d}), r2={:d} ({:d},{:d}), {:d} bins>"
         
         return fmt_repr.format(self.r1, self.p1_1, self.p1_2, self.r2, \
-                               self.p2_1, self.p2_2, self.binN())
+                               self.p2_1, self.p2_2, self.num_bins())
     
     def __init__(self, sparse_list):
         if isinstance(sparse_list, Sparse):
@@ -83,14 +83,14 @@ class Sparse:
             self.num = sparse_list[9]
             self.bins  = {}
 
-    def addBin(self, bin):
+    def add_bin(self, bin):
         self.bins[''.join(bin[0:4])] = bin[4]
 
-    def addBins(self, bins):
+    def add_bins(self, bins):
         for i in bins:
             self.bins[str(bins[0:4])] = bins[4]
     
-    def binN(self):
+    def num_bins(self):
         return len(self.bins)
 
 
@@ -131,7 +131,7 @@ def parse_sparse(potential_file, residues_list):
             
             # for every bin ...
             for k in range(this_sparse.num):
-                this_sparse.addBin(\
+                this_sparse.add_bin(\
                     bin_struct.unpack(\
                         data[pointer : pointer + bin_size]))
                 pointer += bin_size
@@ -177,7 +177,7 @@ def parse_atomlist(fname):
     return data    
 
 
-def dopotential(kbp_atomlist, \
+def do_potential(kbp_atomlist, \
                 residues_list, \
                 potential_file, \
                 seq_dist_co = 0, \
@@ -200,7 +200,7 @@ def dopotential(kbp_atomlist, \
                 "pass 'pdbf', 'grof' and 'xtcf'"
             raise ValueError(errstr)
         
-        pdb, uni = loadsys(pdbf, grof, xtcf)
+        pdb, uni = load_sys(pdbf, grof, xtcf)
 
     ok_residues = []
     discarded_residues = set()
@@ -367,7 +367,7 @@ def load_gmxff(jsonfile):
     return json.load(_jsonfile)
 
 
-def distmatrix(uni, \
+def calc_dist_matrix(uni, \
                idxs, \
                chosenselections, \
                co, \
@@ -547,19 +547,19 @@ def distmatrix(uni, \
 
         all_coms = np.concatenate(all_coms)
         inner_loop = LoopDistances(all_coms, all_coms, co)
-        percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
+        percmat = inner_loop.run_triangular_calc_dist_matrix(coms.shape[0])
         final_percmat = np.array(percmat, dtype = np.float)/numframes*100.0
 
     return final_percmat, distmats
 
 
-def loadsys(pdb, gro, xtc):    
+def load_sys(pdb, gro, xtc):    
     uni = mda.Universe(gro, xtc)       
     pdb = mda.Universe(pdb)
     return pdb, uni
 
 
-def assignffmasses(ffmasses, idxs, chosenselections):
+def assign_ff_masses(ffmasses, idxs, chosenselections):
     ffdata = load_gmxff(ffmasses)
     for i in range(len(idxs)):
         for atom in chosenselections[i]:
@@ -575,7 +575,7 @@ def assignffmasses(ffmasses, idxs, chosenselections):
                                            atom.name))   
 
 
-def generateCustomIdentifiers(pdb, uni, **kwargs):
+def generate_custom_identifiers(pdb, uni, **kwargs):
     selstrings = kwargs["selections"]
     names = kwargs["names"]
     if len(names) != len(selstrings):
@@ -602,7 +602,7 @@ def generateCustomIdentifiers(pdb, uni, **kwargs):
     return identifiers, idxs, chosenselections
 
 
-def generateCGIdentifiers(pdb,uni,**kwargs):
+def generate_cgi_identifiers(pdb,uni,**kwargs):
     cgs = kwargs['cgs']
     identifiers = []
     idxs = []
@@ -630,7 +630,7 @@ def generateCGIdentifiers(pdb,uni,**kwargs):
     return identifiers,idxs,chosenselections
  
       
-def generateSCIdentifiers(pdb,uni,**kwargs):
+def generate_sci_identifiers(pdb,uni,**kwargs):
     reslist = kwargs['reslist']
     log.info("Selecting residues: %s" % ", ".join(reslist))
     excluded_atoms=["CA","C","O","N","H","H1","H2","H3","O1","O2","OXT","OT1","OT2"]
@@ -650,7 +650,7 @@ def generateSCIdentifiers(pdb,uni,**kwargs):
     return identifiers,idxs,chosenselections
     
      
-def SCFullmatrix(identifiers, idxs, percmat, perco):
+def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix = np.zeros((len(identifiers),len(identifiers)))
     for i in range(len(identifiers)):
         for j in range(0,i):
@@ -659,7 +659,7 @@ def SCFullmatrix(identifiers, idxs, percmat, perco):
                 fullmatrix[j,i] = percmat[idxs.index(identifiers[i]), idxs.index(identifiers[j])]
     return fullmatrix
 
-def CGFullmatrix(identifiers, idxs, percmat, perco):
+def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix = np.zeros((len(identifiers),len(identifiers)))
     lastsize=0
     stopsize=0  
@@ -693,7 +693,7 @@ def CGFullmatrix(identifiers, idxs, percmat, perco):
     
     return fullmatrix
     
-def dointeract(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, co=5.0, perco=0.0, ffmasses=None, fullmatrix=None, mindist=False, mindist_mode=None, **identargs ):
+def do_interact(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, co=5.0, perco=0.0, ffmasses=None, fullmatrix=None, mindist=False, mindist_mode=None, **identargs ):
 
     outstr = ""
 
@@ -704,20 +704,20 @@ def dointeract(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, c
     if not pdb or not uni:
         if not pdbf or not grof or not xtcf:
             raise ValueError
-        pdb,uni = loadsys(pdbf,grof,xtcf)
+        pdb,uni = load_sys(pdbf,grof,xtcf)
     
     identifiers,idxs,chosenselections = identfunc(pdb,uni,**identargs)
 
     if ffmasses is not None:
         try:
-            assignffmasses(ffmasses,idxs,chosenselections)
+            assign_ff_masses(ffmasses,idxs,chosenselections)
         except IOError as (errno, strerror):
             log.warning("force field file not found or not readable. Masses will be guessed.")
             pass
     else:
         log.info("No force field assigned: masses will be guessed.")
 
-    percmat,distmats = distmatrix(uni, idxs,chosenselections, co, mindist=mindist, mindist_mode=mindist_mode)
+    percmat,distmats = calc_dist_matrix(uni, idxs,chosenselections, co, mindist=mindist, mindist_mode=mindist_mode)
 
     short_idxs = [ i[0:3] for i in idxs ]
     short_identifiers = [ i[0:3] for i in identifiers ]
@@ -734,7 +734,7 @@ def dointeract(identfunc, grof=None, xtcf=None ,pdbf=None, pdb=None, uni=None, c
 
     return (outstr, None)
 
-def dohbonds(sel1, sel2, grof=None ,xtcf=None, pdbf=None, pdb=None, uni=None, update_selection1=True, update_selection2=True, filter_first=False, distance=3.0, angle=120, perco=0.0, perresidue=False, dofullmatrix=False, other_hbs=None):
+def do_hbonds(sel1, sel2, grof=None ,xtcf=None, pdbf=None, pdb=None, uni=None, update_selection1=True, update_selection2=True, filter_first=False, distance=3.0, angle=120, perco=0.0, perresidue=False, dofullmatrix=False, other_hbs=None):
     
     outstr=""
     
@@ -743,7 +743,7 @@ def dohbonds(sel1, sel2, grof=None ,xtcf=None, pdbf=None, pdb=None, uni=None, up
     if not pdb or not uni:
         if not pdbf or not grof or not xtcf:
             raise ValueError
-        pdb,uni = loadsys(pdbf,grof,xtcf)
+        pdb,uni = load_sys(pdbf,grof,xtcf)
 
 
     hb_basenum = 1
