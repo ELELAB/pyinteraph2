@@ -679,8 +679,8 @@ def generate_sci_identifiers(pdb, uni, **kwargs):
     
     for resname_in_list in reslist:
         idxs.extend(\
-            [identifiers[j] for j in range(len(identifiers)) \
-             if identifiers[j][2] == resname_in_list[0:3]])
+            [identifier for identifier in identifiers \
+             if identifier[2] == resname_in_list[0:3]])
 
         for res_in_uni in uni.residues:
             if res_in_uni.resname[0:3] == resname_in_list:
@@ -706,13 +706,41 @@ def generate_sci_identifiers(pdb, uni, **kwargs):
     
      
 def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
-    fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-    for i in range(len(identifiers)):
-        for j in range(0,i):
-            if identifiers[i] in idxs and identifiers[j] in idxs:
-                fullmatrix[i,j] = percmat[idxs.index(identifiers[i]), idxs.index(identifiers[j])]
-                fullmatrix[j,i] = percmat[idxs.index(identifiers[i]), idxs.index(identifiers[j])]
+    # create an empty matrix of length identifiers x identifiers
+    fullmatrix = np.zeros((len(identifiers), len(identifiers)))
+
+    # get where (index) the elements of idxs are in identifiers
+    where_idxs_in_identifiers = \
+        [identifiers.index(item) for item in idxs]
+
+    # get where (index) each element of idxs is in idxs
+    where_idxs_in_idxs = \
+        [i for i, item in enumerate(idxs)]
+
+    # get where (i,j coordinates) each element of idxs
+    # is in the matrix having dimensions 
+    # len(identifiers) x len(identifiers) - fullmatrix
+    positions_identifiers_in_fullmatrix = \
+        itertools.combinations(where_idxs_in_identifiers, 2)
+
+    # get where (i,j coordinates) each element of idxs
+    # is in the matrix having dimensions 
+    # len(idxs) x len(idxs) - percmat
+    positions_idxs_in_percmat = \
+        itertools.combinations(where_idxs_in_idxs, 2)
+
+    # unpack all pairs of i,j coordinates in lists of i 
+    # indexes and j indexes
+    i_fullmatrix, j_fullmatrix = zip(*positions_identifiers_in_fullmatrix)
+    i_percmat, j_percmat = zip(*positions_idxs_in_percmat)
+
+    # use numpy "fancy indexing" to fill fullmatrix with the
+    # values in percmat corresponding to each pair of elements
+    fullmatrix[i_fullmatrix, j_fullmatrix] = percmat[i_percmat,j_percmat]
+    fullmatrix[j_fullmatrix, i_fullmatrix] = percmat[i_percmat,j_percmat]
+
     return fullmatrix
+
 
 def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix = np.zeros((len(identifiers),len(identifiers)))
