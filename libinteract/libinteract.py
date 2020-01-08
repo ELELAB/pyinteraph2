@@ -602,38 +602,70 @@ def generate_custom_identifiers(pdb, uni, **kwargs):
     return identifiers, idxs, chosenselections
 
 
-def generate_cgi_identifiers(pdb,uni,**kwargs):
-    cgs = kwargs['cgs']
-    identifiers = []
+def generate_cgi_identifiers(pdb, uni, **kwargs):
+    cgs = kwargs["cgs"]
     idxs = []
     chosenselections = []
-    for res,dic in cgs.iteritems(): # preprocess CGs: divide wolves and lambs
-        for cgname,cg in dic.iteritems():
-            cgs[res][cgname] =  {
-                True:   set(                  filter(lambda x: not x.startswith("!"),cg)),   # atoms that must exist (negative of negative)
-                False:  set( [ j[1:] for j in filter(lambda x:     x.startswith("!"),cg)])   # atoms that must NOT exist (positive of negative)
+    # preprocess CGs: divide wolves and lambs
+    for res, dic in cgs.items(): 
+        for cgname, cg in dic.items():
+            # True : set of atoms that must exist (negative of negative)
+            # False: set atoms that must NOT exist (positive of negative)
+            cgs[res][cgname] =  \
+                {\
+                    True : \
+                        set(\
+                            filter(\
+                                lambda x: not x.startswith("!"),cg)), \
+                    False : \
+                        set(\
+                            [j[1:] for j in filter(\
+                                lambda x : x.startswith("!"), cg)]) \
                 }
-    for j in range(len(pdb.residues)):
-        identifiers.append( ( pdb.residues[j].segment.name, pdb.residues[j].id, pdb.residues[j].name, "" )  )
-    for k in range(len(uni.residues)):
-        curnames    = uni.residues[k].names()
-        setcurnames = set(curnames)
-        try:
-            for cgname,cg in cgs[uni.residues[k].name].iteritems():
-                if cg[True].issubset(setcurnames) and not bool(cg[False] & setcurnames): # if lambs exist AND wolves do not exist, add them
+    
+    identifiers = \
+        [(res.segid, res.resid, res.resname, "") for res in pdb.residues]
 
-                    idxs.append( ( pdb.residues[k].segment.name, pdb.residues[k].id, pdb.residues[k].name, cgname )  )
-                    chosenselections.append( mda.core.AtomGroup.AtomGroup( [ uni.residues[k][atom] for atom in cg[True] ] ) )    
-                    log.info("%s %s (%s)" % (chosenselections[-1][0].resid, chosenselections[-1][0].resname, ", ".join([ l.name for l in chosenselections[-1]  ])))
+    for res in uni.residues:
+        segid = res.segid
+        resname = res.resname
+        resid = res.resid
+        setcurnames = set(res.atoms.names)
+        try:
+            for cgname, cg in cgs[resname].items():
+                atoms_to_keep = cg[True]
+                condition_to_keep = \
+                    atoms_to_keep.issubset(setcurnames) \
+                    and not bool(cg[False] & setcurnames)
+                if condition_to_keep:
+                    idxs.append((segid, resid, resname, cgname))
+                    selstring = \
+                        "resid {:d} and (name ".format(resid) + \
+                        " or name ".join(atoms_to_keep) + ")"
+                        
+                    chosenselections.append(uni.select_atoms(selstring))
+
+                    log.info(\
+                        "{:s} {:s} ({:s})".format(\
+                            chosenselections[-1][0].resid, \
+                            chosenselections[-1][0].resname, \
+                            ", ".join([a.name for a in chosenselections[-1]])))
+
         except KeyError:
-            log.warning("residue %s is not in the charge recognition set. Will be skipped." % uni.residues[k].name)
-    return identifiers,idxs,chosenselections
+            logstr = \
+                "Residue {:s} is not in the charge recognition set. " \
+                "Will be skipped."
+            log.warn(logstr.format(resname))
+
+    return (identifiers, chosenselections)
  
       
-def generate_sci_identifiers(pdb,uni,**kwargs):
-    reslist = kwargs['reslist']
-    log.info("Selecting residues: %s" % ", ".join(reslist))
-    excluded_atoms=["CA","C","O","N","H","H1","H2","H3","O1","O2","OXT","OT1","OT2"]
+def generate_sci_identifiers(pdb, uni, **kwargs):
+    reslist = kwargs["reslist"]
+    log.info("Selecting residues: {:s}".format(", ".join(reslist)))
+    excluded_atoms = \
+        ["CA", "C", "O", "N", "H", "H1", "H2", \
+         "H3", "O1", "O2", "OXT", "OT1", "OT2"]
     identifiers=[]
     chosenselections=[]
     idxs=[]
