@@ -928,8 +928,6 @@ def do_hbonds(sel1, \
         pdb, uni = load_sys(pdbf, grof, xtcf)
         logstr = "mda.Universe objects generated from {:s}"
         log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
-
-    hb_basenum = 1
     
     try:
         sel1atoms = uni.select_atoms(sel1)
@@ -964,89 +962,122 @@ def do_hbonds(sel1, \
                                     update_selection2 = update_selection2, \
                                     filter_first = filter_first)
     
-    log.info("Will use acceptors: %s" %  ", ".join(h.DEFAULT_ACCEPTORS[hb_ff]))
-    log.info("Will use donors:    %s" %  ", ".join(h.DEFAULT_DONORS[hb_ff]))
+    logstr = "Will use {:s}: {:s}"
+    log.info(logstr.format("acceptors", \
+                           ", ".join(h.DEFAULT_ACCEPTORS[hb_ff])))
+    log.info(logstr.format("donors", \
+                           ", ".join(h.DEFAULT_DONORS[hb_ff])))
     log.info("Running hydrogen bonds analysis . . .")
     
+    # run hydrogen bonds analysis
     h.run()
     log.info("Done! Finalizing . . .")
     data = h.timeseries
-
-    identifiers = []
-    pdbresidues=[]
-    uniresidues=[]
-    uni_identifiers = []
     fullmatrix = None
-    
-    for i in range(len(uni.segments)): #build global identifiers
-        resids = uni.segments[i].resids()
-        uniresidues.extend( [j for j in uni.segments[i]])
-        uni_identifiers.extend( [ ( uni.segments[i].name, resids[j], uni.segments[i].residues[j].name, "residue" ) for j in range(len(resids)) ] )
-        
-    for i in range(len(pdb.segments)): #build global identifiers
-        resids = pdb.segments[i].resids()
-        pdbresidues.extend([j for j in pdb.segments[i]])
-        identifiers.extend( [ ( pdb.segments[i].name, resids[j], pdb.segments[i].residues[j].name, "residue" ) for j in range(len(resids)) ] ) 
+    if dofullmatrix:
+        fullmatrix = np.zeros((len(identifiers),len(identifiers)))
+
+    uni_identifiers = \
+        [(res.segid, res.resid, res.resname, "residue") \
+         for res in uni.residues]
+
+    identifiers = \
+        [(res.segid, res.resid, res.resname, "residue") \
+         for res in pdb.residues]
+
+    uni_id2ix = \
+        dict([(item, i) for i, item in enumerate(uni_identifiers)])
+
+
+    def get_identifier(uni, hbond):
+        # atoms are 0-indexed now
+        return frozenset(((uni.atoms[hbond[0]].segid, \
+                                uni.atoms[hbond[0]].resid, \
+                                uni.atoms[hbond[0]].resname, \
+                                "residue"), \
+                               (uni.atoms[hbond[1]].segid, \
+                                uni.atoms[hbond[1]].resid, \
+                                uni.atoms[hbond[1]].resname, \
+                                "residue")))
 
     if perresidue or dofullmatrix:
-        outdata={}
-        setsetlist = []
+
+        # compatible with Python 3
+        setlist = list(set(zip(*list(zip(*list(chain(*data))))[0:2])))
         
-        setlist = list(set(zip(*zip(*list(chain(*data)))[0:2])))
-        identifiers_setlist = list(set( [ frozenset(((uni.atoms[hbond[0]-1].segment.name, uni.atoms[hbond[0]-1].resid, uni.atoms[hbond[0]-1].residue.name, "residue"), (uni.atoms[hbond[1]-1].segment.name, uni.atoms[hbond[1]-1].resid, uni.atoms[hbond[1]-1].residue.name, "residue"))) for hbond in setlist ] ))
+        identifiers_setlist = \
+            list(set([get_identifier(uni = uni, hbond = hbond) \
+                      for hbond in setlist]))
 
-        for i in identifiers_setlist:
-            outdata[i] = 0
+        outdata = \
+            {identifier : 0 for identifier in identifiers_setlist}
+
         for frame in data:
-            thisframe = set([ frozenset(((uni.atoms[hbond[0]-1].segment.name, uni.atoms[hbond[0]-1].resid, uni.atoms[hbond[0]-1].residue.name, "residue"), (uni.atoms[hbond[1]-1].segment.name, uni.atoms[hbond[1]-1].resid, uni.atoms[hbond[1]-1].residue.name, "residue"))) for hbond in frame])
-            for resc in thisframe:
-                outdata[resc] +=1
-        if perresidue:
-            outdata2 = outdata.copy()
-            for k in outdata2.keys():
-                outdata2[k] = float(outdata2[k])/float(uni.trajectory.numframes)*100
-                if outdata2[k] > perco:
-                    if len(k) == 2:
-                        outstr+= "%s:%s\t\t%3.2f\n" % ( list(k)[0][0]+list(k)[0][1], list(k)[1][0]+list(k)[1][1], outdata[k])
-                    elif len(k) == 1:
-                        outstr+= "%s:%s\t\t%3.2f\n" % ( list(k)[0],list(k)[0], outdata[k])
+            identifiers_frame = \
+                set([get_identifier(uni = uni, hbond = hbond) \
+                     for hbond in frame])
 
-        fullmatrix = None
-        if dofullmatrix:  
-            fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-            for hb,val in outdata.iteritems():
-                hbond = list(hb)
-                m = uni_identifiers.index(hbond[0])
-                if len(hbond) == 1:
-                    n = m
-                else:
-                    n = uni_identifiers.index(hbond[1])
+            for hbond in identifiers_frame:
+                outdata[hbond] += 1
 
-                fullmatrix[m,n] = val
-                fullmatrix[n,m] = val
+        for identifier, hb_occur in outdata.items():
+            numframes = len(uni.trajectory)
+            outstr_fmt = "{:s}{:d}:{:s}{:d}\t\t{3.2f}\n"
+            hb_pers = \
+                (float(hb_occur)/float(numframes))*100
+            identifier_as_list = list(identifier)
+
+            res1 = identifier_as_list[0]
+            res1_resix = uni_id2ix[res1]
+            res1_segid = res1[0]
+            res1_resid = res1[1]
             
-            fullmatrix = fullmatrix/float(uni.trajectory.numframes)*100.0 
+            if len(identifier) == 1:
+                res2 = res1
+                res2_resix = res1_resix
+                res2_segid = res1_segid
+                res2_resid = res1_resid
+            else:
+                res2 = identifier_as_list[1]
+                res2_resix = uni_id2ix[res2]
+                res2_segid = res2[0]
+                res2_resid = res2[1]
 
+            if dofullmatrix:
+                fullmatrix[res1_resix, res2_resix] = hb_pers
+                fullmatrix[res2_resix, res1_resix] = hb_pers
+            
+            if perresidue:
+                if hb_pers > perco:
+                    outstr += outstr_fmt.format(\
+                                res1_segid, res1_resid, \
+                                res1_segid, res1_resid, \
+                                hb_pers)
+        
     if not perresidue:
-       
         table = h.count_by_type()
-        hbonds_identifiers = []
-        for hbond in table:            
-            hbonds_identifiers.append( ((uni.atoms[hbond[0]-1].segment.name, 
-                                    uni.atoms[hbond[0]-1].residue.id, 
-                                    uni.atoms[hbond[0]-1].residue.name, "residue"), 
-                                   (uni.atoms[hbond[1]-1].segment.name, 
-                                    uni.atoms[hbond[1]-1].residue.id, 
-                                    uni.atoms[hbond[1]-1].residue.name, "residue")) )
+        hbonds_identifiers = \
+            [list(get_identifier(uni = uni, hbond = hbond)) \
+            for hbond in table]
 
-        for i,hbond in enumerate(hbonds_identifiers):
-            if table[i][-1]*100.0 > perco:
-                atom1 = identifiers[uni_identifiers.index(hbond[0])]
-                atom2 = identifiers[uni_identifiers.index(hbond[1])]
- 
-                outstr += "%s-%d%s_%s:%s-%d%s_%s\t\t%3.2f\n" % ( atom1[0], atom1[1], atom1[2], table[i][4], atom2[0], atom2[1], atom2[2], table[i][8], table[i][-1]*100.0 )
+        outstr_fmt = \
+            "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t\t{3.2}\n"
+
+        for i, hbidentifier in enumerate(hbonds_identifiers):
+            hb_pers = table[i][-1]*100
+            donor_heavy_atom = table[i][4]
+            acceptor_atom = table[i][8]
+            if hb_pers > perco:
+                res1_segid, res1_resid, res1_resname, res1_tag = \
+                    identifiers[uni_id2ix[hbidentifier[0]]]
+                    
+                res2_segid, res2_resid, res2_resname, res2_tag = \
+                    identifiers[uni_id2ix[hbidentifier[0]]]
+                    
+                outstr += outstr_fmt.format(\
+                            res1_segid, res1_resid, res1_resname, \
+                            donor_heavy_atom, \
+                            res2_segid, res2_resid, res2_resname, \
+                            acceptor_atom)
 
     return (outstr, fullmatrix)
-    
-    
-
