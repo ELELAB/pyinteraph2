@@ -177,6 +177,7 @@ def parse_atomlist(fname):
 def do_potential(kbp_atomlist, \
                 residues_list, \
                 potential_file, \
+                parse_sparse_func = parse_sparse, \
                 seq_dist_co = 0, \
                 grof = None, \
                 xtcf = None, \
@@ -187,7 +188,7 @@ def do_potential(kbp_atomlist, \
                 kbT = 1.0):
 
     log.info("Loading potential definition . . .")
-    sparses = parse_sparse(potential_file, residues_list)
+    sparses = parse_sparse_func(potential_file, residues_list)
     log.info("Loading input files...")
 
     if pdb is None or uni is None:
