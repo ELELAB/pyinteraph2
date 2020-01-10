@@ -44,9 +44,6 @@ from itertools import chain
 from innerloops import LoopDistances
 
 
-class LoopBreakError(Exception):
-    pass
-
 class Sparse:
     def __repr__(self):
         fmt_repr = \
