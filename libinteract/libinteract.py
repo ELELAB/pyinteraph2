@@ -40,9 +40,11 @@ import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import distance_array
 
-from itertools import chain
+import itertools
 from innerloops import LoopDistances
 
+
+############################## POTENTIAL ##############################
 
 class Sparse:
     def __repr__(self):
@@ -174,157 +176,6 @@ def parse_atomlist(fname):
     return data    
 
 
-def do_potential(kbp_atomlist, \
-                residues_list, \
-                potential_file, \
-                parse_sparse_func = parse_sparse, \
-                seq_dist_co = 0, \
-                grof = None, \
-                xtcf = None, \
-                pdbf = None, \
-                uni = None, \
-                pdb = None, \
-                dofullmatrix = True, \
-                kbT = 1.0):
-
-    log.info("Loading potential definition . . .")
-    sparses = parse_sparse_func(potential_file, residues_list)
-    log.info("Loading input files...")
-
-    if pdb is None or uni is None:
-        if pdbf is None or grof is None or xtcf is None:
-            errstr =\
-                "If you do not pass 'pdb' or 'uni', you have to " \
-                "pass 'pdbf', 'grof' and 'xtcf'"
-            raise ValueError(errstr)
-        
-        pdb, uni = load_sys(pdbf, grof, xtcf)
-
-    ok_residues = []
-    discarded_residues = set()
-    residue_pairs = []
-    atom_selections = []
-    ordered_sparses = []
-    numframes = len(uni.trajectory)
-
-    for res in uni.residues:
-        # check if the residue type is one of
-        # those included in the list
-        if res.resname in residues_list:
-            ok_residues.append(res)
-        else:
-            discarded_residues.add(res)
-            continue
-        
-        for secondres in ok_residues[:-1]:
-            firstres = res 
-            
-            if not (abs(res.ix - secondres.ix) < seq_dist_co \
-            or firstres.segment.segid != secondres.segment.segid):
-                # string comparison ?!
-                if secondres.resname < firstres.resname:
-                    ii,j = j,ii
-                
-                this_sparse = sparses[firstres.resname][secondres.resname]
-                
-                atom0, atom1, atom2, atom3 = \
-                    (kbp_atomlist[firstres.resname][this_sparse.p1_1],
-                     kbp_atomlist[firstres.resname][this_sparse.p1_2],
-                     kbp_atomlist[secondres.resname][this_sparse.p2_1],
-                     kbp_atomlist[secondres.resname][this_sparse.p2_2])
-                
-                try:
-                    index_atom0 = \
-                        firstres.atoms.names.tolist().index(atom0)
-                    index_atom1 = \
-                        firstres.atoms.names.tolist().index(atom1)
-                    index_atom2 = \
-                        secondres.atoms.names.tolist().index(atom2)
-                    index_atom3 = \
-                        secondres.atoms.named.tolist().index(atom3)
-                    selected_atoms = \
-                        mda.core.groups.AtomGroup(\
-                             firstres.atoms[index_atom0],
-                             firstres.atoms[index_atom1],
-                             secondres.atoms[index_atom2],
-                             secondres.atoms[index_atom3])
-                except:
-                    warnstr = \
-                        "Could not identify essential atoms " \
-                        "for the analysis ({:s}{:d}, {:s}{:d})"
-                    log.warning(\
-                        warnstr.format(firstres.resname, \
-                                       firstres.resid, \
-                                       secondres.resname, \
-                                       secondres.resid))
-                    
-                    continue
-                
-                residue_pairs.append((firstres, secondres))
-                atom_selections.append(selected_atoms)
-                ordered_sparses.append(this_sparse)
-
-    scores = np.zeros((len(residue_pairs)), dtype = float)  
-    coords = None
-    
-    for ts in uni.trajectory:
-        logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
-        sys.stdout.write(logstr.format(a, \
-                                       numframes, \
-                                       float(a)/float(numframes)*100.0))
-        sys.stdout.flush()       
-   
-        coords = np.array(\
-            np.concatenate(\
-                [sel.positions for sel in atom_selections]), \
-            dtype = np.float64)
-
-        inner_loop = LoopDistances(coords, coords, None)
-        distances = \
-            inner_loop.run_potential_distances(\
-                len(atom_selections), 4, 1)
-
-        scores += \
-            calc_potential(distances = distances, \
-                           ordered_sparses = ordered_sparses, \
-                           pdb = pdb, \
-                           uni = uni, \
-                           distco = seq_dist_co, \
-                           kbT = kbT)
-    
-    # divide the scores for the lenght of the trajectory
-    scores /= float(len(uni.trajectory))
-    outstr = ""
-    outstr_fmt = "{:s}-{:s}{:s}:{:s}-{:s}{:s}\t{:.3f}\n"
-    for i, score in enumerate(scores):
-        if abs(score) > 0.000001:
-            outstr +=  \
-                outstr_fmt.format(\
-                    pdb.residues[residue_pairs[i][0]].segment.segname, \
-                    pdb.residues[residue_pairs[i][0]].resname, \
-                    pdb.residues[residue_pairs[i][0]].resid, \
-                    pdb.residues[residue_pairs[i][1]].segment.segname, \
-                    pdb.residues[residue_pairs[i][1]].resname, \
-                    pdb.residues[residue_pairs[i][1]].resid, \
-                    score)
-    
-    # inizialize the matrix to None  
-    dm = None   
-    if dofullmatrix:
-        # if requested, create the matrix
-        dm = np.zeros((len(pdb.residues), len(pdb.residues)))
-        # use numpy "fancy indexing" to fill the matrix
-        # with scores at the corresponding residues pairs
-        # positions
-        pair_firstelems = [pair[0] for pair in residue_pairs]
-        pairs_secondelems = [pair[1] for pair in residue_pairs]
-        dm[pair_firstelems, pairs_secondelems] = scores
-        dm[pairs_secondelems, pair_firstelems] = scores           
-    
-    # return the output string and the matrix
-    return (outstr, dm)
-
-
 def calc_potential(distances, \
                    ordered_sparses, \
                    pdb, \
@@ -360,9 +211,179 @@ def calc_potential(distances, \
     return scores/distances.shape[0]
 
 
-def load_gmxff(jsonfile):
-    _jsonfile = open(jsonfile,'r')
-    return json.load(_jsonfile)
+def do_potential(kbp_atomlist, \
+                 residues_list, \
+                 potential_file, \
+                 parse_sparse_func = parse_sparse, \
+                 calc_potential_func = calc_potential, \
+                 seq_dist_co = 0, \
+                 grof = None, \
+                 xtcf = None, \
+                 pdbf = None, \
+                 uni = None, \
+                 pdb = None, \
+                 do_fullmatrix = True, \
+                 kbT = 1.0):
+
+    log.info("Loading potential definition . . .")
+    sparses = parse_sparse_func(potential_file, residues_list)
+    log.info("Loading input files...")
+
+    if not pdb or not uni:
+        if not pdbf or not grof or not xtcf:
+            logstr = \
+                "You have to provide either the mda.Universe " \
+                "objects or the PDB, GRO and XTC files"
+            raise ValueError(logstr)
+        
+        pdb, uni = load_sys(pdbf, grof, xtcf)
+        logstr = "mda.Universe objects generated from {:s}"
+        log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
+
+    ok_residues = []
+    discarded_residues = set()
+    residue_pairs = []
+    atom_selections = []
+    ordered_sparses = []
+    numframes = len(uni.trajectory)
+
+    for res in uni.residues:
+        # check if the residue type is one of
+        # those included in the list
+        if res.resname in residues_list:
+            # add it to the accepted residues
+            ok_residues.append(res)
+        else:
+            # add it to the discarded residues
+            discarded_residues.add(res)
+            continue
+        
+        # for each other accepted residue
+        for res2 in ok_residues[:-1]:
+            res1 = res 
+            seq_dist = abs(res1.ix - res2.ix)
+            res1_segid = res1.segment.segid
+            res2_segid = res2.segment.segid
+            if not (seq_dist < seq_dist_co or res1_segid != res2_segid):
+                # string comparison ?!
+                if res2.resname < res1.resname:
+                    ii, j = j, ii
+                
+                this_sparse = sparses[res1.resname][res2.resname]
+                
+                # get the four atoms for the potential
+                atom0, atom1, atom2, atom3 = \
+                    (kbp_atomlist[res1.resname][this_sparse.p1_1],
+                     kbp_atomlist[res1.resname][this_sparse.p1_2],
+                     kbp_atomlist[res2.resname][this_sparse.p2_1],
+                     kbp_atomlist[res2.resname][this_sparse.p2_2])
+                
+                try:
+                    index_atom0 = \
+                        res1.atoms.names.tolist().index(atom0)
+                    index_atom1 = \
+                        res1.atoms.names.tolist().index(atom1)
+                    index_atom2 = \
+                        res2.atoms.names.tolist().index(atom2)
+                    index_atom3 = \
+                        res2.atoms.named.tolist().index(atom3)
+                    selected_atoms = \
+                        mda.core.groups.AtomGroup(\
+                             res1.atoms[index_atom0],
+                             res1.atoms[index_atom1],
+                             res2.atoms[index_atom2],
+                             res2.atoms[index_atom3])
+                except:
+                    # inform the user about the problem and
+                    # continue
+                    warnstr = \
+                        "Could not identify essential atoms " \
+                        "for the analysis ({:s}{:d}, {:s}{:d})"
+                    log.warning(\
+                        warnstr.format(res1.resname, \
+                                       res1.resid, \
+                                       res2.resname, \
+                                       res2.resid))
+                    
+                    continue
+                
+                residue_pairs.append((res1, res2))
+                atom_selections.append(selected_atoms)
+                ordered_sparses.append(this_sparse)
+
+    # create an matrix of floats to store scores (initially
+    # filled with zeros)
+    scores = np.zeros((len(residue_pairs)), dtype = np.float64)
+    # set coordinates to None
+    coords = None
+    # for each frame in the trajectory
+    numframe = 1
+    for ts in uni.trajectory:
+        # log the progress along the trajectory
+        logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
+        sys.stdout.write(\
+            logstr.format(numframe, \
+                          numframes, \
+                          float(numframe)/float(numframes)*100.0))
+        sys.stdout.flush()       
+        
+        # create an array of coordinates by concatenating the arrays of
+        # atom positions in the selections row-wise
+        coords = \
+            np.array(\
+                np.concatenate(\
+                    [sel.positions for sel in atom_selections]), \
+            dtype = np.float64)
+
+        inner_loop = LoopDistances(coords, coords, None)
+        # compute distances
+        distances = \
+            inner_loop.run_potential_distances(len(atom_selections), 4, 1)
+        # compute scores
+        scores += \
+            calc_potential_func(distances = distances, \
+                                ordered_sparses = ordered_sparses, \
+                                pdb = pdb, \
+                                uni = uni, \
+                                distco = seq_dist_co, \
+                                kbT = kbT)
+    
+    # divide the scores for the lenght of the trajectory
+    scores /= float(len(uni.trajectory))
+    # create the output string
+    outstr = ""
+    # set the format for the representation of each pair of
+    # residues in the output string
+    outstr_fmt = "{:s}-{:s}{:s}:{:s}-{:s}{:s}\t{:.3f}\n"
+    for i, score in enumerate(scores):
+        if abs(score) > 0.000001:
+            # update the output string
+            outstr +=  \
+                outstr_fmt.format(\
+                    pdb.residues[residue_pairs[i][0]].segment.segid, \
+                    pdb.residues[residue_pairs[i][0]].resname, \
+                    pdb.residues[residue_pairs[i][0]].resid, \
+                    pdb.residues[residue_pairs[i][1]].segment.segid, \
+                    pdb.residues[residue_pairs[i][1]].resname, \
+                    pdb.residues[residue_pairs[i][1]].resid, \
+                    score)
+    
+    # inizialize the matrix to None  
+    dm = None   
+    if do_fullmatrix:
+        # if requested, create the matrix
+        dm = np.zeros((len(pdb.residues), len(pdb.residues)))
+        # use numpy "fancy indexing" to fill the matrix
+        # with scores at the corresponding residues pairs
+        # positions
+        pair_firstelems = [pair[0] for pair in residue_pairs]
+        pairs_secondelems = [pair[1] for pair in residue_pairs]
+        dm[pair_firstelems, pairs_secondelems] = scores
+        dm[pairs_secondelems, pair_firstelems] = scores           
+    
+    # return the output string and the matrix
+    return (outstr, dm)
+
 
 
 def calc_dist_matrix(uni, \
@@ -371,70 +392,90 @@ def calc_dist_matrix(uni, \
                      co, \
                      mindist = False, \
                      mindist_mode = None, \
-                     type1char = "p", \
-                     type2char = "n"):
+                     pos_char = "p", \
+                     neg_char = "n"):
+    """Compute matrix of distances"""
     
     numframes = len(uni.trajectory)
-    final_percmat = \
-        np.zeros((len(chosenselections), len(chosenselections)))
-    
-    logstr = "Distance matrix will be {:d}x{:d} ({:d} elements)"
-    log.info(logstr.format(len(idxs), len(idxs), len(idxs)**2))
-
-    distmats = []
+    # initialize the final matrix
+    percmat = \
+        np.zeros((len(chosenselections), len(chosenselections)), \
+                 dtype = np.float64)
 
     if mindist:
-        P = []
-        N = []
-        Pidxs = []
-        Nidxs = []
-        Psizes = []
-        Nsizes = []
+        # lists for positively charged atoms
+        pos = []
+        pos_idxs = []
+        pos_sizes = []
+        # lists for negatively charged atoms
+        neg = []
+        neg_idxs = []
+        neg_sizes = []
 
         for i in range(len(idxs)):
-            if idxs[i][3][-1] == type1char:
-                P.append(chosenselections[i])
-                Pidxs.append(idxs[i])
-                Psizes.append(len(chosenselections[i]))
-            elif idxs[i][3][-1] == type2char:
-                N.append(chosenselections[i])
-                Nidxs.append(idxs[i])
-                Nsizes.append(len(chosenselections[i]))
+            # character in the index indicating the
+            # charge of the atom
+            charge_char = idxs[i][3][-1]
+            # if the index contains the indication of a
+            # positively charged atom
+            if charge_char == pos_char:
+                pos.append(chosenselections[i])
+                pos_idxs.append(idxs[i])
+                pos_sizes.append(len(chosenselections[i]))
+            # if the index contains the indication of a
+            # negatively charged atom
+            elif charge_char == neg_char:
+                neg.append(chosenselections[i])
+                neg_idxs.append(idxs[i])
+                neg_sizes.append(len(chosenselections[i]))
+            # if none of the above
             else: 
                 errstr = \
-                    "Accepted values are either 'n' or 'p', " \
+                    "Accepted values are either '{:s}' or '{:s}', " \
                     "but {:s} was found."
-                raise ValueError(errstr.format(idxs[i][3][-1]))
+                raise ValueError(errstr.format(pos_char, \
+                                               neg_char, \
+                                               charge_char))
 
-        Nsizes = np.array(Nsizes, dtype = np.int)
-        Psizes = np.array(Psizes, dtype = np.int)
+        # convert lists of positions into arrays
+        pos_sizes = np.array(pos_sizes, dtype = np.int)
+        neg_sizes = np.array(neg_sizes, dtype = np.int)
 
+        # if we are interested in interactions between atoms
+        # with different charges
 	    if mindist_mode == "diff":
-            sets = [(P,N)]
-            sets_idxs = [(Pidxs, Nidxs)]
-            sets_sizes = [(Psizes, Nsizes)]
+            sets = [(pos, neg)]
+            sets_idxs = [(pos_idxs, neg_idxs)]
+            sets_sizes = [(pos_sizes, neg_sizes)]
+        # if we are interested in interactions between atoms
+        # with the same charge
         elif mindist_mode == "same":
-            sets = [(P,P),(N,N)]
-            sets_idxs = [(Pidxs,Pidxs), (Nidxs,Nidxs)]
-            sets_sizes = [(Psizes,Psizes), (Nsizes,Nsizes)]
+            sets = [(pos, pos), (neg, neg)]
+            sets_idxs = [(pos_idxs, pos_idxs), (neg_idxs, neg_idxs)]
+            sets_sizes = [(pos_sizes, pos_sizes), (neg_idxs, neg_sizes)]
+        # if we are interested in both
         elif mindist_mode == "both":
             sets = [(chosenselections, chosenselections)]
             sets_idxs = [(idxs, idxs)]
             sizes =  [len(s) for s in chosenselections]
-            sets_sizes = [(sizes,sizes)]               
+            sets_sizes = [(sizes, sizes)]
+        # unrecognized choice             
         else:
             choices = ["diff", "same", "both"]
             errstr = \
-                "Accepted values for mindist_mode are {:s}, " \
-                "but you provided {:s}."
+                "Accepted values for 'mindist_mode' are {:s}, " \
+                "but {:s} was found."
             raise ValueError(errstr.format(", ".join(choices), \
                                            mindist_mode))
 
         percmats = []
+        # create an empty list to store the atomic coordinates
         coords = [([[], []]) for s in sets]
 
+        # for each frame in the trajectory
         numframe = 1
         for ts in uni.trajectory:
+            # log the progress along the trajectory
             logstr = \
                 "Caching coordinates: frame {:d} / {:d} ({:3.1f}%)\r"
             sys.stdout.write(logstr.format(\
@@ -442,113 +483,105 @@ def calc_dist_matrix(uni, \
                                 numframes, \
                                 float(numframe)/float(numframes)*100.0))
             sys.stdout.flush()
+            # update the frame number
             numframe += 1
             
-            for set_index, s in enumerate(sets):
+            # for each set of atoms
+            for s_index, s in enumerate(sets):
                 if s[0] == s[1]:
                     # triangular case
                     log.info("Caching coordinates...")
                     for group in s[0]:
-                        coords[set_index][0].append(group.positions)
-                        coords[set_index][1].append(group.positions)
+                        coords[s_index][0].append(group.positions)
+                        coords[s_index][1].append(group.positions)
                 else:
                     # square case
                     log.info("Caching coordinates...")
                     for group in s[0]:
-                        coords[set_index][0].append(group.positions)
+                        coords[s_index][0].append(group.positions)
                     for group in s[1]:
-                        coords[set_index][1].append(group.positions)
+                        coords[s_index][1].append(group.positions)
 
-        for set_index, s in enumerate(sets):
+        for s_index, s in enumerate(sets):
             # recover the final matrix
             if s[0] == s[1]:
                 # triangular case
                 this_coords = \
-                    np.array(\
-                        np.concatenate(coords[si][0]), \
-                        dtype = np.float64)
-
+                    np.array(np.concatenate(coords[s_index][0]), \
+                             dtype = np.float64)
+                # compute the distances within the cut-off
                 inner_loop = LoopDistances(this_coords, this_coords, co)
                 percmats.append(\
                     inner_loop.run_triangular_mindist(\
-                        sets_sizes[set_index][0]))
+                        sets_sizes[s_index][0]))
 
             else:
                 # square case
                 this_coords1 = \
-                    np.array(\
-                        np.concatenate(coords[set_index][0]), \
-                        dtype = np.float64)
-                
+                    np.array(np.concatenate(coords[s_index][0]), \
+                             dtype = np.float64)              
                 this_coords2 = \
-                    np.array(\
-                        np.concatenate(coords[set_index][1]), \
-                        dtype = np.float64)
-                
+                    np.array(np.concatenate(coords[s_index][1]), \
+                             dtype = np.float64)
+                # compute the distances within the cut-off
                 inner_loop = LoopDistances(this_coords1, this_coords2, co)
                 percmats.append(\
                     inner_loop.run_square_mindist(\
-                        sets_sizes[set_index][0], \
-                        sets_sizes[set_index][1]))
+                        sets_sizes[s_index][0], \
+                        sets_sizes[s_index][1]))
 
-        for set_index, s in enumerate(sets): 
+        for s_index, s in enumerate(sets): 
             # recover the final matrix
-            Pidxs = sets_idxs[si][0]
-            Nidxs = sets_idxs[si][1]
+            pos_idxs = sets_idxs[s_index][0]
+            neg_idxs = sets_idxs[s_index][1]
             if s[0] == s[1]:
                 # triangular case
                 for j in range(len(s[0])):
-                    for k in range(0,j):
-                        final_percmat[idxs.index(Pidxs[j]), \
-                                                 idxs.index(Pidxs[k])] = \
-                                            percmats[si][j,k]
-                        
-                        final_percmat[idxs.index(Pidxs[k]), \
-                                                 idxs.index(Pidxs[j])] = \
-                                            percmats[si][j,k]
+                    for k in range(0, j):
+                        ix_j = idxs.index(pos_idxs[j])
+                        ix_k = idxs.index(pos_idxs[k])
+                        percmat[ix_j, ix_k] = percmats[s_index][j,k]         
+                        percmat[ix_k, ix_j] = percmats[s_index][j,k]
             else: 
                 # square case
                 for j in range(len(s[0])):
                     for k in range(len(s[1])):
-                        final_percmat[idxs.index(Pidxs[j]), \
-                                                 idxs.index(Nidxs[k])] = \
-                                            percmats[si][j,k]
-                        
-                        final_percmat[idxs.index(Nidxs[k]), \
-                                                cidxs.index(Pidxs[j])] = \
-                                            percmats[si][j,k]
- 
-        final_percmat = \
-            np.array(final_percmat, dtype = np.float)/numframes*100.0
+                        ix_j_p = idxs.index(pos_idxs[j])
+                        ix_k_n = idxs.index(neg_idxs[k])
+                        percmat[ix_j_p, ix_k_n] = percmats[s_index][j,k]         
+                        percmat[ix_k_n, ix_j_p] = percmats[s_index][j,k]
                      
     else:
+        # empty list of matrices of centers of mass
         all_coms = []
+        # for each frame in the trajectory
         numframe = 1
         for ts in uni.trajectory:
+            # log the progress along the trajectory
             logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
             sys.stdout.write(logstr.format(\
                                 numframe, \
                                 numframes, \
                                 float(numframe)/float(numframes)*100.0))
             sys.stdout.flush()
-            
+            # update the frame number
             numframe += 1
-            distmat = \
-                np.zeros((len(chosenselections), len(chosenselections)))
             
-            # empty matrices of centers of mass
-            coms = np.zeros([len(chosenselections),3])
-            # fill the matrix
-            for j in range(len(chosenselections)):
-                coms[j,:] = chosenselections[j].centerOfMass()
+            # matrix of centers of mass for the chosen selections
+            coms_list = [sel.center(sel.masses) for sel in chosenselections]
+            coms = np.array(coms_list, dtype = np.float64)
             all_coms.append(coms)
 
+        # create a matrix of all centers of mass along the trajectory
         all_coms = np.concatenate(all_coms)
+        # compute the distances within the cut-off
         inner_loop = LoopDistances(all_coms, all_coms, co)
         percmat = inner_loop.run_triangular_calc_dist_matrix(coms.shape[0])
-        final_percmat = np.array(percmat, dtype = np.float)/numframes*100.0
+    
+    # convert the matrix into an array
+    percmat = np.array(percmat, dtype = np.float64)/numframes*100.0
 
-    return final_percmat, distmats
+    return percmat
 
 
 def load_sys(pdb, gro, xtc):    
@@ -557,263 +590,289 @@ def load_sys(pdb, gro, xtc):
     return pdb, uni
 
 
-def assign_ff_masses(ffmasses, idxs, chosenselections):
-    ffdata = load_gmxff(ffmasses)
-    for i in range(len(idxs)):
-        for atom in chosenselections[i]:
+def assign_ff_masses(ffmasses, chosenselections):
+    # load force field data
+    ffdata = json.load(open(ffmasses), "r")
+    for selection in chosenselections:
+        # for each atom
+        for atom in selection:
+            atom_resname = atom.residue.resname
+            atom_resid = atom.residue.resid
+            atom_name = atom.name
             try:                
-                atom.mass = ffdata[1][atom.residue.resname][atom.name]
+                atom.mass = ffdata[1][atom_resname][atom_name]
             except:
                 warnstr = \
                     "Atom type not recognized (resid {:d}, " \
                     "resname {:s}, atom {:s}). " \
                     "Atomic mass will be guessed."
-                log.warning(warnstr.format(atom.residue.resid, \
-                                           atom.residue.resname, \
-                                           atom.name))   
+                log.warning(warnstr.format(atom_resid, \
+                                           atom_resname, \
+                                           atom_name))   
 
 
 def generate_custom_identifiers(pdb, uni, **kwargs):
+    # get selection strings
     selstrings = kwargs["selections"]
+    # get names
     names = kwargs["names"]
+    # raise an error if their lengths do not match
     if len(names) != len(selstrings):
-        errstr = "names and selections must have the same lenght."
+        errstr = "'names' and 'selections' must have the same lenght."
         raise ValueError(errstr)
     
     chosenselections = []
     identifiers = []
     idxs = []
-    for i in range(len(selstrings)):
+    for selstring, name in zip(selstrings, names):
         try:
-            chosenselections.append(uni.select_atoms(selstrings[i]))
-            identifiers.append((names[i], "", "", ""))
-            idxs.append((names[i], names[i], "", "", ""))
-
-            logstr = "Selection \"{:s}\" found with {:d} atoms."
-            sys.stdout.write(logstr.format(names[i], \
-                                           len(chosenselections[-1])))
+            chosenselections.append(uni.select_atoms(selstring))
         except:
             warnstr = \
                 "Could not select \"{:s}\". Selection will be skipped."
-            log.warning(names[i])
+            log.warning(name)
+            continue
+        
+        identifiers.append((name, "", "", ""))
+        idxs.append((name, name, "", "", ""))
+        # log the selection
+        logstr = "Selection \"{:s}\" found with {:d} atoms."
+        sys.stdout.write(logstr.format(name, len(chosenselections[-1])))
     
     return identifiers, idxs, chosenselections
 
 
-def generate_cgi_identifiers(pdb, uni, **kwargs):
+def generate_cg_identifiers(pdb, uni, **kwargs):
+    """Generate charged atoms identifiers"""
+
     cgs = kwargs["cgs"]
-    idxs = []
-    chosenselections = []
     # preprocess CGs: divide wolves and lambs
+    filter_func = lambda x: not x.startswith("!")
     for res, dic in cgs.items(): 
         for cgname, cg in dic.items():
-            # True : set of atoms that must exist (negative of negative)
-            # False: set atoms that must NOT exist (positive of negative)
-            cgs[res][cgname] =  \
-                {\
-                    True : \
-                        set(\
-                            filter(\
-                                lambda x: not x.startswith("!"),cg)), \
-                    False : \
-                        set(\
-                            [j[1:] for j in filter(\
-                                lambda x : x.startswith("!"), cg)]) \
-                }
+            # True : atoms that must exist (negative of negative)
+            true_set = set(filter(filter_func, cg))
+            # False: atoms that must NOT exist (positive of negative)
+            false_set = set([j[1:] for j in filter(filter_func, cg)])
+            # update CGs
+            cgs[res][cgname] =  {True : true_set, False : false_set}
     
-    identifiers = \
-        [(res.segid, res.resid, res.resname, "") for res in pdb.residues]
-
+    # list of identifiers
+    identifiers = [(r.segid, r.resid, r.resname, "") for r in pdb.residues]
+    # empty lists of IDs and atom selections
+    idxs = []
+    chosenselections = []
+    # atom selection string
+    selstring = "segid {:s} and resid {:d} and (name {:s})"
+    # for each residue in the Universe
     for res in uni.residues:
         segid = res.segid
         resname = res.resname
         resid = res.resid
-        setcurnames = set(res.atoms.names)
         try:
-            for cgname, cg in cgs[resname].items():
-                atoms_to_keep = cg[True]
-                condition_to_keep = \
-                    atoms_to_keep.issubset(setcurnames) \
-                    and not bool(cg[False] & setcurnames)
-                
-                if condition_to_keep:
-                    idxs.append((segid, resid, resname, cgname))
-                    selstring = \
-                        "segid {:s} and resid {:d} and (name {:s})"
-                        
-                    chosenselections.append(\
-                        uni.select_atoms(selstring.format(\
-                            segid, resid, " or name ".join(atoms_to_keep))))
-
-                    log.info(\
-                        "{:s} {:s} ({:s})".format(\
-                            chosenselections[-1][0].resid, \
-                            chosenselections[-1][0].resname, \
-                            ", ".join([a.name for a in chosenselections[-1]])))
-
+            cgs_items = cgs[resname].items()
         except KeyError:
             logstr = \
                 "Residue {:s} is not in the charge recognition set. " \
                 "Will be skipped."
             log.warn(logstr.format(resname))
+            continue
 
-    return (identifiers, chosenselections)
- 
+        # current atom names
+        setcurnames = set(res.atoms.names)
+        for cgname, cg in cgs_items:
+            # get the set of atoms to be kept
+            atoms_must_exist = cg[True]
+            atoms_must_not_exist = cg[False]
+            # set the condition to keep atoms in the current
+            # residue, i.e. the atoms that must be present are
+            # present and those which must not be present are not
+            condition_to_keep = \
+                atoms_must_exist.issubset(setcurnames) and \
+                atoms_must_not_exist.isdisjoint(setcurnames)
+            # if the condition is met
+            if condition_to_keep:
+                idx = (segid, resid, resname, cgname)
+                atoms_str = " or name ".join(atoms_must_exist)
+                selection = \
+                    uni.select_atoms(selstring.format(\
+                        segid, resid, atoms_str))
+                    
+                # update lists of IDs and atom selections
+                idxs.append(idx)
+                chosenselections.append(selection)
+                # log the selection
+                atoms_names_str = ", ".join([a.name for a in selection])
+                logstr = "{:s} {:s} ({:s})"
+                log.info(logstr.format(resid, resname, atoms_names_str))
+
+    # return identifiers, IDs and atom selections
+    return (identifiers, idxs, chosenselections)
+
+
       
-def generate_sci_identifiers(pdb, uni, **kwargs):
+def generate_sc_identifiers(pdb, uni, **kwargs):
+    """Generate side chain identifiers"""
+
+    # get the residue names list
     reslist = kwargs["reslist"]
+    # log the list of residue names
     log.info("Selecting residues: {:s}".format(", ".join(reslist)))
-    excluded_atoms = \
+    # backbone atoms must be excluded
+    backbone_atoms = \
         ["CA", "C", "O", "N", "H", "H1", "H2", \
          "H3", "O1", "O2", "OXT", "OT1", "OT2"]
-
+    # create list of identifiers
+    identifiers = \
+        [(r.segid, r.resid, r.resname, "sidechain") for r in pdb.residues]
+    # create empty lists for IDs and atom selections
     chosenselections = []
     idxs = []
-    identifiers = \
-        [(res.segid, res.resid, res.resname, "sidechain") \
-         for res in uni.residues]
+    # atom selection string
+    selstring = "segid {:s} and resid {:d} and (name {:s})"
 
     log.info("Chosen selections:")
-    
+    # for each residue name in the residue list
     for resname_in_list in reslist:
-        idxs.extend(\
-            [identifier for identifier in identifiers \
-             if identifier[2] == resname_in_list[0:3]])
-
-        for res_in_uni in uni.residues:
-            if res_in_uni.resname[0:3] == resname_in_list:
-                resid = res_in_uni.resid
-                segid = res_in_uni.segid
-                
-                kept_atoms = \
-                    [a for a in res_in_uni.atoms \
-                     if a.name not in excluded_atoms]
-                kept_atoms_names = [a.name for a in kept_atoms]
-                
-                selstring = \
-                    "segid {:s} and resid {:d} and (name {:s})"
-                
-                chosenselections.append(\
+        resname_3letters = resname_in_list[0:3]
+        # update the list of IDs with all those residues matching
+        # the current residue type
+        for identifier in identifiers:
+            if identifier[2] == resname_3letters:
+                idxs.append(identifier)
+        # for each residue in the Universe
+        for res in uni.residues:
+            if res.resname[0:3] == resname_in_list:
+                resid = res.resid
+                segid = res.segid
+                # get side chain atom names
+                sc_atoms_names = \
+                    [a.name for a in res.atoms \
+                     if a.name not in backbone_atoms]
+                sc_atoms_str = " or name ".join(sc_atoms_names)
+                sc_atoms_names_str = ", ".join(sc_atoms_names)
+                # get the side chain atom selection
+                selection = \
                     uni.select_atoms(selstring.format(\
-                        segid, resid, " or name ".join(kept_atoms_names))))
-
+                        segid, resid, sc_atoms_str))
+                chosenselections.append(selection)
+                # log the selection
                 log.info("{:s} {:s} ({:s})".format(\
-                    resid, resname, ", ".join(kept_atoms_names)))
+                    resid, resname, sc_atoms_names_str))
 
     return (identifiers, idxs, chosenselections)
     
      
 def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
-    # create an empty matrix of length identifiers x identifiers
-    fullmatrix = np.zeros((len(identifiers), len(identifiers)))
+    """Calculate side chain-side chain interaction matrix
+    (hydrophobic contacts)"""
 
+    # create a matrix of size identifiers x identifiers
+    fullmatrix = np.zeros((len(identifiers), len(identifiers)))
     # get where (index) the elements of idxs are in identifiers
     where_idxs_in_identifiers = \
         [identifiers.index(item) for item in idxs]
-
     # get where (index) each element of idxs is in idxs
-    where_idxs_in_idxs = \
-        [i for i, item in enumerate(idxs)]
-
-    # get where (i,j coordinates) each element of idxs
-    # is in the matrix having dimensions 
-    # len(identifiers) x len(identifiers) - fullmatrix
+    where_idxs_in_idxs = [i for i, item in enumerate(idxs)]
+    # get where (i,j coordinates) each element of idxs is in
+    # fullmatrix
     positions_identifiers_in_fullmatrix = \
         itertools.combinations(where_idxs_in_identifiers, 2)
-
-    # get where (i,j coordinates) each element of idxs
-    # is in the matrix having dimensions 
-    # len(idxs) x len(idxs) - percmat
+    # get where (i,j coordinates) each element of idxs is in
+    # percmat (which has dimensions len(idxs) x len(idxs))
     positions_idxs_in_percmat = \
         itertools.combinations(where_idxs_in_idxs, 2)
-
     # unpack all pairs of i,j coordinates in lists of i 
     # indexes and j indexes
     i_fullmatrix, j_fullmatrix = zip(*positions_identifiers_in_fullmatrix)
     i_percmat, j_percmat = zip(*positions_idxs_in_percmat)
-
     # use numpy "fancy indexing" to fill fullmatrix with the
     # values in percmat corresponding to each pair of elements
     fullmatrix[i_fullmatrix, j_fullmatrix] = percmat[i_percmat,j_percmat]
     fullmatrix[j_fullmatrix, i_fullmatrix] = percmat[i_percmat,j_percmat]
-
+    # return the full matrix (square matrix)
     return fullmatrix
 
 
 def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
-    fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-    lastsize = 0
-    stopsize = 0  
-    clashes = []
-    origidxs = list(idxs)
-    if percmat.shape[0] != percmat.shape[1]:
-        logstr = "percmat must be square"
-        raise ValueError(logstr)
-    if percmat.shape[0] == lastsize:
-        raise ValueError("percmat must have dimensions != 0")
-    lastsize = percmat.shape[0]
-    corrected_percmat = percmat.copy()
-    i = 0
-    while i < percmat.shape[0]:
-        rescgs = \
-            list(map(idxs.index, \
-                    filter(lambda x: x[0:3] == idxs[i][0:3], idxs)))
-        i += len(rescgs)
-        clashes.append(frozenset(rescgs)) # possibly clashing residues
+    """Calculate charged atoms interaction matrix (salt bridges)"""
     
-    corrected_percmat = np.zeros((len(clashes),len(clashes)))
-    for i in range(len(clashes)):
-        for j in range(i):
-            thisclash = 0.0
-            for k in list(clashes[i]):
-                for l in list(clashes[j]):
-                    if percmat[k][l] > thisclash:
-                        thisclash = percmat[k][l]
-            corrected_percmat[i,j] = thisclash
+    # search for residues with duplicate ID
+    duplicates = []
+    idx_index = 0
+    while idx_index < percmat.shape[0]:
+        # function to retrieve only residues whose ID (segment ID,
+        # residue ID and residue name) perfectly match the one of
+        # the residue currently under evaluation (name duplication)
+        filter_func = lambda x: x[0:3] == idxs[idx_index][0:3]
+        # get where (indexes) residues with the same ID as that
+        # currently evaluated are
+        rescgs = list(map(idxs.index, filter(filter_func, idxs)))
+        # save the indexes of the duplicates residues
+        duplicates.append(frozenset(rescgs))
+        # update the counter
+        idx_index += len(rescgs)
     
+    # if no duplicates found, it will have the same size as
+    # the original matrix 
+    corrected_percmat = np.zeros((len(duplicates), len(duplicates)))
+    # generate all the possible combinations of the sets of 
+    # duplicates (each set represents one residue who was found
+    # multiple times in percmat)
+    dup_combinations = itertools.combinations(duplicates)
+    # for each pair of sets of duplicates
+    for dup_resi, dup_resj in dup_combinations:
+        # get where residue i and residue j should be uniquely
+        # represented in the corrected matrix
+        corrected_ix_i = duplicates.index(dup_resi)
+        corrected_ix_j = duplicates.index(dup_resj)
+        # get the positions of all interactions made by each instance
+        # of residue i with each instance of residue j in percmat
+        index_i, index_j = zip(*itertools.product(dup_resi,dup_resj))
+        # use numpy "fancy indexing" to put in corrected_percmat
+        # only the strongest interaction found between instances of
+        # residue i and instances of residue j
+        corrected_percmat[corrected_ix_i,corrected_ix_j] = \
+            np.max(percmat[index_i,index_j])
+    
+    # to generate the new IDs, get the first instance of each residue
+    # (duplicates all share the same ID) and add an empty string as
+    # last element of the ID
     corrected_idxs = \
-        [idxs[list(i)[0]][0:3] + ('',) for i in list(clashes)]
-
-    # create an empty matrix of length identifiers x identifiers
+        [idxs[list(i)[0]][0:3] + ("",) for i in list(duplicates)]
+    # create a matrix of size identifiers x identifiers
     fullmatrix = np.zeros((len(identifiers), len(identifiers)))
-
     # get where (index) the elements of corrected_idxs are in identifiers
     where_idxs_in_identifiers = \
         [identifiers.index(item) for item in corrected_idxs]
-
     # get where (index) each element of corrected_idxs 
     # is in corrected_idxs
-    where_idxs_in_idxs = \
-        [i for i, item in enumerate(corrected_idxs)]
-
+    where_idxs_in_idxs = [i for i, item in enumerate(corrected_idxs)]
     # get where (i,j coordinates) each element of corrected_idxs
-    # is in the matrix having dimensions 
-    # len(identifiers) x len(identifiers) - fullmatrix
+    # is in fullmatrix
     positions_identifiers_in_fullmatrix = \
         itertools.combinations(where_idxs_in_identifiers, 2)
-
     # get where (i,j coordinates) each element of corrected_idxs
-    # is in the matrix having dimensions 
-    # len(corrected_idxs) x len(corrected_idxs) - corrected_percmat
+    # is in corrected_percmat
     positions_idxs_in_corrected_percmat = \
         itertools.combinations(where_idxs_in_idxs, 2)
-
     # unpack all pairs of i,j coordinates in lists of i 
     # indexes and j indexes
     i_fullmatrix, j_fullmatrix = \
         zip(*positions_identifiers_in_fullmatrix)
     i_corrected_percmat, j_corrected_percmat = \
         zip(*positions_idxs_in_corrected_percmat)
-
     # use numpy "fancy indexing" to fill fullmatrix with the
     # values in percmat corresponding to each pair of elements
     fullmatrix[i_fullmatrix, j_fullmatrix] = \
         corrected_percmat[i_corrected_percmat, j_corrected_percmat]
     fullmatrix[j_fullmatrix, i_fullmatrix] = \
         corrected_percmat[i_corrected_percmat, j_corrected_percmat]
-
+    # return the full matrix (square matrix)
     return fullmatrix
 
+
+############################ INTERACTIONS #############################
 
 def do_interact(identfunc, \
                 grof = None, \
@@ -823,17 +882,13 @@ def do_interact(identfunc, \
                 uni = None, \
                 co = 5.0, \
                 perco = 0.0, \
+                assignffmassesfunc = assign_ff_masses, \
+                distmatrixfunc = calc_dist_matrix, \
                 ffmasses = None, \
                 fullmatrixfunc = None, \
                 mindist = False, \
                 mindist_mode = None, \
                 **identargs):
-
-    outstr = ""
-
-    idxs = []
-    chosenselections = []
-    identifiers = []
     
     if not pdb or not uni:
         if not pdbf or not grof or not xtcf:
@@ -853,24 +908,24 @@ def do_interact(identfunc, \
         log.info("No force field assigned: masses will be guessed.")
     else:
         try:
-            assign_ff_masses(ffmasses, idxs, chosenselections)
-        except IOError as (errno, strerror):
+            assignffmassesfunc(ffmasses, chosenselections)
+        except IOError:
             logstr = \
-                "force field file not found or not readable. " \
+                "Force field file not found or not readable. " \
                 "Masses will be guessed."
             log.warning(logstr)     
 
-    percmat, distmats = \
-        calc_dist_matrix(uni = uni, \
-                         idxs = idxs,\
-                         chosenselections = chosenselections, \
-                         co = co, \
-                         mindist = mindist, \
-                         mindist_mode = mindist_mode)
+    percmat = calc_dist_matrix(uni = uni, \
+                               idxs = idxs,\
+                               chosenselections = chosenselections, \
+                               co = co, \
+                               mindist = mindist, \
+                               mindist_mode = mindist_mode)
 
     short_idxs = [i[0:3] for i in idxs]
     short_identifiers = [i[0:3] for i in identifiers]
-    outstr_toformat = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{3.1f}\n"
+    outstr = ""
+    outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{3.1f}\n"
 
     for i in range(len(percmat)):
         for j in range(0, i):
@@ -880,7 +935,7 @@ def do_interact(identfunc, \
                 res2 = short_identifiers[short_identifiers.index(short_idxs[j])]
                 segid2, resid2, resname2 = res2
                 outstr += \
-                    outstr_toformat.format(\
+                    outstr_fmt.format(\
                         segid1, resid1, resname1, idxs[i][3], \
                         segid2, resid2, resname2, idxs[j][3], \
                         percmat[i,j])
@@ -894,6 +949,8 @@ def do_interact(identfunc, \
 
     return (outstr, None)
 
+
+############################### HBONDS ################################
 
 def do_hbonds(sel1, \
               sel2, \
@@ -909,7 +966,7 @@ def do_hbonds(sel1, \
               angle = 120, \
               perco = 0.0, \
               perresidue = False, \
-              dofullmatrix = False, \
+              do_fullmatrix = False, \
               other_hbs = None):
     
     outstr = ""
@@ -972,7 +1029,7 @@ def do_hbonds(sel1, \
     log.info("Done! Finalizing . . .")
     data = h.timeseries
     fullmatrix = None
-    if dofullmatrix:
+    if do_fullmatrix:
         fullmatrix = np.zeros((len(identifiers),len(identifiers)))
 
     uni_identifiers = \
@@ -998,10 +1055,11 @@ def do_hbonds(sel1, \
                                 uni.atoms[hbond[1]].resname, \
                                 "residue")))
 
-    if perresidue or dofullmatrix:
+    if perresidue or do_fullmatrix:
 
         # compatible with Python 3
-        setlist = list(set(zip(*list(zip(*list(chain(*data))))[0:2])))
+        setlist = \
+            list(set(zip(*list(zip(*list(itertools.chain(*data))))[0:2])))
         
         identifiers_setlist = \
             list(set([get_identifier(uni = uni, hbond = hbond) \
@@ -1041,7 +1099,7 @@ def do_hbonds(sel1, \
                 res2_segid = res2[0]
                 res2_resid = res2[1]
 
-            if dofullmatrix:
+            if do_fullmatrix:
                 fullmatrix[res1_resix, res2_resix] = hb_pers
                 fullmatrix[res2_resix, res1_resix] = hb_pers
             
