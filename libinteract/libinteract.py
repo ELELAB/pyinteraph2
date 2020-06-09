@@ -33,15 +33,17 @@ if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
     log.error(errstr.format(sys.version))
     exit(1)
 
+import collections
+import itertools
 import json
 import struct
 
+#from innerloops import LoopDistances
 import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import distance_array
 
-import itertools
-from innerloops import LoopDistances
+
 
 
 ############################## POTENTIAL ##############################
@@ -160,6 +162,8 @@ def parse_sparse(potential_file, residues_list):
 
 
 def parse_atomlist(fname):
+    """Parse atom list for potential calculation."""
+
     try:
         fh = open(fname)
     except:
@@ -443,7 +447,7 @@ def calc_dist_matrix(uni, \
 
         # if we are interested in interactions between atoms
         # with different charges
-	    if mindist_mode == "diff":
+        if mindist_mode == "diff":
             sets = [(pos, neg)]
             sets_idxs = [(pos_idxs, neg_idxs)]
             sets_sizes = [(pos_sizes, neg_sizes)]
@@ -584,12 +588,6 @@ def calc_dist_matrix(uni, \
     return percmat
 
 
-def load_sys(pdb, gro, xtc):    
-    uni = mda.Universe(gro, xtc)       
-    pdb = mda.Universe(pdb)
-    return pdb, uni
-
-
 def assign_ff_masses(ffmasses, chosenselections):
     # load force field data
     ffdata = json.load(open(ffmasses), "r")
@@ -643,7 +641,7 @@ def generate_custom_identifiers(pdb, uni, **kwargs):
 
 
 def generate_cg_identifiers(pdb, uni, **kwargs):
-    """Generate charged atoms identifiers"""
+    """Generate charged atoms identifiers."""
 
     cgs = kwargs["cgs"]
     # preprocess CGs: divide wolves and lambs
@@ -696,8 +694,7 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
                 atoms_str = " or name ".join(atoms_must_exist)
                 selection = \
                     uni.select_atoms(selstring.format(\
-                        segid, resid, atoms_str))
-                    
+                        segid, resid, atoms_str))                
                 # update lists of IDs and atom selections
                 idxs.append(idx)
                 chosenselections.append(selection)
@@ -730,7 +727,7 @@ def generate_sc_identifiers(pdb, uni, **kwargs):
     idxs = []
     # atom selection string
     selstring = "segid {:s} and resid {:d} and (name {:s})"
-
+    # start logging the chosen selections
     log.info("Chosen selections:")
     # for each residue name in the residue list
     for resname_in_list in reslist:
@@ -802,22 +799,22 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     idx_index = 0
     while idx_index < percmat.shape[0]:
         # function to retrieve only residues whose ID (segment ID,
-        # residue ID and residue name) perfectly match the one of
-        # the residue currently under evaluation (name duplication)
+        # residue ID and residue name) perfectly matches the one of
+        # the residue currently under evaluation (ID duplication)
         filter_func = lambda x: x[0:3] == idxs[idx_index][0:3]
         # get where (indexes) residues with the same ID as that
         # currently evaluated are
         rescgs = list(map(idxs.index, filter(filter_func, idxs)))
-        # save the indexes of the duplicates residues
+        # save the indexes of the duplicate residues
         duplicates.append(frozenset(rescgs))
         # update the counter
         idx_index += len(rescgs)
     
-    # if no duplicates found, it will have the same size as
-    # the original matrix 
+    # if no duplicates are found, the corrected matrix will have
+    # the same size as the original matrix 
     corrected_percmat = np.zeros((len(duplicates), len(duplicates)))
     # generate all the possible combinations of the sets of 
-    # duplicates (each set represents one residue who was found
+    # duplicates (each set represents a residue who found
     # multiple times in percmat)
     dup_combinations = itertools.combinations(duplicates)
     # for each pair of sets of duplicates
@@ -875,11 +872,8 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
 ############################ INTERACTIONS #############################
 
 def do_interact(identfunc, \
-                grof = None, \
-                xtcf = None, \
-                pdbf = None, \
-                pdb = None, \
-                uni = None, \
+                pdb, \
+                uni, \
                 co = 5.0, \
                 perco = 0.0, \
                 assignffmassesfunc = assign_ff_masses, \
@@ -890,75 +884,59 @@ def do_interact(identfunc, \
                 mindist_mode = None, \
                 **identargs):
     
-    if not pdb or not uni:
-        if not pdbf or not grof or not xtcf:
-            logstr = \
-                "You have to provide either the mda.Universe " \
-                "objects or the PDB, GRO and XTC files"
-            raise ValueError(logstr)
-        
-        pdb, uni = load_sys(pdbf, grof, xtcf)
-        logstr = "mda.Universe objects generated from {:s}"
-        log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
-    
-    identifiers, idxs, chosenselections = \
-        identfunc(pdb, uni, **identargs)
-
+    # get identifiers, indexes and atom selections
+    identifiers, idxs, chosenselections = identfunc(pdb, uni, **identargs)
+    # assign atomic masses to atomic selections if not provided
     if ffmasses is None:
         log.info("No force field assigned: masses will be guessed.")
     else:
         try:
             assignffmassesfunc(ffmasses, chosenselections)
         except IOError:
-            logstr = \
-                "Force field file not found or not readable. " \
-                "Masses will be guessed."
+            logstr = "Force field file not found or not readable. " \
+                     "Masses will be guessed."
             log.warning(logstr)     
-
+    # calculate the matrix of persistences
     percmat = calc_dist_matrix(uni = uni, \
                                idxs = idxs,\
                                chosenselections = chosenselections, \
                                co = co, \
                                mindist = mindist, \
                                mindist_mode = mindist_mode)
-
+    # get shortened indexes and identifiers
     short_idxs = [i[0:3] for i in idxs]
-    short_identifiers = [i[0:3] for i in identifiers]
+    short_ids = [i[0:3] for i in identifiers]
+    # set output string and output string format
     outstr = ""
     outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{3.1f}\n"
-
-    for i in range(len(percmat)):
-        for j in range(0, i):
-            if percmat[i,j] > perco:
-                res1 = short_identifiers[short_identifiers.index(short_idxs[i])]
-                segid1, resid1, resname1 = res1
-                res2 = short_identifiers[short_identifiers.index(short_idxs[j])]
-                segid2, resid2, resname2 = res2
-                outstr += \
-                    outstr_fmt.format(\
-                        segid1, resid1, resname1, idxs[i][3], \
-                        segid2, resid2, resname2, idxs[j][3], \
-                        percmat[i,j])
-
+    # get where in the lower triangle of the matrix (it is symmeric)
+    # the value is greater than the persistence cut-off
+    where_gt_perco = np.argwhere(np.tril(percmat>perco))
+    for i, j in where_gt_perco:
+        segid1, resid1, resname1 = short_ids[short_ids.index(short_idxs[i])]
+        segid2, resid2, resname2 = short_ids[short_ids.index(short_idxs[j])]
+        outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
+                                    segid2, resid2, resname2, idxs[j][3], \
+                                    percmat[i,j])
+    # set the full matrix to None
+    fullmatrix = None
+    # compute the full matrix if requestes
     if fullmatrixfunc is not None:
-        return (outstr, \
-                fullmatrixfunc(identifiers = identifiers, \
-                               idxs = idxs, \
-                               percmat = percmat, \
-                               perco = perco))
-
-    return (outstr, None)
+        fullmatrix = fullmatrixfunc(identifiers = identifiers, \
+                                    idxs = idxs, \
+                                    percmat = percmat, \
+                                    perco = perco)
+    
+    # return output string and fullmatrix
+    return (outstr, fullmatrix)
 
 
 ############################### HBONDS ################################
 
 def do_hbonds(sel1, \
               sel2, \
-              grof = None, \
-              xtcf = None, \
-              pdbf = None, \
-              pdb = None, \
-              uni = None, \
+              pdb, \
+              uni, \
               update_selection1 = True, \
               update_selection2 = True, \
               filter_first = False, \
@@ -969,44 +947,30 @@ def do_hbonds(sel1, \
               do_fullmatrix = False, \
               other_hbs = None):
     
-    outstr = ""
-    
+    # import the hydrogen bonds analysis module
     from MDAnalysis.analysis.hbonds import hbond_analysis
-    
-    if not pdb or not uni:
-        if not pdbf or not grof or not xtcf:
-            logstr = \
-                "You have to provide either the mda.Universe " \
-                "objects or the PDB, GRO and XTC files"
-            raise ValueError(logstr)
-        
-        pdb, uni = load_sys(pdbf, grof, xtcf)
-        logstr = "mda.Universe objects generated from {:s}"
-        log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
-    
+    # check if selection 1 is valid
     try:
         sel1atoms = uni.select_atoms(sel1)
     except:
         log.error("ERROR: selection 1 is invalid")
+    # check if selection 2 is valid
     try:
         sel2atoms = uni.select_atoms(sel2)
     except:
-        log.error("ERROR: selection 2 is invalid")     
-    
-
+        log.error("ERROR: selection 2 is invalid")      
+    # check if custom donors and acceptors were provided
     if other_hbs is None:
         class Custom_HydrogenBondAnalysis(hbond_analysis.HydrogenBondAnalysis):
             pass
         hb_ff = "CHARMM27"
-
     else:  
         # custom names
         class Custom_HydrogenBondAnalysis(hbond_analysis.HydrogenBondAnalysis):
             DEFAULT_DONORS = {"customFF" : other_hbs["DONORS"]}
             DEFAULT_ACCEPTORS = {"customFF" : other_hbs["ACCEPTORS"]}
         hb_ff = "customFF"
-
-    
+    # set up the hydrogen bonds analysis
     h = Custom_HydrogenBondAnalysis(universe = uni, \
                                     selection1 = sel1, \
                                     selection2 = sel2, \
@@ -1016,119 +980,117 @@ def do_hbonds(sel1, \
                                     update_selection1 = update_selection1, \
                                     update_selection2 = update_selection2, \
                                     filter_first = filter_first)
-    
+    # inform the user about the hydrogen bond analysis parameters
     logstr = "Will use {:s}: {:s}"
     log.info(logstr.format("acceptors", \
                            ", ".join(h.DEFAULT_ACCEPTORS[hb_ff])))
     log.info(logstr.format("donors", \
                            ", ".join(h.DEFAULT_DONORS[hb_ff])))
     log.info("Running hydrogen bonds analysis . . .")
-    
-    # run hydrogen bonds analysis
+    # run the hydrogen bonds analysis
     h.run()
     log.info("Done! Finalizing . . .")
+    # get the hydrogen bonds timeseries
     data = h.timeseries
-    fullmatrix = None
-    if do_fullmatrix:
-        fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-
-    uni_identifiers = \
-        [(res.segid, res.resid, res.resname, "residue") \
-         for res in uni.residues]
-
-    identifiers = \
-        [(res.segid, res.resid, res.resname, "residue") \
-         for res in pdb.residues]
-
+    # create identifiers for the uni Universe
+    uni_identifiers = [(res.segid, res.resid, res.resname, "residue") \
+                       for res in uni.residues]
+    # create identifiers for the pdb Universe (reference)
+    identifiers = [(res.segid, res.resid, res.resname, "residue") \
+                   for res in pdb.residues]
+    # map the identifiers of the uni Universe to their corresponding
+    # indexes in the matrix
     uni_id2ix = \
         dict([(item, i) for i, item in enumerate(uni_identifiers)])
-
-
-    def get_identifier(uni, hbond):
-        # atoms are 0-indexed now
-        return frozenset(((uni.atoms[hbond[0]].segid, \
-                                uni.atoms[hbond[0]].resid, \
-                                uni.atoms[hbond[0]].resname, \
-                                "residue"), \
-                               (uni.atoms[hbond[1]].segid, \
-                                uni.atoms[hbond[1]].resid, \
-                                uni.atoms[hbond[1]].resname, \
-                                "residue")))
-
+    # utility function to get the identifier of a hydrogen bond
+    get_identifier = \
+        lambda uni, hbond: frozenset(((uni.atoms[hbond[0]].segid, \
+                                       uni.atoms[hbond[0]].resid, \
+                                       uni.atoms[hbond[0]].resname, \
+                                       "residue"), \
+                                      (uni.atoms[hbond[1]].segid, \
+                                       uni.atoms[hbond[1]].resid, \
+                                       uni.atoms[hbond[1]].resname, \
+                                       "residue")))
+    # initialize the full matrix to None
+    fullmatrix = None
+    # create the full matrix if requested
+    if do_fullmatrix:
+        fullmatrix = np.zeros((len(identifiers),len(identifiers)))
+    # set the empty output string
+    outstr = ""
     if perresidue or do_fullmatrix:
-
+        # get the number of frames in the trajectory
+        numframes = len(uni.trajectory)
+        # set the output string format
+        outstr_fmt = "{:s}{:d}:{:s}{:d}\t\t{3.2f}\n"
         # compatible with Python 3
         setlist = \
             list(set(zip(*list(zip(*list(itertools.chain(*data))))[0:2])))
-        
+        # get a list of the unique hydrogen bonds identified (between
+        # pairs of residues)
         identifiers_setlist = \
-            list(set([get_identifier(uni = uni, hbond = hbond) \
-                      for hbond in setlist]))
-
-        outdata = \
-            {identifier : 0 for identifier in identifiers_setlist}
-
+            list(set([get_identifier(uni, hbond) for hbond in setlist]))
+        # initialize an empty counter (number of occurrences
+        # for each hydrogen bond)
+        outdata = collections.Counter(\
+            {identifier : 0 for identifier in identifiers_setlist})
+        # for each frame
         for frame in data:
-            identifiers_frame = \
-                set([get_identifier(uni = uni, hbond = hbond) \
-                     for hbond in frame])
-
-            for hbond in identifiers_frame:
-                outdata[hbond] += 1
-
+            # update the counter for the occurences of each
+            # hydrogen bond in this frame
+            outdata.update(\
+                set([get_identifier(uni, hbond) for hbond in frame]))
+        # for each hydrogen bond identified in the trajectory
         for identifier, hb_occur in outdata.items():
-            numframes = len(uni.trajectory)
-            outstr_fmt = "{:s}{:d}:{:s}{:d}\t\t{3.2f}\n"
-            hb_pers = \
-                (float(hb_occur)/float(numframes))*100
+            # get the persistence of the hydrogen bond
+            hb_pers = (float(hb_occur)/float(numframes))*100
+            # convert the identifier from a frozenset to a list
+            # to get items by index (the order does not matter)
             identifier_as_list = list(identifier)
-
+            # get info about the first residue
             res1 = identifier_as_list[0]
             res1_resix = uni_id2ix[res1]
-            res1_segid = res1[0]
-            res1_resid = res1[1]
-            
-            if len(identifier) == 1:
-                res2 = res1
-                res2_resix = res1_resix
-                res2_segid = res1_segid
-                res2_resid = res1_resid
-            else:
-                res2 = identifier_as_list[1]
-                res2_resix = uni_id2ix[res2]
-                res2_segid = res2[0]
-                res2_resid = res2[1]
-
+            res1_segid, res1_resid = res1
+            # get info about the second residue (if present)
+            res2 = res1 if len(identifier) == 1 else identifier_as_list[1]
+            res2_resix = uni_id2ix[res2]
+            res2_segid, res2_resid = res2
+            # fill the full matrix if requested
             if do_fullmatrix:
                 fullmatrix[res1_resix, res2_resix] = hb_pers
                 fullmatrix[res2_resix, res1_resix] = hb_pers
-            
+            # format the output string if requesets
             if perresidue:
                 if hb_pers > perco:
-                    outstr += outstr_fmt.format(\
-                                res1_segid, res1_resid, \
-                                res1_segid, res1_resid, \
-                                hb_pers)
-        
+                    outstr += outstr_fmt.format(res1_segid, res1_resid, \
+                                                res1_segid, res1_resid, \
+                                                hb_pers)
+    
+    # do not merge hydrogen bonds per residue
     if not perresidue:
+        # count hydrogen bonds by type
         table = h.count_by_type()
         hbonds_identifiers = \
-            [list(get_identifier(uni = uni, hbond = hbond)) \
-            for hbond in table]
-
+            [list(get_identifier(uni, hbond)) for hbond in table]
+        # set output string format
         outstr_fmt = \
             "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t\t{3.2}\n"
-
+        # for each hydrogen bonds identified
         for i, hbidentifier in enumerate(hbonds_identifiers):
+            # get the hydrogen bond persistence
             hb_pers = table[i][-1]*100
+            # get donor heavy atom and acceptor atom
             donor_heavy_atom = table[i][4]
             acceptor_atom = table[i][8]
+            # consider only those hydrogen bonds whose persistence
+            # is greater than the cut-off
             if hb_pers > perco:
                 res1_segid, res1_resid, res1_resname, res1_tag = \
                     identifiers[uni_id2ix[hbidentifier[0]]]
                     
                 res2_segid, res2_resid, res2_resname, res2_tag = \
-                    identifiers[uni_id2ix[hbidentifier[0]]]
+                    identifiers[uni_id2ix[hbidentifier[1]]]
                     
                 outstr += outstr_fmt.format(\
                             res1_segid, res1_resid, res1_resname, \
@@ -1136,4 +1098,5 @@ def do_hbonds(sel1, \
                             res2_segid, res2_resid, res2_resname, \
                             acceptor_atom)
 
+    # return output string and full matrix
     return (outstr, fullmatrix)
