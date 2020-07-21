@@ -1,155 +1,55 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
 
-#    PyInteraph, a software suite to analyze interactions and interaction network in structural ensembles.
-#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, Gaetano Invernizzi, Yuval Inbar, 
-#    Matteo Lambrughi, Gideon Schreiber,  Elena Papaleo <elena.papaleo@unimib.it> <elena.papaleo@bio.ku.dk>
+#    PyInteraph, a software suite to analyze interactions and 
+#    interaction network in structural ensembles.
+#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, 
+#                       Gaetano Invernizzi, Yuval Inbar, 
+#                       Matteo Lambrughi, Gideon Schreiber, 
+#                       Elena Papaleo <elena.papaleo@unimib.it> 
+#                                     <elena.papaleo@bio.ku.dk>
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#    This program is free software: you can redistribute it 
+#    and/or modify it under the terms of the GNU General Public 
+#    License as published by the Free Software Foundation, either 
+#    version 3 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  
+#    If not, see <http://www.gnu.org/licenses/>.
 
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import argparse
+import logging as log
 import os
 import os.path
 import sys
-import logging as log
 
-vinfo = sys.version_info
-if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
-    errstr = \
-        "Your Python version is {:s}, but only " \
-        "versions >= 2.7 are supported."
-    log.error(errstr.format(sys.version))
-    exit(1)
-
-import argparse
-
-if vinfo[0] == 2:
-    import ConfigParser as cp
-else:
-    # changed name in Python3
-    import configparser as cp
-
+import MDAnalysis as mda
 import numpy as np
 from libinteract import libinteract as li
 
 
-########################## HELPER FUNCTIONS ###########################
-
-def str2file(string, fname):
-    with open(fname, "w") as fhout:
-        fhout.write(string)
-
-
-def parse_cgs_file(fname):
-    grps_str = "CHARGED_GROUPS"
-    res_str = "RESIDUES"
-    default_grps_str = "default_charged_groups"
-    
-    # create the config parser and read the config file
-    cfg = cp.ConfigParser()   
-    try:
-        cfg.read(fname)
-    except:
-        logstr = "File {:s} not readeable or not in the right format."
-        log.error(logstr.format(fname), exc_info = True)
-        exit(1)
-
-    charged_groups = \
-        [item.strip() for item \
-         in cfg.options(grps_str).remove(default_grps_str)]
-
-    default_charged = \
-        [item.strip() for item \
-         in cfg.get(grps_str, default_grps_str).split(",")]
-
-    residues = cfg.options(res_str)
-
-    group_definitions = \
-        {group : \
-            [item.strip() for item \
-             in cfg.get(grps_str, group).split(",")] \
-         for group in (charged_groups + default_charged)}
-
-    out = {}
-    try:
-        for res in residues:
-            # convert the residue name into all uppercase
-            res = res.upper()
-            # default charged groups
-            def_charged_dict = \
-                {def_charged : group_definitions[def_charged] \
-                 for def_charged in default_charged}
-            # other charged groups
-            charged_groups_dict = \
-                {item : group_definitions[item.lower()] \
-                 for item in cfg.get(res_str, res).split(",") \
-                 if item in list(group_definitions.keys())}
-
-            out[res] = def_charged_dict.copy().update(charged_groups_dict)
-
-    except:
-        logstr = \
-            "Could not parse the charged groups file {:s}. " \
-            "Are there any inconsistencies?"
-        log.error(logstr.format(fname, exc_info = True))
-        exit(1)
-    
-    return out
-
-
-def parse_hbs_file(fname):
-    hbs_str = "HYDROGEN_BONDS"
-    acceptors_str = "ACCEPTORS"
-    donors_str = "DONORS"
-    cfg = cp.ConfigParser()
-    
-    cfg = cp.ConfigParser()
-    cfg.read(fname)
-    try:
-        cfg.read(fname)
-    except:
-        logstr = "File {:s} not readeable or not in the right format."
-        log.error(logstr.format(fname), exc_info = True)
-        exit(1)
-    
-    acceptors = cfg.get(hbs_str, acceptors_str)
-    tmp = acceptors.strip().split(",")
-    acceptors = [i.strip() for i in tmp]
-
-    donors = cfg.get(hbs_str, donors_str)
-    tmp = donors.strip().split(",")
-    donors = [i.strip() for i in tmp ]
-
-    return dict(ACCEPTORS = acceptors, DONORS = donors)
-
-
 ######################## ENVIRONMENT VARIABLES ########################
 
-INSTALL_DIR = os.getenv('PYINTERAPH')
+INSTALL_DIR = os.getenv("PYINTERAPH")
 
 if not INSTALL_DIR:
     log.warn(\
         "PYINTERAPH system variable should contain the path to the " \
-        "PYINTERAPH installation directory! Defaulting to local dir")
-    INSTALL_DIR = './'
+        "PYINTERAPH installation directory! Defaulting to local dir.")
+    INSTALL_DIR = os.getcwd()
 
 if not os.path.isdir(INSTALL_DIR):
     log.warn(\
         "The path specified by system variable PYINTERAPH does not " \
-        "exist. Defaulting to local dir")
-    INSTALL_DIR = './'
+        "exist. Defaulting to local dir.")
+    INSTALL_DIR = os.getcwd()
 
-INSTALL_DIR += '/'
 sys.path.append(INSTALL_DIR)
 
 
@@ -158,7 +58,7 @@ sys.path.append(INSTALL_DIR)
 description = "Interaction calculator"
 parser = argparse.ArgumentParser(description = description)
 
-### Top/trajs ###
+#------------------------------ Top/traj -----------------------------#
 
 s_helpstr = "Topology file"
 parser.add_argument("-s", "--top", \
@@ -184,8 +84,7 @@ parser.add_argument("-r", "--ref", \
                     default = None, \
                     help = r_helpstr)
 
-
-### Analyses ###
+#------------------------------ Analyses -----------------------------#
 
 b_helpstr = "Analyze salt-bridges"
 parser.add_argument("-b", "--salt-bridges", \
@@ -212,8 +111,7 @@ parser.add_argument("-p","--potential", \
                     dest = "do_kbp", \
                     help = p_helpstr)
 
-
-### Hydrophobic clusters ###
+#------------------------ Hydrophobic contacts -----------------------#
 
 hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
 hcres_helpstr = \
@@ -267,8 +165,7 @@ parser.add_argument("--hc-graph", \
                     default = None, \
                     help = hcgraph_helpstr)
 
-
-### Salt bridges ###
+#---------------------------- Salt bridges ---------------------------#
 
 sbco_default = 4.5
 sbco_helpstr = \
@@ -311,7 +208,7 @@ parser.add_argument("--sb-graph", \
                     default = None, \
                     help = sbgraph_helpstr)
 
-sbcgfile_default = INSTALL_DIR + "charged_groups.ini"
+sbcgfile_default = os.path.join(INSTALL_DIR, "charged_groups.ini")
 sbcgfile_helpstr = "Default charged groups file (default: {:s})"
 parser.add_argument("--sb-cg-file", \
                     action = "store", \
@@ -328,15 +225,14 @@ sbmode_helpstr = \
 parser.add_argument("--sb-mode", \
                     action = "store", \
                     type = str, \
-                    dest = "cgs_mode", \
+                    dest = "sb_mode", \
                     choices = sbmode_choices, \
                     default = sbmode_default, \
                     help = sbmode_helpstr.format(\
                                 ", ".join(sbmode_choices), \
                                 sbmode_default))
 
-
-### Hydrogen bonds ###
+#--------------------------- Hydrogen bonds --------------------------#
 
 hbco_default = 3.5
 hbco_helpstr = "Donor-acceptor distance cut-off (default: {:f})"
@@ -402,7 +298,7 @@ parser.add_argument("--hb-class", \
                             ", ".join(hbclass_choices), \
                             hbclass_default))
 
-hbadfile_default = INSTALL_DIR + "hydrogen_bonds.ini"
+hbadfile_default = os.path.join(INSTALL_DIR, "hydrogen_bonds.ini")
 hbadfile_helpstr = \
     "File defining hydrogen bonds donor and acceptor atoms " \
     "(default: {:s})"
@@ -429,10 +325,9 @@ parser.add_argument("--hb-custom-group-2", \
                     default = None, \
                     help = hbcustom2_helpstr)
 
+#----------------------------- Potential -----------------------------#
 
-### Statistical potential ###
-
-kbpff_default = INSTALL_DIR + "ff.S050.bin64"
+kbpff_default = os.path.join(INSTALL_DIR, "ff.S050.bin64")
 kbpff_helpstr = "Statistical potential definition file (default: {:s})"
 parser.add_argument("--kbp-ff", "--force-field", \
                     action = "store", \
@@ -441,7 +336,7 @@ parser.add_argument("--kbp-ff", "--force-field", \
                     default = kbpff_default, \
                     help = kbpff_helpstr.format(kbpff_default))
 
-kbpatom_default = INSTALL_DIR + "kbp_atomlist"
+kbpatom_default = os.path.join(INSTALL_DIR, "kbp_atomlist")
 kbpatom_helpstr = \
     "Ordered, force-field specific list of atom names (default: {:s})"
 parser.add_argument("--kbp-atomlist", \
@@ -483,8 +378,7 @@ parser.add_argument("--kbp-kbt", \
                     default = kbpkbt_default, \
                     help = kbpkbt_helpstr.format(kbpkbt_default))
 
-
-### Miscellaneous ###
+#---------------------------- Miscellanea ----------------------------#
 
 ff_masses_dir = "ff_masses"
 masses_dir = INSTALL_DIR + ff_masses_dir
@@ -517,7 +411,6 @@ args = parser.parse_args()
 
 # Logging format
 LOGFMT = "%(levelname)s: %(message)s"
-
 # Verbose mode?
 if args.verbose:
     log.basicConfig(level = log.INFO, format = LOGFMT)
@@ -525,28 +418,28 @@ else:
     log.basicConfig(level = log.WARNING, format = LOGFMT)
 
 
-############################ CHECK INPUTS #############################
+############################## ARGUMENTS ##############################
 
+# input files
 top = args.top
 trj = args.trj
 ref = args.ref
-ffmasses = os.path.join(masses_dir, args.ffmasses)
-
+# hydrophobic contacts
 do_hc = args.do_hc
 hc_reslist = args.hc_reslist
 hc_graph = args.hc_graph
 hc_co = args.hc_co
 hc_perco = args.hc_perco
 hc_dat = args.hc_dat
-
+# salt bridges
 do_sb = args.do_sb
 cgs_file = args.cgs_file
-cgs_mode = args.cgs_mode
+sb_mode = args.sb_mode
 sb_graph = args.sb_graph
 sb_co = args.sb_co
 sb_perco = args.sb_perco
 sb_dat = args.sb_dat
-
+# hydrogen bonds
 do_hb = args.do_hb
 hbs_file = args.hbs_file
 hb_group1 = args.hb_group1
@@ -557,27 +450,31 @@ hb_co = args.hb_co
 hb_perco = args.hb_perco
 hb_angle = args.hb_angle
 hb_dat = args.hb_dat
-
+# potential
 do_kbp = args.do_kbp
 kbp_atomlist = args.kbp_atomlist
 kbp_graph = args.kbp_graph
 kbp_ff = args.kbp_ff
 kbp_kbt = args.kbp_kbt
 kbp_dat = args.kbp_dat
+# miscellanea
+ffmasses = os.path.join(masses_dir, args.ffmasses)
+
+
+############################ CHECK INPUTS #############################
 
 # top and trj must be present
 if top is None or trj is None:
     log.error("Topology and trajectory are required.")
     exit(1)
-
 # if no reference, topology is reference
 if ref is None:
     ref = top
-    log.info("Using topology as reference structure")
-
+    log.info("Using topology as reference structure.")
 # Load systems
 try:
-    pdb, uni = li.loadsys(ref, top, trj)
+    pdb = mda.Universe(ref)
+    uni = mda.Universe(top, trj)
 except ValueError:
     logstr = \
         "Could not read one of the input files, or trajectory " \
@@ -589,23 +486,20 @@ except ValueError:
 ######################## HYDROPHOBIC CONTACTS #########################
 
 if do_hc:
-    fullmatrix = None
-    if hc_graph is not None:
-        fullmatrix = li.SCFullmatrix
-
-    str_out, hc_mat_out = li.dointeract(li.generateSCIdentifiers,
-                                        pdb = pdb,
-                                        uni = uni,
-                                        co = hc_co, 
-                                        perco = hc_perco,
-                                        ffmasses = ffmasses, 
-                                        fullmatrix = fullmatrix, 
-                                        reslist = hc_reslist,
-                                        mindist = False)
+    fmfunc = None if hc_graph is None else li.calc_sc_fullmatrix
+    str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
+                                         pdb = pdb,
+                                         uni = uni,
+                                         co = hc_co, 
+                                         perco = hc_perco,
+                                         ffmasses = ffmasses, 
+                                         calc_fullmatrix_func = fmfunc,
+                                         residues_list = hc_reslist, \
+                                         salt_bridges = False)
 
     # Save .dat
-    str2file(str_out, hc_dat)
-
+    with open(hc_dat, "w") as out:
+        out.write(str_out)
     # Save .mat (if available)
     if hc_mat_out is not None:
         np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
@@ -614,32 +508,41 @@ if do_hc:
 ############################ SALT BRIDGES #############################
 
 if do_sb:
-    cgs = parse_cgs_file(cgs_file)
-    if cgs_mode == "same_charge":
-        cgs_mode = "same"
-    elif cgs_mode == "different_charge":
-        cgs_mode = "diff"
-    elif cgs_mode == "all":
-        cgs_mode = "both"
+    try:
+        cgs = li.parse_cgs_file(cgs_file)
+    except IOError:
+        logstr = "Problems reading file {:s}."
+        log.error(logstr.format(cgs_file), exc_info = True)
+        exit(1)
+    except:
+        logstr = \
+            "Could not parse the charged groups file {:s}. " \
+            "Are there any inconsistencies?"
+        log.error(logstr.format(cgs_file), exc_info = True)
+        exit(1)
+    
+    if sb_mode == "same_charge":
+        sb_mode = "same"
+    elif sb_mode == "different_charge":
+        sb_mode = "diff"
+    elif sb_mode == "all":
+        sb_mode = "both"
 
-    fullmatrix = None
-    if sb_graph is not None:
-        fullmatrix = li.CGFullmatrix
-
-    str_out, sb_mat_out = li.dointeract(li.generateCGIdentifiers,
-                                        pdb = pdb,
-                                        uni = uni,
-                                        co = sb_co, 
-                                        perco = sb_perco,
-                                        ffmasses = ffmasses, 
-                                        fullmatrix = fullmatrix, 
-                                        mindist = True,
-                                        mindist_mode = cgs_mode,
-                                        cgs = cgs)
+    fmfunc = None if sb_graph is None else li.calc_cg_fullmatrix
+    str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
+                                         pdb = pdb,
+                                         uni = uni,
+                                         co = sb_co, 
+                                         perco = sb_perco,
+                                         ffmasses = ffmasses, 
+                                         fullmatrixfunc = fmfunc, 
+                                         salt_bridges = True,
+                                         salt_bridges_mode = sb_mode,
+                                         cgs = cgs)
 
     # Save .dat
-    str2file(str_out, sb_dat)
-
+    with open(sb_dat, "w") as out:
+        out.write(str_out)
     # Save .mat (if available)
     if sb_mat_out is not None:
         np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
@@ -648,12 +551,10 @@ if do_sb:
 ########################### HYDROGEN BONDS ############################
 
 if args.do_hb:
-
-    # Handle hb groups for main chain and side chain
-    mc_sel = \
-        "backbone or name H or name H1 or name H2 or name H3 " \
-        "or name O1 or name O2 or name OXT"
-    
+    # atom selection for main chain hydrogen bonds
+    mc_sel = "backbone or name H or name H1 or name H2 or name H3 " \
+             "or name O1 or name O2 or name OXT"
+    # atom selection for side chain hydrogen bonds
     sc_sel = "protein and not ({:s})".format(mc_sel)
 
     if (hb_group1 is not None and hb_group2 is not None) \
@@ -670,32 +571,8 @@ if args.do_hb:
             errstr = \
                 "Hydrogen bond class 'custom' requires the " \
                 "definition of two interation groups. (see " \
-                "options --hb-custom-group1 and hb-custom-group2)"
+                "options --hb-custom-group1 and --hb-custom-group2)"
             log.error(errstr)
-            exit(1)
-
-        try:
-            hb_sel1 = uni.selectAtoms(hb_group1)
-        except:
-            log.error("Error: hydrogen bonds group one is not valid.")
-            exit(1)
-        
-        try:
-            hb_sel2 = uni.selectAtoms(hb_group2)
-        except:
-            log.error("Error: hydrogen bonds group two is not valid.")
-            exit(1)
-
-        if len(hb_sel1) == 0:
-            log.error(\
-                "No atoms were found in selection group 1 for " \
-                "hydrogen bonds analysis.")
-            exit(1)
-        
-        if len(hb_sel2) == 0:
-            log.error(\
-                "No atoms were found in selection group 2 for " \
-                "hydrogen bonds analysis.")
             exit(1)
 
     elif hb_class == "all":
@@ -713,35 +590,49 @@ if args.do_hb:
     elif hb_class == "mc-sc":
         hb_group1 = mc_sel
         hb_group2 = sc_sel
-    
 
+    # check if selection 1 is valid
+    try:
+        uni.select_atoms(hb_group1)
+    except:
+        log.error("Selection 1 is invalid", exc_info = True)
+        exit(1)
+    # check if selection 2 is valid
+    try:
+        uni.select_atoms(hb_group2)
+    except:
+        log.error("Selection 2 is invalid", exc_info = True)
+        exit(1)
     # check the donors-acceptors file
     try:
-        hbs = parse_hbs_file(hbs_file)
+        hbs = li.parse_hbs_file(hbs_file)
+    except IOError:
+        logstr = "Problems reading file {:s}."
+        log.error(logstr.format(hbs_file), exc_info = True)
+        exit(1)
     except:
-        log.error(\
-            "Error parsing the hydrogen bonds definition file!")
+        logstr = \
+            "Could not parse the hydrogen bonds file {:s}. " \
+            "Are there any inconsistencies?"
+        log.error(logstr.format(hbs_file), exc_info = True)
         exit(1)
 
-    fullmatrix = False
-    perresidue = False
-    if hb_graph is not None:
-        fullmatrix = True
-    
-    str_out, hb_mat_out = li.dohbonds(sel1 = hb_group1,
-                                      sel2 = hb_group2,
-                                      pdb = pdb,
-                                      uni = uni,
-                                      distance = hb_co,
-                                      angle = hb_angle,
-                                      perco = hb_perco,
-                                      perresidue = perresidue,
-                                      dofullmatrix = fullmatrix,
-                                      other_hbs = hbs)                                    
+    dofullmatrix = False if hb_graph is None else True
+    perresidue = False    
+    str_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1,
+                                       sel2 = hb_group2,
+                                       pdb = pdb,
+                                       uni = uni,
+                                       distance = hb_co,
+                                       angle = hb_angle,
+                                       perco = hb_perco,
+                                       dofullmatrix = dofullmatrix,
+                                       other_hbs = hbs, \
+                                       perresidue = False)                                    
 
     # Save .dat
-    str2file(str_out, hb_dat)
-
+    with open(hb_dat, "w") as out:
+        out.write(str_out)
     # Save .mat (if available)
     if hb_mat_out is not None:
         np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
@@ -750,31 +641,26 @@ if args.do_hb:
 ######################## STATISTICAL POTENTIAL ########################
 
 if do_kbp:
-
-    # Residue list for potential calculation - all canonical but G
+    # Residue list for potential calculation - all canonical but GLY
     kbp_residues_list = \
-        ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", "ILE", \
-         "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
+        ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", \
+         "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", \
+         "TRP", "TYR", "VAL"]
     
     kbp_atomlist = li.parse_atomlist(kbp_atomlist)
-
-    fullmatrix = False
-    if kbp_graph is not None:
-        fullmatrix = True
-    
-    kbp_seq_dist_co = 0
-    str_out, mat_out = li.dopotential(kbp_atomlist, 
-                                      residues_list = kbp_residues_list,
-                                      potential_file = kbp_ff,
-                                      seq_dist_co = kbp_seq_dist_co, 
-                                      uni = uni,
-                                      pdb = pdb,
-                                      dofullmatrix = fullmatrix,
-                                      kbT = kbp_kbt)
+    dofullmatrix = False if kbp_graph is None else True
+    str_out, kbp_mat_out = li.do_potential(kbp_atomlist = kbp_atomlist, 
+                                           residues_list = kbp_residues_list,
+                                           potential_file = kbp_ff,
+                                           uni = uni,
+                                           pdb = pdb,
+                                           seq_dist_co = 0, 
+                                           dofullmatrix = dofullmatrix,
+                                           kbT = kbp_kbt)
 
     # Save .dat
-    str2file(str_out, kbp_dat)
-    
+    with open(kbp_dat, "w") as out:
+        out.write(str_out)
     # Save .mat (if available)
     if mat_out is not None:
-        np.savetxt(kbp_graph, mat_out, fmt = "%.3f")
+        np.savetxt(kbp_graph, kbp_mat_out, fmt = "%.3f")

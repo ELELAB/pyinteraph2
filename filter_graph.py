@@ -1,81 +1,76 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
 
-#    PyInteraph, a software suite to analyze interactions and interaction network in structural ensembles.
-#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, Gaetano Invernizzi, Yuval Inbar, 
-#    Matteo Lambrughi, Gideon Schreiber,  Elena Papaleo <elena.papaleo@unimib.it> <elena.papaleo@bio.ku.dk>
+#    PyInteraph, a software suite to analyze interactions and 
+#    interaction network in structural ensembles.
+#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, 
+#                       Gaetano Invernizzi, Yuval Inbar, 
+#                       Matteo Lambrughi, Gideon Schreiber, 
+#                       Elena Papaleo <elena.papaleo@unimib.it> 
+#                                     <elena.papaleo@bio.ku.dk>
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#    This program is free software: you can redistribute it 
+#    and/or modify it under the terms of the GNU General Public 
+#    License as published by the Free Software Foundation, either 
+#    version 3 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  
+#    If not, see <http://www.gnu.org/licenses/>.
 
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from __future__ import absolute_import
+import argparse
 import sys
 import logging as log
 
-vinfo = sys.version_info
-if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
-    errstr = \
-        "Your Python version is {:s}, but only " \
-        "versions >= 2.7 are supported."
-    log.error(errstr.format(sys.version))
-    exit(1)
-
-import argparse
-
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import fsolve
-import matplotlib.pyplot as plt
-import networkx as nx
 
 
 ########################## HELPER FUNCTIONS ###########################
 
-# Parametric sigmoid function for fitting
-def sigmoid(x, x0, k, m, n): 
+def sigmoid(x, x0, k, m, n):
+    """Parametric sigmoid function for fitting.""" 
     y = m / (1 + np.exp(k*(x-x0))) + n
     return y
+ 
 
-# Parametric analytic second derivative of sigmoid 
-def seconddevsigmoid(x, x0, k, l, m): 
+def seconddevsigmoid(x, x0, k, l, m):
+    """Parametric analytic second derivative of sigmoid."""
     y = \
-        (k**2 * l * np.exp(k*(x+x0)) * (np.exp(k*x)-np.exp(k*x0)))  \
-        / (np.exp(k*x0) + np.exp(k*x))**3    
-    
+        (k**2 * l * np.exp(k*(x+x0)) * (np.exp(k*x) - np.exp(k*x0))) \
+        / (np.exp(k*x0) + np.exp(k*x))**3     
     return y
 
-# Load matrix
-def load_matrix(fname):
-    try:
-        matrix = np.loadtxt(fname)
-        return matrix
-    except:
-        # catch numpy errors and include the traceback when
-        # log
-        logstr = "Could not open file {:s}, or file in wrong format"
-        log.error(logstr.format(fname, exc_info = True))
-        exit(1)       
 
-
-# Process matrices
 def process_matrices(fnames):
-    matrices = [load_matrix(fname) for fname in fnames]
-    shapes = [matrix.shape for matrix in matrices]
+    """Load and process matrix files. """
 
+    # empty list to store matrices
+    matrices = []
+    for fname in fnames:
+        try:
+            matrices.append(np.loadtxt(fname))
+        except:
+            # catch numpy errors and include the traceback when logging
+            logstr = "Could not open file {:s}, or file in wrong format"
+            log.error(logstr.format(fname, exc_info = True))
+            exit(1) 
+    
+    # get matrix shapes
+    shapes = [matrix.shape for matrix in matrices]
+    # all matrices must have the same shape
     if len(set(shapes)) != 1:
         log.error("Matrices do not have the same shape.")
         exit(1)
-
+    # check if the matrix are square and symmetric
     for fname, matrix in zip(fnames, matrices):
         if matrix.shape[0] != matrix.shape[1]:
             logstr = "Matrix {:s} is not square"
@@ -89,25 +84,24 @@ def process_matrices(fnames):
         # all diagonal elements must be zero
         np.fill_diagonal(matrix, 0.0)
 
+    # return checked matrices
     return matrices
 
-# Get maximum cluster sizes
+
 def get_maxclustsizes(matrices, interval):
+    """Get maximum cluster sizes."""
+    
+    # empty list to store maximum cluster sizes
     maxclustsizes = []
+    # for each value in the interval
     for val in interval:
         # boolean matrices indicating where the original
         # matrices exceed val       
         boolmatrices = [matrix > val for matrix in matrices]
-        # there will be only one boolean matrix if only one
-        # input matrix was provided
-        allmatrix = boolmatrices[0]
-        if len(boolmatrices) > 1:
-            # in case more there was more than one input matrix,
-            # the final matrix will be a matrix resulting from an
-            # element-wise logical OR applied to all matrices
-            for i in range(1, len(boolmatrices)):
-                allmatrix = np.logical_or(allmatrix, boolmatrices[i])
-
+        # in case more there was more than one input matrix,
+        # the final matrix will be a matrix resulting from an
+        # element-wise logical OR applied to all matrices
+        allmatrix = np.logical_or.reduce(boolmatrices)
         # build a graph from the final boolean matrix
         G = nx.Graph(allmatrix)
         # get the maximum cluster size from the graph
@@ -116,21 +110,24 @@ def get_maxclustsizes(matrices, interval):
                 nx.algorithms.components.connected_components(G)), \
             key = len)))
 
+    # return the list of maximum cluster sizes
     return maxclustsizes
 
 
-# Perform curve fitting
 def perform_fitting(f, xdata, ydata, maxfev, p0):
+    """Perform curve fitting."""
+    
     # args will be None unless the fitting completes successfully
     args = None
     try:
+        # try to perform the curve fitting
         popt, pcov = \
             curve_fit(f = f, \
                       xdata = xdata, \
                       ydata = ydata, \
                       maxfev = maxfev, \
                       p0 = p0)
-            
+
         args = (popt[0], popt[1], popt[2], popt[3])
         
     except ValueError:
@@ -156,82 +153,78 @@ def perform_fitting(f, xdata, ydata, maxfev, p0):
     return args
 
 
-# Find point of inflexion
 def find_flex(func, x0, args, maxfev):
+    """Find the point of inflection."""
+
     # flex will be None unless the calculation completes successfully
-    flex = None
-    try:
-        flex = fsolve(func = seconddevsigmoid, \
-                      x0 = x0, \
-                      args = args, \
-                      maxfev = maxfev)    
-    except:
-        # inform the user that something went wrong during
-        # the calculation and include traceback
-        log.error(\
-            "Could not complete the calculation", \
-            exc_info = True)
-
-    return flex
+    return fsolve(func = seconddevsigmoid, \
+                  x0 = x0, \
+                  args = args, \
+                  maxfev = maxfev, \
+                  full_output = True)
 
 
-# Plot
 def perform_plotting(x, \
                      y, \
                      lower, \
                      upper, \
                      out_plot, \
                      args = None, \
-                     popt = None, \
                      flex = None, \
                      func_sigmoid = None):
+    """Plot the dependency between the persistence
+    cut-off and the size of the biggest cluster."""
 
-    plt.plot(x = x, y = y, fmt = "o")
+    # plot as dots
+    plt.plot(x, y, "o")
+    # set X-axis limit
     plt.xlim((lower, upper))
+    # set axes labels
     plt.xlabel("$p_{min}$")
     plt.ylabel("Size of the biggest cluster")
-        
-    if args is not None and popt is not None:
+    # plot sigmoidal fitting
+    if args is not None:
         xplot = np.linspace(max(x), min(x))
-        yplot = sigmoid(xplot, *popt)
-        plt.plot(x = xplot, y = yplot, label = "Fitting")
-             
-    if flex is not None and func_sigmoid is not None:
-        plt.plot(x = flex, \
-                 y = func_sigmoid(flex, *popt),\
-                 fmt = "o", \
+        yplot = func_sigmoid(xplot, *args)
+        plt.plot(xplot, yplot, label = "Fitting")
+        # plot the inflection point, if found
+        if flex is not None:
+            plt.plot(flex, \
+                     func_sigmoid(flex, *args),\
+                     "o", \
                      label = "Critical value", \
-                 color = "red")
-            
-        plt.axvline(x = flex)
+                     color = "red")
+                
+            plt.axvline(x = flex)
 
+    # plot the legend
     plt.legend(loc = "best")
+    # save the figure
     plt.savefig(out_plot)
 
 
-# Write clusters to an output file
-def write_clusters(out_clusters, x):
+def write_clusters(out_clusters, interval, maxclustsizes):
+    """Write clusters to an output file."""
+    
     try:
         fh = open(out_clusters, "w")
     except:
-        log.error(\
-            "Could not write clusters file.", \
-            exc_info = True)
+        log.error("Could not write clusters file.", exc_info = True)
         exit(1)
-        
-    fh.write("P_min\tSize of biggest cluster\n")
-    for i, xi in enumerate(x):
-        fh.write("{:.3f}\t{:d}\n".format(xi, y[i]))
-        
-    fh.close()
+    
+    with fh:
+        fh.write("P_min\tSize of biggest cluster\n")
+        for pmin, maxclustsize in zip(interval, maxclustsizes):
+            fh.write("{:.3f}\t{:d}\n".format(pmin, maxclustsize))
 
 
-# Write matrices to a .dat file (logical OR applied if 
-# multiple input matrices provided)
 def write_dat(matrices, \
               matrix_filter, \
               out_dat, \
               weights = None):
+
+    """Write matrices to a .dat file (logical OR applied if
+    multiple input matrices provided)"""
     
     if len(matrices) == 1:
         # where the mask is True, the corresponding value 
@@ -258,7 +251,8 @@ def write_dat(matrices, \
                 "Could not read weights matrix.", \
                 exc_info = True)
             exit(1)
-             
+        
+        # check the shape of the matrix of weights
         if weights_matrix.shape != out_matrix.shape:
             log.error(\
                 "Output and weight matrix have different shapes.")
@@ -268,6 +262,7 @@ def write_dat(matrices, \
                                         mask = out_matrix > 0.0, \
                                         fill_value = 0.0).filled()
 
+    # save the output matrix
     np.savetxt(out_dat, out_matrix, fmt = "%3.2f")
 
 
@@ -401,37 +396,35 @@ if __name__ == "__main__":
 
     ########################### CHECK INPUTS ##############################
 
+    # check matrices
     if options.datfiles is None:
         log.error("Input file(s) must be provided.")
         exit(1)
-
+    # check range
     if options.upper <= options.lower:
         log.error("Maximum range value must be higher than minimum.")
         exit(1)
-
+    # check step
     if options.step > (options.upper - options.lower):
         logstr = \
             "Step value must be lower than or equal to " \
-            "[upper_value - lower_value]"
+            "[upper_value - lower_value]."
         log.error(logstr)
         exit(1)
-
+    # process matrices
     matrices = process_matrices(fnames = options.datfiles)
 
 
     ####################### MAXIMUM CLUSTER SIZES #########################
 
+    # set the interval of persistence cut-offs
     interval = np.arange(options.lower, options.upper, options.step)
+    # find the maximum cluster size at each cut-off
     maxclustsizes = get_maxclustsizes(matrices = matrices, \
                                       interval = interval)
 
 
     ############################## FITTING ################################
-
-    x = interval
-    y = maxclustsizes
-    args = None
-    flex = None
 
     if options.do_fit:
         logstr = \
@@ -440,11 +433,11 @@ if __name__ == "__main__":
             'x0 = {:3.2f}\nk =  {:3.2f}\nm =  {:3.2f}\nn =  {:3.2f}\n"""'
         log.info(\
             logstr.format(options.x0, options.k, options.m, options.n))
-
         # args will be None unless the fitting completes successfully
+        args = None
         args = perform_fitting(f = sigmoid, \
-                               xdata = x, \
-                               ydata = y, \
+                               xdata = interval, \
+                               ydata = maxclustsizes, \
                                maxfev = 100000, \
                                p0 = (options.x0, options.k, \
                                      options.m, options.n))
@@ -455,38 +448,38 @@ if __name__ == "__main__":
         if args is not None:
             logstr = \
                 '"""\nDone! Calculated parameters:\nx0 = {:3.5f}\n' \
-                'k  = {:3.5f}\nl  = {:3.5f}\nm  = {:3.5f}\n"""'
+                'k  = {:3.5f}\nl  = {:3.5f}\n"""'
             log.info(logstr.format(*args))
-
             log.info(\
                 "Looking for central point of inflection (f''(x) = 0) ...")
 
             solvestart = options.x0
             log.info("Starting from: {:3.5f} ...".format(solvestart))
+            # find the inflection point
+            flex, infodict, ier, mesg = \
+                find_flex(func = seconddevsigmoid, \
+                          x0 = solvestart, \
+                          args = args, \
+                          maxfev = 5000)
 
-            # flex will be None unless the calculation completes
-            # successfully
-            flex = find_flex(func = seconddevsigmoid, \
-                             x0 = solvestart, \
-                             args = args, \
-                             maxfev = 5000)
-
-            if flex is not None:
-                log.info("Flex at {:3.2f}".format(flex))
+            # log the result of the flex search
+            if ier == 1:
+                log.info("Inflection point at {:3.2f}.".format(flex))
             else:
-                log.info("No flex found")
+                log.info("No inflection point found. " \
+                         "Reason: {:s}. Last iteration value: " \
+                         " {:3.2f}".format(mesg, flex[0]))
 
 
     ############################## PLOTTING ###############################
 
     if options.out_plot is not None:
-        perform_plotting(x = x, \
-                         y = y, \
+        perform_plotting(x = interval, \
+                         y = maxclustsizes, \
                          lower = options.lower, \
                          upper = options.upper, \
                          out_plot = options.out_plot, \
                          args = args, \
-                         popt = popt, \
                          flex = flex, \
                          func_sigmoid = sigmoid)
 
@@ -495,7 +488,8 @@ if __name__ == "__main__":
 
     if options.out_clusters is not None:
         write_clusters(out_clusters = options.out_clusters, \
-                       x = x)
+                       interval = interval, \
+                       maxclustsizes = maxclustsizes)
 
 
     ############################# OUTPUT DAT ##############################

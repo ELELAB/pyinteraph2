@@ -1,55 +1,63 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
 
-#    PyInteraph, a software suite to analyze interactions and interaction network in structural ensembles.
-#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, Gaetano Invernizzi, Yuval Inbar,
-#    Matteo Lambrughi, Gideon Schreiber,  Elena Papaleo <elena.papaleo@unimib.it> <elena.papaleo@bio.ku.dk>
+#    PyInteraph, a software suite to analyze interactions and 
+#    interaction network in structural ensembles.
+#    Copyright (C) 2013 Matteo Tiberti <matteo.tiberti@gmail.com>, 
+#                       Gaetano Invernizzi, Yuval Inbar, 
+#                       Matteo Lambrughi, Gideon Schreiber, 
+#                       Elena Papaleo <elena.papaleo@unimib.it> 
+#                                     <elena.papaleo@bio.ku.dk>
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#    This program is free software: you can redistribute it 
+#    and/or modify it under the terms of the GNU General Public 
+#    License as published by the Free Software Foundation, either 
+#    version 3 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  
+#    If not, see <http://www.gnu.org/licenses/>.
 
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
 
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from __future__ import absolute_import
-import sys
-import logging as log
 import argparse
+import logging as log
+import os
+import os.path
 import re
+import sys
 
-vinfo = sys.version_info
-if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
-    errstr = \
-        "Your Python version is {:s}, but only " \
-        "versions >= 2.7 are supported."
-    log.error(errstr.format(sys.version))
-    exit(1)
-
-import numpy as np
-import networkx as nx
-import MDAnalysis as mda
 from Bio import PDB
+import MDAnalysis as mda
+import networkx as nx
+import numpy as np
 
 
 ############################## FUNCTIONS ##############################
 
-def resstring2resnum(x):
-    # using re to get rid of the bug where residues having a number
-    # in their name (i.e. SP2) caused the resnum to include such number
+def get_resnum(resstring):
+    """Get the residue number from the string representing the
+    residue."""
+
+    # using re to get rid of a bug where residues having a number
+    # in their name (i.e. SP2) caused the residue number to include 
+    # such number.
     # Here, only the first instance of consecutive digits is returned
-    # (the actual residue number)
-    return re.findall(r"\d+", x)[0]
+    # (the actual residue number).
+    return re.findall(r"\d+", resstring)[0]
 
 
 def replace_bfac_column(pdb, vals, pdb_out):
+    """Replace the column containing B-factors in a PDB with
+    custom values."""
+
+    # create tthe PDB parser
     parser = PDB.PDBParser()
+    # get the protein structure
     structure = parser.get_structure("protein", pdb)
     io = PDB.PDBIO()
     chain_offset = 0
@@ -57,78 +65,74 @@ def replace_bfac_column(pdb, vals, pdb_out):
         for chain in model:
             for i, residue in enumerate(chain):
                 for atom in residue:
+                    # set the custom value
                     atom.set_bfactor(float(vals[i+chain_offset]))
             chain_offset += len(chain)
-
+    # set the structure for the output
     io.set_structure(structure)
+    # save the structure to a new PDB file
     io.save(pdb_out)
 
 
 def build_graph(fname, pdb = None):
+    """Build a graph from the provided matrix"""
+
     try:
         data = np.loadtxt(fname)
     except:
-        errstr = \
-            "Could not load file {:s} or wrong file format. Exiting..."
-        # log the full numpy stack trace with exc_info
-        log.error(errstr.format(fname), exc_info = True)
-        exit(1)
-
+        errstr = "Could not load file {:s} or wrong file format."
+        raise ValueError(errstr.format(fname))
+    # if the user provided a reference structure
     if pdb is not None:
         try:
             # generate a Universe object from the PDB file
-            # (use the PDB for both the 'topology' and 'trajectory'
-            # arguments necessary to create the Universe)
-            u = mda.Universe(pdb, pdb)
+            u = mda.Universe(pdb)
         except Exception:
             errstr = \
-                "Exception caught during creation of the Universe " \
-                "object. Exiting..."
-            # log the full MDAnalysis stack trace with exc_info
-            log.error(errstr, exc_info = True)
-            exit(1)
-        
+                "Exception caught during creation of the Universe."
+            raise ValueError(errstr)      
+        # generate identifiers for the nodes of the graph
+        idfmt = "{:s}-{:d}{:s}"
         identifiers = \
-            ["{:s}-{:d}{:s}".format(r.segment.segid, \
-                                    r.resnum, \
-                                    r.resname) \
+            [idfmt.format(r.segment.segid, r.resnum, r.resname) \
              for r in u.residues]
- 
+    # if the user did not provide a reference structure
     else:
         # generate automatic identifiers going from 1 to the
         # total number of residues considered
-        identifiers = [str(name) for name in range(1,data.shape[0]+1)]
+        identifiers = [str(i) for i in range(1, data.shape[0]+1)]
     
     # generate a graph from the data loaded
     G = nx.Graph(data)
-
     # set the names of the graph nodes (in place)
     node_names = dict(zip(range(data.shape[0]), identifiers))
     nx.relabel_nodes(G, mapping = node_names, copy = False)
-
+    # return the idenfiers and the graph
     return identifiers, G
 
 
 def get_connected_components(G):
+    """Get the connected components of the graph."""
+    
     return list(nx.connected_components(G))
 
 
 def write_connected_components(ccs, outfile = None):
+    """Write the connected components of the graph."""
     
-    # outfile = None makes it output to the console
+    # outfile = None makes it output to the standard output
     # (PyInteraph 1 behavior)
 
-    logstr = "Connected component {:d}\n ({:d} elements) {:s}"
-
+    # output string format
+    outstr = "Connected component {:d}\n ({:d} elements) {:s}\n"
     if outfile is None:
-        for i, cc in enumerate(ccs):
-            ### TODO: output to a file, not print
-            print(logstr.format(\
-                    i + 1, \
-                    len(cc), \
-                    ", ".join(sorted(cc, key = resstring2resnum))))
-
+        for numcc, cc in enumerate(ccs):
+            sys.stdout.write(outstr.format(\
+                numcc + 1, \
+                len(cc), \
+                ", ".join(sorted(cc, key = get_resnum))))
     else:
+        ### TODO: output to a file, not standard output
         raise NotImplementedError
 
 
@@ -136,56 +140,64 @@ def write_connected_components_pdb(identifiers, \
                                    ccs, \
                                    top, \
                                    components_pdb, \
-                                   conversion_func):
+                                   replace_bfac_func):
+    """Write a PDB file with the input structure but the B factor
+    column replaced for each residue with the number of the
+    connected component it belongs to."""
     
-    conn_comp_array = np.array(identifiers)
+    # create an empty array for the custom B factors
+    conn_comp_array = np.zeros(len(identifiers))
     for i, cc in enumerate(ccs):
         for res in cc:
             conn_comp_array[identifiers.index(res)] = i+1
     # write a PDB file identical to the reference PDB file
     # but with the b-factor column filled with the number of
     # the connected component a residue belongs to
-    conversion_func(pdb = top, \
-                    vals = conn_comp_array, \
-                    pdb_out = components_pdb)
+    replace_bfac_func(pdb = top, \
+                      vals = conn_comp_array, \
+                      pdb_out = components_pdb)
 
 
 def get_hubs(G, min_k = 3, sorting = None):
+    """Get hubs in the graph."""
+
+    # get the hubs
     hubs = {node : k for node, k in G.degree() if k >= min_k}
-    
+    # if no hubs were found
     if len(list(hubs.keys())) == 0:
         # warn the user that no hubs have been found
         logstr = \
             "No hubs with connectivity >= {:d} have been found."
-        log.warning(logstr.format(min_k))
-        
-        return hubs
-    
-    else:
-        if sorting is None:
-            sorted_hubs = hubs
-        elif sorting == "ascending":
-            sorted_hubs = \
-                sorted(hubs.items(), \
-                       key = lambda item: item[1], \
-                       reverse = False)
-        elif sorting == "descending":
-                sorted(hubs.items(), \
-                       key = lambda item: item[1], \
-                       reverse = True)
-
-        return dict(sorted_hubs)
+        log.warning(logstr.format(min_k))    
+        return
+    # if no sorting was requested
+    if sorting is None:
+        sorted_hubs = hubs
+    # sort the hubs in ascending order of degree
+    elif sorting == "ascending":
+        sorted_hubs = sorted(hubs.items(), \
+                             key = lambda item: item[1], \
+                             reverse = False)
+    # sort hubs in descending order of degree
+    elif sorting == "descending":
+        sorted_hubs = sorted(hubs.items(), \
+                             key = lambda item: item[1], \
+                             reverse = True)
+    # return the sorted list of hubs
+    return sorted_hubs
 
 
 def write_hubs(hubs, outfile = None):
+    """Write the hubs."""
 
+    # outfile = None makes it output to the standard output
+    # (PyInteraph 1 behavior)
     if outfile is None:
-        ### TODO: output to a file, not print
-        print("Hubs:\n\tNode\tk{:s}")
+        sys.stdout.write("Hubs:\n\tNode\tk\n")
         for hub, k in hubs:
-            print("\t{:s}\t{:d}".format(hub, k))
-
+            sys.stdout.write("\t{:s}\t{:d}\n".format(hub, k))
     else:
+        ### TODO: output to a file, not print
         raise NotImplementedError
 
 
@@ -193,125 +205,125 @@ def write_hubs_pdb(identifiers, \
                    hubs, \
                    top, \
                    hubs_pdb, \
-                   conversion_func):
+                   replace_bfac_func):
+    """Write a PDB file with the input structure but the B factor
+    column replaced for each residue with the degree of that
+    residue if the residue is a hub, zero otherwise."""
     
     hubs_array = np.zeros(len(identifiers))
+    hubs = dict(hubs)
     for index, node in enumerate(identifiers):
-        if node in set(hubs.keys()):
-            # check if the node is a hub
-            # iterate and check over a set()
-            # of keys because it is faster than
-            # a list (keys() returns a list
-            # in python2)
+        if node in hubs.keys():
+            # check if the node is a hub by checking
+            # if it is in the keys of the hubs dictionary
             hubs_array[index] = hubs[node]
+    
     # write a PDB file identical to the reference PDB file
     # but with the b-factor column filled with the degree of
     # a residue if it is a hub, zero otherwise       
-    conversion_func(pdb = args.top, \
-                    vals = hubs_array, \
-                    pdb_out = args.hubs_pdb) 
+    replace_bfac_func(pdb = top, \
+                      vals = hubs_array, \
+                      pdb_out = hubs_pdb) 
 
 
 def get_paths(G, source, target, maxl, sort_paths_by):
-    if source is None or target is None:
-        log.error(\
-            "You must specify source and target residues. Exiting...")
-        exit(1)
-        
+    """Get all the shortest paths between a source and a target
+    node in the graph."""
+    
+    # both nodes must be in the graph
     if not source in G.nodes() or not target in G.nodes():
-        # maybe logstring should reflect better the error?
-        log.error(\
-            "Source or target residues have been badly specified. " \
-            "Exiting...")
-        exit(1)
-        
+        errstr = "Source or target residues have been badly specified."
+        raise ValueError(errstr)
+    # check if there are any paths
     try:
         shortest = nx.algorithms.shortest_path(G = G, \
                                                 source = source, \
                                                 target = target)
     except nx.NetworkXNoPath:
         log.warning("No paths exist between selected residues.")
-        exit(1)
-
+        # return None since no paths were found
+        return
+    # check if the shortest is within the length cut-off
     if len(shortest) > maxl:
         warnstr = \
             "No paths were found between the given nodes at the " \
             "given cut-off. Shortest path length between these two " \
             "nodes is {:d}"
         log.warning(warnstr.format(len(shortest)))
-        exit(1)
-        
-    else:
-        # calculate all the paths
-        paths = \
-            list(nx.algorithms.simple_paths.all_simple_paths(\
-                                                    G = G, \
-                                                    source = source, \
-                                                    target = target, \
-                                                    cutoff = maxl))
+        # return None since no path of the desired maximum
+        # length were found
+        return
 
-        lengths = [len(p) for p in paths]
-            
-        # calculate the sum of their weights
-        sum_weights = \
-            [np.sum([G[p[i]][p[i+1]]["weight"] \
-                    for i in range(len(p)-1)]) \
-            for p in paths]
-            
-        # calculate the average of their weights
-        avg_weights = \
-            [np.average([G[p[i]][p[i+1]]["weight"] \
-                for i in range(len(p)-1)]) \
-            for p in paths]
-
-        # sort the paths
-        full_paths = zip(paths, lengths, sum_weights, avg_weights)        
-        reverse = True        
-        if sort_paths_by == "length":
-            key = lambda x: x[1]
-            reverse = False            
-        elif sort_paths_by == "cumulative_weight":
-            key = lambda x: x[2]
-        elif sort_paths_by == "avg_weight":
-            key = lambda x: x[3]
-
-        sorted_paths = sorted(full_paths, \
-                              key = key, \
-                              reverse = reverse)
-
-        return sorted_paths
+    # calculate all the paths
+    paths = list(nx.algorithms.simple_paths.all_simple_paths(\
+                    G = G, \
+                    source = source, \
+                    target = target, \
+                    cutoff = maxl))
+    # get the length of each path
+    lengths = [len(p) for p in paths]         
+    # calculate the sum of the each path's weights
+    sum_weights = \
+        [np.sum([G[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)]) \
+         for p in paths]           
+    # calculate the average of each path's weights
+    avg_weights = \
+        [np.average([G[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)]) \
+         for p in paths]
+    # sort the paths
+    full_paths = zip(paths, lengths, sum_weights, avg_weights)
+    # sort by length (ascending, shortest paths first)
+    if sort_paths_by == "length":
+        key = lambda x: x[1]
+        reverse = False
+    # sort by cumulative weight (descending, paths with highest
+    # cumulative weight first)  
+    elif sort_paths_by == "cumulative_weight":
+        key = lambda x: x[2]
+        reverse = True
+    # sort by average weight (descending, paths with highest
+    # average weight first)
+    elif sort_paths_by == "avg_weight":
+        key = lambda x: x[3]
+        reverse = True
+    # return the sortes list of paths
+    return sorted(full_paths, key = key, reverse = reverse)
 
 
 def write_paths(paths, outfile = None):
+    """Write the paths."""
 
     # write the paths found to the output in a human-readable format
     if outfile is None:
-        print("Path #\tLength\tSum of weights\tAverage weight\tPath")
-        pathfmt_str = "{:d}\t{:d}\t{:.1f}\t\t{:.1f}\t\t{:s}"
+        sys.stdout.write(\
+            "Path #\tLength\tSum of weights\tAverage weight\tPath\n")
+        pathfmt_str = "{:d}\t{:d}\t{:.1f}\t\t{:.1f}\t\t{:s}\n"
         for index, path in enumerate(paths):
-            print(\
+            sys.stdout.write(\
                 pathfmt_str.format(\
                     index+1, path[1], path[2], path[3], ",".join(path[0])))
 
     else:
+        ### TODO: output to a file, not print
         raise NotImplementedError
 
 
-def write_paths_matrices(identifiers, G, paths, fmt):
+def write_paths_matrices(identifiers, G, paths, fmt, where):
+    """For each path, write a matrix with all edges erased apart
+    from those constituting the path."""
+    
     for index, path in enumerate(paths):
         # for each path...
-        path_matrix = np.zeros(nx.adjacency_matrix(G).shape)
+        path_mat = np.zeros(nx.adjacency_matrix(G).shape)
         for node in range(len(path[0])-1):
             # for each node in the path...
             x = identifiers.index(path[0][node])
             y = identifiers.index(path[0][node+1])
-            path_matrix[x,y] = \
-                G[path[0][node]][path[0][node+1]]["weight"]
-            path_matrix[y,x] = \
-                G[path[0][node+1]][path[0][node]]["weight"]
+            path_mat[x,y] = G[path[0][node]][path[0][node+1]]["weight"]
+            path_mat[y,x] = G[path[0][node+1]][path[0][node]]["weight"]
         # save the matrix
-        matrix_file = "path{:s}.dat".format(index+1)
-        np.savetxt(matrix_file, path_matrix, fmt = fmt)
+        mat_file = os.path.join(where, "path{:d}.dat".format(index+1))
+        np.savetxt(mat_file, path_mat, fmt = fmt)
     
 
 
@@ -423,40 +435,48 @@ if __name__ == "__main__":
 
     if args.dat is None:
         # Exit if the adjacency matrix was not speficied
-        log.error("Graph adjacency matrix must be specified. Exiting...")
+        log.error("Graph adjacency matrix must be specified. Exiting ...")
         exit(1)
 
-    if (args.components_pdb is None or args.hubs_pdb is None) \
+    if (args.components_pdb is not None or args.hubs_pdb is not None) \
     and args.top is None:
         # Exit if the user requested the PDB files with connected
         # components and hubs but did not provide a reference PDB
         # file
         log.error(\
-            "A PDB reference file must be supplied with options " \
-            "-cb and -ub. Exiting...")
+            "A PDB reference file must be supplied if using options " \
+            "-cb and -ub. Exiting ...")
         exit(1)
 
     # build the graph
-    identifiers, G = build_graph(args.dat, pdb = args.top)
+    try:
+        identifiers, G = build_graph(args.dat, pdb = args.top)
+    except ValueError:
+        errstr = \
+            "Could not build the graph from the files provided. " \
+            "Exiting ..."
+        log.error(errstr, exc_info = True)
+        exit(1)
+    # get graph nodes and edges
     nodes = G.nodes()
     edges = G.edges()
-
-    logstr = "Graph loaded! {:d} nodes, {:d} edges"
-    log.info(logstr.format(len(nodes), len(edges)))
-    logstr = "Node list: {:s}"
-    log.info(\
-        logstr.format(\
-            "\t".join([node for node in sorted(nodes, key = resstring2resnum)])))
+    # log about the graph building
+    outstr = "Graph loaded! {:d} nodes, {:d} edges\n"
+    sys.stdout.write(outstr.format(len(nodes), len(edges)))
+    outstr = "Node list: \n{:s}\n"
+    sys.stdout.write(outstr.format(\
+        "\n".join([node for node in sorted(nodes, key = get_resnum)])))
 
 
     ###################### CONNECTED COMPONENTS #######################
 
-    if args.do_components:
+    if args.do_components: 
         # calculate the connected components
         ccs = get_connected_components(G)
         # write the connected components
         write_connected_components(ccs = ccs, outfile = None)
-
+        # if the user requested the PDB file with the connected
+        # components
         if args.components_pdb is not None:
             # write PDB file with B-factor column replaced
             write_connected_components_pdb(\
@@ -464,7 +484,7 @@ if __name__ == "__main__":
                 ccs = ccs, \
                 top = args.top, \
                 components_pdb = args.components_pdb, \
-                conversion_func = replace_bfac_column)
+                replace_bfac_func = replace_bfac_column)
 
 
     ############################## HUBS ###############################
@@ -474,35 +494,50 @@ if __name__ == "__main__":
         hubs = get_hubs(G = G, \
                         min_k = args.hubs_cutoff, \
                         sorting = "descending")
-        # write the hubs
-        write_hubs(hubs = hubs, outfile = None)
-        
-        if args.hubs_pdb is not None:
-            # write PDB file with B-factor column replaced
-            write_hubs_pdb(\
-                identifiers = identifiers, \
-                hubs = hubs, \
-                top = args.top, \
-                hubs_pdb = args.hubs_pdb, \
-                conversion_func = replace_bfac_column)
+        # if hubs have been found
+        if hubs is not None:
+            # write the hubs
+            write_hubs(hubs = hubs, outfile = None)
+            # if the user requested the PDB file with the hubs
+            if args.hubs_pdb is not None:
+                # write PDB file with B-factor column replaced
+                write_hubs_pdb(\
+                    identifiers = identifiers, \
+                    hubs = hubs, \
+                    top = args.top, \
+                    hubs_pdb = args.hubs_pdb, \
+                    replace_bfac_func = replace_bfac_column)
 
 
     ############################## PATHS ##############################
             
-    if args.do_paths:
-        # calculate paths between a pair of residues
-        paths = get_paths(G = G, \
-                          source = args.source, \
-                          target = args.target, \
-                          max = args.maxl, \
-                          sort_paths_by = args.sort_paths_by)
-        # write the paths
-        write_paths(paths = paths, outfile = None)
-            
-        if args.write_paths:
-            # write paths as matrices
-            write_paths_matrices(identifiers = identifiers, \
-                                 G = G, \
-                                 paths = paths, \
-                                 fmt = "%.1f")
+    if args.do_paths:    
+        # source and target must be specified
+        if args.source is None or args.target is None:
+            log.error(\
+                "You must specify source and target residues. " \
+                "Exiting...")
+            exit(1)
+        try:
+            # calculate paths between a pair of residues
+            paths = get_paths(G = G, \
+                              source = args.source, \
+                              target = args.target, \
+                              maxl = args.maxl, \
+                              sort_paths_by = args.sort_paths_by)
+        except ValueError:
+            errstr = "Could not compute paths."
+            log.error(errstr, exc_info = True)     
+        # if paths have been found
+        if paths is not None:
+            # write the paths
+            write_paths(paths = paths, outfile = None)
+            # if path matrices have been requested           
+            if args.write_paths:
+                # write paths as matrices
+                write_paths_matrices(identifiers = identifiers, \
+                                     G = G, \
+                                     paths = paths, \
+                                     fmt = "%.1f", \
+                                     where = os.getcwd())
 
