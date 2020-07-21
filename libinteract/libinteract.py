@@ -86,11 +86,7 @@ class Sparse:
 
     def add_bin(self, bin):
         self.bins[''.join(bin[0:4])] = bin[4]
-
-    def add_bins(self, bins):
-        for i in bins:
-            self.bins[str(bins[0:4])] = bins[4]
-    
+   
     def num_bins(self):
         return len(self.bins)
 
