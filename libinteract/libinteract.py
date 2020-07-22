@@ -90,8 +90,9 @@ class Sparse:
     def num_bins(self):
         return len(self.bins)
 
+kbp_residues_list = ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL"]
 
-def parse_sparse(potential_file, residues_list):
+def parse_sparse(potential_file):
     header_fmt  = '400i'
     header_struct = struct.Struct(header_fmt)
     header_size = struct.calcsize(header_fmt)
@@ -104,7 +105,7 @@ def parse_sparse(potential_file, residues_list):
     pointer = 0
     sparses = []
 
-    fh = open(potential_file)
+    fh = open(potential_file, 'rb')
     data = fh.read()
     fh.close()
 
@@ -128,9 +129,10 @@ def parse_sparse(potential_file, residues_list):
             
             # for every bin ...
             for k in range(this_sparse.num):
-                this_sparse.add_bin(\
-                    bin_struct.unpack(\
-                        data[pointer : pointer + bin_size]))
+                tmp_struc = bin_struct.unpack(\
+                    data[pointer : pointer + bin_size])
+                tmp_struc = tuple([ s.decode('ascii') for s in tmp_struc[0:4] ] + [tmp_struc[4]])
+                this_sparse.add_bin(tmp_struc)
                 pointer += bin_size
             sparses[-1].append(this_sparse)
     
@@ -142,17 +144,16 @@ def parse_sparse(potential_file, residues_list):
         exit(1)
 
     sparses_dict = {}
-    for i in range(len(residues_list)):
-        sparses_dict[residues_list[i]] = {}
+    for i in range(len(kbp_residues_list)):
+        sparses_dict[kbp_residues_list[i]] = {}
         for j in range(i):            
-            sparses_dict[residues_list[i]][residues_list[j]] = {}
-            
+            sparses_dict[kbp_residues_list[i]][kbp_residues_list[j]] = {}
     for s in sparses:
         if s:
-            sparses_dict[residues_list[s[0].r1]][residues_list[s[0].r2]] = s[0]
-    
+            sparses_dict[kbp_residues_list[s[0].r1]][kbp_residues_list[s[0].r2]] = s[0]
+   
     logstr = "Done parsing file {:s}!"
-    sys.stodout.write(logstr.format(potential_file))
+    sys.stdout.write(logstr.format(potential_file))
     
     return sparses_dict
 
