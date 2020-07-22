@@ -18,6 +18,9 @@ PDB_FNAME = os.path.join(TEST_DIR, "files/pdb.pdb")
 MATRICES_FNAMES = \
     [os.path.join(MATRICES_DIR, mat) for mat in os.listdir(MATRICES_DIR)]
 
+
+######################## MODULE-LEVEL FIXTURES ########################
+
 @pytest.fixture(\
     scope = "module", \
     params = MATRICES_FNAMES)
@@ -41,7 +44,11 @@ def results_dir():
     return RESULTS_DIR
 
 
+######################### FILTER GRAPH TESTS ##########################
+
 class TestFilterGraph(object):
+
+    #--------------------------- Fixtures ----------------------------#
 
     @pytest.fixture(scope = "class")
     def maxfev(self):
@@ -92,6 +99,8 @@ class TestFilterGraph(object):
     def weights(self):
         return None
 
+    #---------------------------- Tests ------------------------------#
+
     @pytest.mark.parametrize("x, x0, k, m, n, expected", \
                             [(1.0, 20.0, 2.0, 10.0, 20.0, 30.0)])
     def test_sigmoid(self, x, x0, k, m, n, expected):
@@ -102,11 +111,13 @@ class TestFilterGraph(object):
     @pytest.mark.parametrize("x, x0, k, l, m, expected", \
                              [(1.0, 1.0, 1.0, 1.0, 1.0, 0.0)])
     def test_seconddevsigmoid(self, x, x0, k, l, m, expected):
-        seconddev = fg.seconddevsigmoid(x = x, x0 = x0, k = k, l = l, m = m)
+        seconddev = fg.seconddevsigmoid(x = x, x0 = x0, k = k, \
+                                        l = l, m = m)
         assert_almost_equal(actual = seconddev, \
                             desired = expected)
 
-    def test_perform_plotting(self, interval, maxclustsizes, args, flex, results_dir):
+    def test_perform_plotting(self, interval, maxclustsizes, \
+                              args, flex, results_dir):
         out_plot = os.path.join(results_dir, "test_plot.pdf")
         return fg.perform_plotting(x = interval, \
                                    y = maxclustsizes, \
@@ -117,14 +128,16 @@ class TestFilterGraph(object):
                                    flex = flex, \
                                    func_sigmoid = fg.sigmoid)
 
-    def test_write_clusters(self, interval, maxclustsizes, results_dir):
+    def test_write_clusters(self, interval, maxclustsizes, \
+                            results_dir):
         out_clusters = os.path.join(results_dir, "test_clusters.dat")
         return fg.write_clusters(out_clusters = out_clusters, \
                                  interval = interval, \
                                  maxclustsizes = maxclustsizes)
 
 
-    def test_write_dat(self, matrices, matrix_filter, weights, results_dir):
+    def test_write_dat(self, matrices, matrix_filter, \
+                       weights, results_dir):
         out_dat = os.path.join(results_dir, "test_outmatrix.dat")
         return fg.write_dat(matrices = matrices, \
                             matrix_filter = matrix_filter, \
@@ -132,7 +145,11 @@ class TestFilterGraph(object):
                             weights = weights)
 
 
+######################## GRAPH ANALYSIS TESTS #########################
+
 class TestGraphAnalysis(object):
+
+    #--------------------------- Fixtures ----------------------------#
 
     @pytest.fixture(\
         scope = "class", \
@@ -180,6 +197,7 @@ class TestGraphAnalysis(object):
                             maxl = maxl, \
                             sort_paths_by = sort_paths_by)
 
+    #---------------------------- Tests ------------------------------#
 
     def test_get_resnum(self, resstring):
         return ga.get_resnum(resstring = resstring)
@@ -188,36 +206,38 @@ class TestGraphAnalysis(object):
         return ga.write_connected_components(ccs = ccs, \
                                              outfile = None)
 
-    def test_write_connected_components_pdb(self, identifiers, ccs, pdb_fname, results_dir):
+    def test_write_connected_components_pdb(self, identifiers, ccs, \
+                                            pdb_fname, results_dir):
         components_pdb = os.path.join(results_dir, "test_ccs.pdb")
-        return ga.write_connected_components_pdb(identifiers = identifiers, \
-                                                 ccs = ccs, \
-                                                 top = pdb_fname, \
-                                                 components_pdb = components_pdb, \
-                                                 replace_bfac_func = ga.replace_bfac_column)
+        return ga.write_connected_components_pdb(\
+                    identifiers = identifiers, \
+                    ccs = ccs, \
+                    ref = pdb_fname, \
+                    components_pdb = components_pdb, \
+                    replace_bfac_func = ga.replace_bfac_column)
 
     def test_write_hubs(self, hubs):
         return ga.write_hubs(hubs = hubs, \
                              outfile = None)
 
-    def test_write_hubs_pdb(self, identifiers, hubs, pdb_fname, results_dir):
+    def test_write_hubs_pdb(self, identifiers, hubs, \
+                            pdb_fname, results_dir):
         hubs_pdb = os.path.join(results_dir, "test_hubs.pdb")
-        return ga.write_hubs_pdb(identifiers = identifiers, \
-                                 hubs = hubs, \
-                                 top = pdb_fname, \
-                                 hubs_pdb = hubs_pdb, \
-                                 replace_bfac_func = ga.replace_bfac_column)
+        return ga.write_hubs_pdb(\
+                identifiers = identifiers, \
+                hubs = hubs, \
+                ref = pdb_fname, \
+                hubs_pdb = hubs_pdb, \
+                replace_bfac_func = ga.replace_bfac_column)
 
     def test_write_paths(self, paths):
         return ga.write_paths(paths = paths, \
                               outfile = None)
 
-    def test_write_paths_matrices(self, identifiers, G, paths, results_dir):
+    def test_write_paths_matrices(self, identifiers, \
+                                  G, paths, results_dir):
         return ga.write_paths_matrices(identifiers = identifiers, \
                                        G = G, \
                                        paths = paths, \
                                        fmt = "%.1f", \
                                        where = results_dir)
-
-
-
