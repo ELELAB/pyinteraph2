@@ -588,7 +588,8 @@ def calc_dist_matrix(uni, \
 
 def assign_ff_masses(ffmasses, chosenselections):
     # load force field data
-    ffdata = json.load(open(ffmasses), "r")
+    with open(ffmasses, 'r') as fh:
+        ffdata = json.load(fh)
     for selection in chosenselections:
         # for each atom
         for atom in selection:
@@ -641,15 +642,18 @@ def generate_custom_identifiers(pdb, uni, **kwargs):
 def generate_cg_identifiers(pdb, uni, **kwargs):
     """Generate charged atoms identifiers."""
 
+
     cgs = kwargs["cgs"]
     # preprocess CGs: divide wolves and lambs
-    filter_func = lambda x: not x.startswith("!")
+    filter_func_p = lambda x: not x.startswith("!")
+    filter_func_n = lambda x:     x.startswith("!")   
+
     for res, dic in cgs.items(): 
         for cgname, cg in dic.items():
             # True : atoms that must exist (negative of negative)
-            true_set = set(filter(filter_func, cg))
+            true_set = set(filter(filter_func_p, cg))
             # False: atoms that must NOT exist (positive of negative)
-            false_set = set([j[1:] for j in filter(filter_func, cg)])
+            false_set = set([j[1:] for j in filter(filter_func_n, cg)])
             # update CGs
             cgs[res][cgname] =  {True : true_set, False : false_set}
     
@@ -673,7 +677,6 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
                 "Will be skipped."
             log.warn(logstr.format(resname))
             continue
-
         # current atom names
         setcurnames = set(res.atoms.names)
         for cgname, cg in cgs_items:
@@ -683,6 +686,8 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
             # set the condition to keep atoms in the current
             # residue, i.e. the atoms that must be present are
             # present and those which must not be present are not
+            print("GRPDEF", cgname, atoms_must_exist, atoms_must_not_exist, setcurnames)
+
             condition_to_keep = \
                 atoms_must_exist.issubset(setcurnames) and \
                 atoms_must_not_exist.isdisjoint(setcurnames)
@@ -698,8 +703,13 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
                 chosenselections.append(selection)
                 # log the selection
                 atoms_names_str = ", ".join([a.name for a in selection])
-                logstr = "{:s} {:s} ({:s})"
+                logstr = "{:d} {:s} ({:s})"
                 log.info(logstr.format(resid, resname, atoms_names_str))
+                print("INSIDE", (segid, resid, resname, cgname))
+
+            else:
+                pass
+                print("NOTIN", (segid, resid, resname, cgname))
 
     # return identifiers, IDs and atom selections
     return (identifiers, idxs, chosenselections)
@@ -884,6 +894,9 @@ def do_interact(identfunc, \
     
     # get identifiers, indexes and atom selections
     identifiers, idxs, chosenselections = identfunc(pdb, uni, **identargs)
+    print("IDENTS:", identifiers)
+    print("IDXS", idxs)
+    print("SELS", chosenselections)
     # assign atomic masses to atomic selections if not provided
     if ffmasses is None:
         log.info("No force field assigned: masses will be guessed.")
