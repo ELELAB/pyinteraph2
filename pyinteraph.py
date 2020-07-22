@@ -464,16 +464,16 @@ ffmasses = os.path.join(masses_dir, args.ffmasses)
 ############################ CHECK INPUTS #############################
 
 # top and trj must be present
-if top is None or trj is None:
+if not top or not traj:
     log.error("Topology and trajectory are required.")
     exit(1)
 # if no reference, topology is reference
-if ref is None:
+if not ref:
     ref = top
     log.info("Using topology as reference structure.")
 # Load systems
 try:
-    pdb = mda.Universe(ref)
+    refuni = mda.Universe(ref)
     uni = mda.Universe(top, trj)
 except ValueError:
     logstr = \
@@ -486,22 +486,22 @@ except ValueError:
 ######################## HYDROPHOBIC CONTACTS #########################
 
 if do_hc:
-    fmfunc = None if hc_graph is None else li.calc_sc_fullmatrix
+    fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
     str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
-                                         pdb = pdb,
+                                         refuni = refuni,
                                          uni = uni,
                                          co = hc_co, 
                                          perco = hc_perco,
                                          ffmasses = ffmasses, 
                                          calc_fullmatrix_func = fmfunc,
-                                         residues_list = hc_reslist, \
-                                         salt_bridges = False)
+                                         reslist = hc_reslist, \
+                                         sb = False)
 
     # Save .dat
     with open(hc_dat, "w") as out:
         out.write(str_out)
     # Save .mat (if available)
-    if hc_mat_out is not None:
+    if hc_mat_out:
         np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
 
 
@@ -509,16 +509,16 @@ if do_hc:
 
 if do_sb:
     try:
-        cgs = li.parse_cgs_file(cgs_file)
+        cgs = li.parse_cgsfile(cgs_file)
     except IOError:
-        logstr = "Problems reading file {:s}."
-        log.error(logstr.format(cgs_file), exc_info = True)
+        logstr = f"Problems reading file {cgs_file}."
+        log.error(logstr, exc_info = True)
         exit(1)
     except:
         logstr = \
-            "Could not parse the charged groups file {:s}. " \
-            "Are there any inconsistencies?"
-        log.error(logstr.format(cgs_file), exc_info = True)
+            f"Could not parse the charged groups file {cgs_file}. " \
+            f"Are there any inconsistencies?"
+        log.error(logstr, exc_info = True)
         exit(1)
     
     if sb_mode == "same_charge":
@@ -528,23 +528,23 @@ if do_sb:
     elif sb_mode == "all":
         sb_mode = "both"
 
-    fmfunc = None if sb_graph is None else li.calc_cg_fullmatrix
+    fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
     str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
-                                         pdb = pdb,
+                                         refuni = refuni,
                                          uni = uni,
                                          co = sb_co, 
                                          perco = sb_perco,
                                          ffmasses = ffmasses, 
-                                         fullmatrixfunc = fmfunc, 
-                                         salt_bridges = True,
-                                         salt_bridges_mode = sb_mode,
+                                         calc_fullmatrix_func = fmfunc, 
+                                         sb = True,
+                                         sbmode = sb_mode,
                                          cgs = cgs)
 
     # Save .dat
     with open(sb_dat, "w") as out:
         out.write(str_out)
     # Save .mat (if available)
-    if sb_mat_out is not None:
+    if sb_mat_out:
         np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
 
 
@@ -552,13 +552,12 @@ if do_sb:
 
 if args.do_hb:
     # atom selection for main chain hydrogen bonds
-    mc_sel = "backbone or name H or name H1 or name H2 or name H3 " \
-             "or name O1 or name O2 or name OXT"
+    mc_sel = "protein and (backbone or name H or name H1 or name H2 " \
+             "or name H3 or name O1 or name O2 or name OXT)"
     # atom selection for side chain hydrogen bonds
-    sc_sel = "protein and not ({:s})".format(mc_sel)
+    sc_sel = f"protein and (not {mc_sel})"
 
-    if (hb_group1 is not None and hb_group2 is not None) \
-    and hb_class != "custom":
+    if (hb_group1 and hb_group2) and hb_class != "custom":
         warnstr = \
             "Hydrogen bond custom groups have been specified; " \
             "they will be used. Please use --hb-class=custom to " \
@@ -567,7 +566,7 @@ if args.do_hb:
         hb_class = "custom"
 
     if hb_class == "custom":
-        if hb_group1 is None or hb_group2 is None:
+        if not hb_group1 or not hb_group2:
             errstr = \
                 "Hydrogen bond class 'custom' requires the " \
                 "definition of two interation groups. (see " \
@@ -607,34 +606,32 @@ if args.do_hb:
     try:
         hbs = li.parse_hbs_file(hbs_file)
     except IOError:
-        logstr = "Problems reading file {:s}."
-        log.error(logstr.format(hbs_file), exc_info = True)
+        logstr = f"Problems reading {hbs_file}."
+        log.error(logstr, exc_info = True)
         exit(1)
     except:
-        logstr = \
-            "Could not parse the hydrogen bonds file {:s}. " \
-            "Are there any inconsistencies?"
-        log.error(logstr.format(hbs_file), exc_info = True)
+        logstr = f"Could not parse {hbs_file}." 
+        log.error(logstr, exc_info = True)
         exit(1)
 
-    dofullmatrix = False if hb_graph is None else True
+    dofullmatrix = True if hb_graph else False
     perresidue = False    
-    str_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1,
-                                       sel2 = hb_group2,
-                                       pdb = pdb,
-                                       uni = uni,
-                                       distance = hb_co,
-                                       angle = hb_angle,
-                                       perco = hb_perco,
-                                       dofullmatrix = dofullmatrix,
-                                       other_hbs = hbs, \
-                                       perresidue = False)                                    
+    str_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
+                                       sel2 = hb_group2, \
+                                       refuni = refuni, \
+                                       uni = uni, \
+                                       distance = hb_co, \
+                                       angle = hb_angle, \
+                                       perco = hb_perco, \
+                                       dofullmatrix = dofullmatrix, \
+                                       otherhbs = hbs, \
+                                       perresidue = perresidue)                                    
 
     # Save .dat
     with open(hb_dat, "w") as out:
         out.write(str_out)
     # Save .mat (if available)
-    if hb_mat_out is not None:
+    if hb_mat_out:
         np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
 
 
@@ -642,25 +639,25 @@ if args.do_hb:
 
 if do_kbp:
     # Residue list for potential calculation - all canonical but GLY
-    kbp_residues_list = \
+    kbp_reslist = \
         ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", \
          "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", \
          "TRP", "TYR", "VAL"]
     
-    kbp_atomlist = li.parse_atomlist(kbp_atomlist)
-    dofullmatrix = False if kbp_graph is None else True
-    str_out, kbp_mat_out = li.do_potential(kbp_atomlist = kbp_atomlist, 
-                                           residues_list = kbp_residues_list,
-                                           potential_file = kbp_ff,
-                                           uni = uni,
-                                           pdb = pdb,
-                                           seq_dist_co = 0, 
-                                           dofullmatrix = dofullmatrix,
-                                           kbT = kbp_kbt)
+    kbpatoms = li.parse_kbpatomsfile(kbp_atomlist)
+    dofullmatrix = True if kbp_graph else False
+    str_out, kbp_mat_out = li.do_potential(kbpatoms = kbpatoms, \
+                                           reslist = kbp_reslist, \
+                                           potentialfile = kbp_ff, \
+                                           uni = uni, \
+                                           refuni = refuni, \
+                                           dofullmatrix = dofullmatrix, \
+                                           kbT = kbp_kbt, \
+                                           seqdistco = 0)
 
     # Save .dat
     with open(kbp_dat, "w") as out:
         out.write(str_out)
     # Save .mat (if available)
-    if mat_out is not None:
+    if kbp_mat_out:
         np.savetxt(kbp_graph, kbp_mat_out, fmt = "%.3f")

@@ -125,7 +125,7 @@ def write_connected_components(ccs, outfile = None):
 
     # output string format
     outstr = "Connected component {:d}\n ({:d} elements) {:s}\n"
-    if outfile is None:
+    if not outfile:
         for numcc, cc in enumerate(ccs):
             sys.stdout.write(outstr.format(\
                 numcc + 1, \
@@ -138,7 +138,7 @@ def write_connected_components(ccs, outfile = None):
 
 def write_connected_components_pdb(identifiers, \
                                    ccs, \
-                                   top, \
+                                   ref, \
                                    components_pdb, \
                                    replace_bfac_func):
     """Write a PDB file with the input structure but the B factor
@@ -153,7 +153,7 @@ def write_connected_components_pdb(identifiers, \
     # write a PDB file identical to the reference PDB file
     # but with the b-factor column filled with the number of
     # the connected component a residue belongs to
-    replace_bfac_func(pdb = top, \
+    replace_bfac_func(pdb = ref, \
                       vals = conn_comp_array, \
                       pdb_out = components_pdb)
 
@@ -192,7 +192,7 @@ def write_hubs(hubs, outfile = None):
 
     # outfile = None makes it output to the standard output
     # (PyInteraph 1 behavior)
-    if outfile is None:
+    if not outfile:
         sys.stdout.write("Hubs:\n\tNode\tk\n")
         for hub, k in hubs:
             sys.stdout.write("\t{:s}\t{:d}\n".format(hub, k))
@@ -203,7 +203,7 @@ def write_hubs(hubs, outfile = None):
 
 def write_hubs_pdb(identifiers, \
                    hubs, \
-                   top, \
+                   ref, \
                    hubs_pdb, \
                    replace_bfac_func):
     """Write a PDB file with the input structure but the B factor
@@ -217,11 +217,10 @@ def write_hubs_pdb(identifiers, \
             # check if the node is a hub by checking
             # if it is in the keys of the hubs dictionary
             hubs_array[index] = hubs[node]
-    
     # write a PDB file identical to the reference PDB file
     # but with the b-factor column filled with the degree of
     # a residue if it is a hub, zero otherwise       
-    replace_bfac_func(pdb = top, \
+    replace_bfac_func(pdb = ref, \
                       vals = hubs_array, \
                       pdb_out = hubs_pdb) 
 
@@ -237,8 +236,8 @@ def get_paths(G, source, target, maxl, sort_paths_by):
     # check if there are any paths
     try:
         shortest = nx.algorithms.shortest_path(G = G, \
-                                                source = source, \
-                                                target = target)
+                                               source = source, \
+                                               target = target)
     except nx.NetworkXNoPath:
         log.warning("No paths exist between selected residues.")
         # return None since no paths were found
@@ -294,15 +293,15 @@ def write_paths(paths, outfile = None):
     """Write the paths."""
 
     # write the paths found to the output in a human-readable format
-    if outfile is None:
+    if not outfile:
         sys.stdout.write(\
             "Path #\tLength\tSum of weights\tAverage weight\tPath\n")
         pathfmt_str = "{:d}\t{:d}\t{:.1f}\t\t{:.1f}\t\t{:s}\n"
         for index, path in enumerate(paths):
             sys.stdout.write(\
                 pathfmt_str.format(\
-                    index+1, path[1], path[2], path[3], ",".join(path[0])))
-
+                    index+1, path[1], path[2], path[3], \
+                    ",".join(path[0])))
     else:
         ### TODO: output to a file, not print
         raise NotImplementedError
@@ -433,21 +432,21 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.dat is None:
-        # Exit if the adjacency matrix was not speficied
+    # check the presence of the adjacency matrix (or matrices)
+    if not args.dat:
+        # exit if the adjacency matrix was not speficied
         log.error("Graph adjacency matrix must be specified. Exiting ...")
         exit(1)
-
-    if (args.components_pdb is not None or args.hubs_pdb is not None) \
-    and args.top is None:
-        # Exit if the user requested the PDB files with connected
+    # check the presence of the reference structure if the output
+    # PDBs have been requested
+    if (args.components_pdb or args.hubs_pdb) and (not args.top):
+        # exit if the user requested the PDB files with connected
         # components and hubs but did not provide a reference PDB
         # file
         log.error(\
             "A PDB reference file must be supplied if using options " \
             "-cb and -ub. Exiting ...")
         exit(1)
-
     # build the graph
     try:
         identifiers, G = build_graph(args.dat, pdb = args.top)
@@ -477,12 +476,12 @@ if __name__ == "__main__":
         write_connected_components(ccs = ccs, outfile = None)
         # if the user requested the PDB file with the connected
         # components
-        if args.components_pdb is not None:
+        if args.components_pdb:
             # write PDB file with B-factor column replaced
             write_connected_components_pdb(\
                 identifiers = identifiers, \
                 ccs = ccs, \
-                top = args.top, \
+                ref = args.top, \
                 components_pdb = args.components_pdb, \
                 replace_bfac_func = replace_bfac_column)
 
@@ -495,16 +494,16 @@ if __name__ == "__main__":
                         min_k = args.hubs_cutoff, \
                         sorting = "descending")
         # if hubs have been found
-        if hubs is not None:
+        if hubs:
             # write the hubs
             write_hubs(hubs = hubs, outfile = None)
             # if the user requested the PDB file with the hubs
-            if args.hubs_pdb is not None:
+            if args.hubs_pdb:
                 # write PDB file with B-factor column replaced
                 write_hubs_pdb(\
                     identifiers = identifiers, \
                     hubs = hubs, \
-                    top = args.top, \
+                    ref = args.top, \
                     hubs_pdb = args.hubs_pdb, \
                     replace_bfac_func = replace_bfac_column)
 
@@ -513,7 +512,7 @@ if __name__ == "__main__":
             
     if args.do_paths:    
         # source and target must be specified
-        if args.source is None or args.target is None:
+        if not args.source or not args.target:
             log.error(\
                 "You must specify source and target residues. " \
                 "Exiting...")
@@ -529,7 +528,7 @@ if __name__ == "__main__":
             errstr = "Could not compute paths."
             log.error(errstr, exc_info = True)     
         # if paths have been found
-        if paths is not None:
+        if paths:
             # write the paths
             write_paths(paths = paths, outfile = None)
             # if path matrices have been requested           
@@ -540,4 +539,3 @@ if __name__ == "__main__":
                                      paths = paths, \
                                      fmt = "%.1f", \
                                      where = os.getcwd())
-

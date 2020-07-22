@@ -60,30 +60,22 @@ def process_matrices(fnames):
             matrices.append(np.loadtxt(fname))
         except:
             # catch numpy errors and include the traceback when logging
-            logstr = "Could not open file {:s}, or file in wrong format"
-            log.error(logstr.format(fname, exc_info = True))
-            exit(1) 
-    
+            errstr = \
+                f"Could not open file {fname}, or file in wrong format."
+            raise IOError(errstr)
     # get matrix shapes
     shapes = [matrix.shape for matrix in matrices]
     # all matrices must have the same shape
     if len(set(shapes)) != 1:
-        log.error("Matrices do not have the same shape.")
-        exit(1)
+        raise ValueError("Matrices do not have the same shape.")
     # check if the matrix are square and symmetric
     for fname, matrix in zip(fnames, matrices):
         if matrix.shape[0] != matrix.shape[1]:
-            logstr = "Matrix {:s} is not square"
-            log.error(logstr.format(fname))
-            exit(1)
+            raise ValueError(f"Matrix {fname} is not square.")
         if not np.allclose(matrix, matrix.T):
-            logstr = "Matrix {:s} is not symmetric"
-            log.error(logstr.format(fname))
-            exit(1)
-
+            raise ValueError(f"Matrix {fname} is not symmetric.")
         # all diagonal elements must be zero
         np.fill_diagonal(matrix, 0.0)
-
     # return checked matrices
     return matrices
 
@@ -109,7 +101,6 @@ def get_maxclustsizes(matrices, interval):
             len(max(list(\
                 nx.algorithms.components.connected_components(G)), \
             key = len)))
-
     # return the list of maximum cluster sizes
     return maxclustsizes
 
@@ -127,29 +118,30 @@ def perform_fitting(f, xdata, ydata, maxfev, p0):
                       ydata = ydata, \
                       maxfev = maxfev, \
                       p0 = p0)
-
+        # results of the fitting
         args = (popt[0], popt[1], popt[2], popt[3])
-        
+    # invalid inputs or options
     except ValueError:
         # as per scipy.optimize.curve_fit documentation
         log.error(\
             "Please check input data and options provided for " \
             "the fitting", \
             exc_info = True)
-
+    # runtime error during optimization
     except RuntimeError:
         # as per scipy.optimize.curve_fit documentation
         log.error(\
             "Could not complete fitting since the least-squares ", \
             "minimization failed", \
             exc_info = True)
-
+    # other errors
     except:
         # something else happened (should not happen)
         log.error(\
             "Could not complete fitting", \
             exc_info = True)
-
+    # return results of the fitting or None if the fitting
+    # could not complete
     return args
 
 
@@ -194,9 +186,9 @@ def perform_plotting(x, \
                      "o", \
                      label = "Critical value", \
                      color = "red")
-                
+            # plot a vertical line corresponding
+            # to the inflection point
             plt.axvline(x = flex)
-
     # plot the legend
     plt.legend(loc = "best")
     # save the figure
@@ -209,9 +201,7 @@ def write_clusters(out_clusters, interval, maxclustsizes):
     try:
         fh = open(out_clusters, "w")
     except:
-        log.error("Could not write clusters file.", exc_info = True)
-        exit(1)
-    
+        raise IOError("Could not write clusters file.")  
     with fh:
         fh.write("P_min\tSize of biggest cluster\n")
         for pmin, maxclustsize in zip(interval, maxclustsizes):
@@ -241,27 +231,21 @@ def write_dat(matrices, \
         # the final matrix will be a matrix resulting from an
         # element-wise logical OR applied to all matrices
         out_matrix = np.logical_or.reduce(boolmatrices)
-        
+    # if a matrix of weights was provided 
     if weights is not None:
-        # if a matrix of weights was provided
+        # try to open the matrix file
         try:
             weights_matrix = np.loadtxt(weights)
         except:
-            log.error(\
-                "Could not read weights matrix.", \
-                exc_info = True)
-            exit(1)
-        
+            raise IOError("Could not read weights matrix.")
         # check the shape of the matrix of weights
         if weights_matrix.shape != out_matrix.shape:
-            log.error(\
-                "Output and weight matrix have different shapes.")
-            exit(1)
-
+            raise ValueError("Output and weight matrix " \
+                             "have different shapes.")
+        # update out matrix
         out_matrix = np.ma.masked_array(data = weights_matrix, \
                                         mask = out_matrix > 0.0, \
                                         fill_value = 0.0).filled()
-
     # save the output matrix
     np.savetxt(out_dat, out_matrix, fmt = "%3.2f")
 
@@ -397,7 +381,7 @@ if __name__ == "__main__":
     ########################### CHECK INPUTS ##############################
 
     # check matrices
-    if options.datfiles is None:
+    if not options.datfiles:
         log.error("Input file(s) must be provided.")
         exit(1)
     # check range
@@ -461,7 +445,6 @@ if __name__ == "__main__":
                           x0 = solvestart, \
                           args = args, \
                           maxfev = 5000)
-
             # log the result of the flex search
             if ier == 1:
                 log.info("Inflection point at {:3.2f}.".format(flex))
@@ -473,7 +456,7 @@ if __name__ == "__main__":
 
     ############################## PLOTTING ###############################
 
-    if options.out_plot is not None:
+    if options.out_plot:
         perform_plotting(x = interval, \
                          y = maxclustsizes, \
                          lower = options.lower, \
@@ -486,7 +469,7 @@ if __name__ == "__main__":
 
     ########################### OUTPUT CLUSTERS ###########################
 
-    if options.out_clusters is not None:
+    if options.out_clusters:
         write_clusters(out_clusters = options.out_clusters, \
                        interval = interval, \
                        maxclustsizes = maxclustsizes)
@@ -494,7 +477,7 @@ if __name__ == "__main__":
 
     ############################# OUTPUT DAT ##############################
 
-    if options.out_dat is not None:
+    if options.out_dat:
         write_dat(matrices = matrices, \
                   matrix_filter = options.filter, \
                   out_dat = options.out_dat, \
