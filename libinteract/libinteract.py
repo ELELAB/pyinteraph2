@@ -33,7 +33,7 @@ import logging as log
 import struct
 import sys
 
-#from innerloops import LoopDistances
+from innerloops import LoopDistances
 import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import distance_array
