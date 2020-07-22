@@ -14,7 +14,7 @@ import graph_analysis as ga
 TEST_DIR = os.path.join(os.getcwd(), "tests")
 MATRICES_DIR = os.path.join(TEST_DIR, "matrices")
 RESULTS_DIR = os.path.join(TEST_DIR, "results")
-PDB_FNAME = os.path.join(TEST_DIR, "files/pdb.pdb")
+PDB_FNAME = os.path.join(TEST_DIR, "files/ref.pdb")
 MATRICES_FNAMES = \
     [os.path.join(MATRICES_DIR, mat) for mat in os.listdir(MATRICES_DIR)]
 
