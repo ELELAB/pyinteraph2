@@ -38,7 +38,8 @@ import itertools
 import json
 import struct
 
-#from innerloops import LoopDistances
+from libinteract import innerloops as il
+
 import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import distance_array
@@ -227,7 +228,7 @@ def do_potential(kbp_atomlist, \
                  kbT = 1.0):
 
     log.info("Loading potential definition . . .")
-    sparses = parse_sparse_func(potential_file, residues_list)
+    sparses = parse_sparse_func(potential_file)
     log.info("Loading input files...")
 
     if not pdb or not uni:
@@ -268,7 +269,7 @@ def do_potential(kbp_atomlist, \
             if not (seq_dist < seq_dist_co or res1_segid != res2_segid):
                 # string comparison ?!
                 if res2.resname < res1.resname:
-                    ii, j = j, ii
+                    res1, res2 = res2, res1
                 
                 this_sparse = sparses[res1.resname][res2.resname]
                 
@@ -287,13 +288,13 @@ def do_potential(kbp_atomlist, \
                     index_atom2 = \
                         res2.atoms.names.tolist().index(atom2)
                     index_atom3 = \
-                        res2.atoms.named.tolist().index(atom3)
+                        res2.atoms.names.tolist().index(atom3)
                     selected_atoms = \
-                        mda.core.groups.AtomGroup(\
+                        mda.core.groups.AtomGroup((\
                              res1.atoms[index_atom0],
                              res1.atoms[index_atom1],
                              res2.atoms[index_atom2],
-                             res2.atoms[index_atom3])
+                             res2.atoms[index_atom3]))
                 except:
                     # inform the user about the problem and
                     # continue
@@ -336,7 +337,7 @@ def do_potential(kbp_atomlist, \
                     [sel.positions for sel in atom_selections]), \
             dtype = np.float64)
 
-        inner_loop = LoopDistances(coords, coords, None)
+        inner_loop = il.LoopDistances(coords, coords, None)
         # compute distances
         distances = \
             inner_loop.run_potential_distances(len(atom_selections), 4, 1)
@@ -355,18 +356,18 @@ def do_potential(kbp_atomlist, \
     outstr = ""
     # set the format for the representation of each pair of
     # residues in the output string
-    outstr_fmt = "{:s}-{:s}{:s}:{:s}-{:s}{:s}\t{:.3f}\n"
+    outstr_fmt = "{:s}-{:s}{:d}:{:s}-{:s}{:d}\t{:.3f}\n"
     for i, score in enumerate(scores):
         if abs(score) > 0.000001:
             # update the output string
             outstr +=  \
                 outstr_fmt.format(\
-                    pdb.residues[residue_pairs[i][0]].segment.segid, \
-                    pdb.residues[residue_pairs[i][0]].resname, \
-                    pdb.residues[residue_pairs[i][0]].resid, \
-                    pdb.residues[residue_pairs[i][1]].segment.segid, \
-                    pdb.residues[residue_pairs[i][1]].resname, \
-                    pdb.residues[residue_pairs[i][1]].resid, \
+                    pdb.residues[residue_pairs[i][0].ix].segment.segid, \
+                    pdb.residues[residue_pairs[i][0].ix].resname, \
+                    pdb.residues[residue_pairs[i][0].ix].resid, \
+                    pdb.residues[residue_pairs[i][1].ix].segment.segid, \
+                    pdb.residues[residue_pairs[i][1].ix].resname, \
+                    pdb.residues[residue_pairs[i][1].ix].resid, \
                     score)
     
     # inizialize the matrix to None  
@@ -377,10 +378,10 @@ def do_potential(kbp_atomlist, \
         # use numpy "fancy indexing" to fill the matrix
         # with scores at the corresponding residues pairs
         # positions
-        pair_firstelems = [pair[0] for pair in residue_pairs]
-        pairs_secondelems = [pair[1] for pair in residue_pairs]
+        pair_firstelems = [pair[0].ix for pair in residue_pairs]
+        pairs_secondelems = [pair[1].ix for pair in residue_pairs]
         dm[pair_firstelems, pairs_secondelems] = scores
-        dm[pairs_secondelems, pair_firstelems] = scores           
+        dm[pairs_secondelems, pair_firstelems] = scores
     
     # return the output string and the matrix
     return (outstr, dm)
@@ -511,7 +512,7 @@ def calc_dist_matrix(uni, \
                     np.array(np.concatenate(coords[s_index][0]), \
                              dtype = np.float64)
                 # compute the distances within the cut-off
-                inner_loop = LoopDistances(this_coords, this_coords, co)
+                inner_loop = il.LoopDistances(this_coords, this_coords, co)
                 percmats.append(\
                     inner_loop.run_triangular_mindist(\
                         sets_sizes[s_index][0]))
@@ -525,7 +526,7 @@ def calc_dist_matrix(uni, \
                     np.array(np.concatenate(coords[s_index][1]), \
                              dtype = np.float64)
                 # compute the distances within the cut-off
-                inner_loop = LoopDistances(this_coords1, this_coords2, co)
+                inner_loop = il.LoopDistances(this_coords1, this_coords2, co)
                 percmats.append(\
                     inner_loop.run_square_mindist(\
                         sets_sizes[s_index][0], \
@@ -576,7 +577,7 @@ def calc_dist_matrix(uni, \
         # create a matrix of all centers of mass along the trajectory
         all_coms = np.concatenate(all_coms)
         # compute the distances within the cut-off
-        inner_loop = LoopDistances(all_coms, all_coms, co)
+        inner_loop = il.LoopDistances(all_coms, all_coms, co)
         percmat = inner_loop.run_triangular_calc_dist_matrix(coms.shape[0])
     
     # convert the matrix into an array
