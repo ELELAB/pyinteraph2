@@ -895,9 +895,7 @@ def do_interact(identfunc, \
     
     # get identifiers, indexes and atom selections
     identifiers, idxs, chosenselections = identfunc(pdb, uni, **identargs)
-    print("IDENTS:", identifiers)
-    print("IDXS", idxs)
-    print("SELS", chosenselections)
+
     # assign atomic masses to atomic selections if not provided
     if ffmasses is None:
         log.info("No force field assigned: masses will be guessed.")
@@ -925,8 +923,6 @@ def do_interact(identfunc, \
     # the value is greater than the persistence cut-off
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
     for i, j in where_gt_perco:
-        print(short_ids)
-        #!!!!
         segid1, resid1, resname1 = short_ids[short_idxs.index(short_idxs[i])]
         segid2, resid2, resname2 = short_ids[short_idxs.index(short_idxs[j])]
         outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
@@ -1065,11 +1061,12 @@ def do_hbonds(sel1, \
             # get info about the first residue
             res1 = identifier_as_list[0]
             res1_resix = uni_id2ix[res1]
-            res1_segid, res1_resid = res1
+
+            res1_segid, res1_resid = res1[:2]
             # get info about the second residue (if present)
             res2 = res1 if len(identifier) == 1 else identifier_as_list[1]
             res2_resix = uni_id2ix[res2]
-            res2_segid, res2_resid = res2
+            res2_segid, res2_resid = res2[:2]
             # fill the full matrix if requested
             if do_fullmatrix:
                 fullmatrix[res1_resix, res2_resix] = hb_pers
@@ -1083,13 +1080,25 @@ def do_hbonds(sel1, \
     
     # do not merge hydrogen bonds per residue
     if not perresidue:
+            # utility function to get the identifier of a hydrogen bond
+        get_list_identifier = \
+            lambda uni, hbond: [ (uni.atoms[hbond[0]].segid, \
+                                           uni.atoms[hbond[0]].resid, \
+                                           uni.atoms[hbond[0]].resname, \
+                                           "residue"), \
+                                          (uni.atoms[hbond[1]].segid, \
+                                           uni.atoms[hbond[1]].resid, \
+                                           uni.atoms[hbond[1]].resname, \
+                                           "residue") ]
+
         # count hydrogen bonds by type
         table = h.count_by_type()
+
         hbonds_identifiers = \
-            [list(get_identifier(uni, hbond)) for hbond in table]
+            [ get_list_identifier(uni, hbond) for hbond in table ]
         # set output string format
         outstr_fmt = \
-            "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t\t{3.2}\n"
+            "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t\t{:3.2f}\n"
         # for each hydrogen bonds identified
         for i, hbidentifier in enumerate(hbonds_identifiers):
             # get the hydrogen bond persistence
@@ -1099,18 +1108,20 @@ def do_hbonds(sel1, \
             acceptor_atom = table[i][8]
             # consider only those hydrogen bonds whose persistence
             # is greater than the cut-off
+
             if hb_pers > perco:
+
                 res1_segid, res1_resid, res1_resname, res1_tag = \
                     identifiers[uni_id2ix[hbidentifier[0]]]
-                    
+
                 res2_segid, res2_resid, res2_resname, res2_tag = \
                     identifiers[uni_id2ix[hbidentifier[1]]]
-                    
+                
                 outstr += outstr_fmt.format(\
-                            res1_segid, res1_resid, res1_resname, \
-                            donor_heavy_atom, \
-                            res2_segid, res2_resid, res2_resname, \
-                            acceptor_atom)
+                            res1_segid, res1_resid, res1_resname,
+                            donor_heavy_atom,
+                            res2_segid, res2_resid, res2_resname,
+                            acceptor_atom, hb_pers)
 
     # return output string and full matrix
     return (outstr, fullmatrix)
