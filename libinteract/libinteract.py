@@ -665,7 +665,7 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
     # atom selection string
     selstring = "segid {:s} and resid {:d} and (name {:s})"
     # for each residue in the Universe
-    for res in uni.residues:
+    for k, res in enumerate(uni.residues):
         segid = res.segid
         resname = res.resname
         resid = res.resid
@@ -686,30 +686,30 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
             # set the condition to keep atoms in the current
             # residue, i.e. the atoms that must be present are
             # present and those which must not be present are not
-            print("GRPDEF", cgname, atoms_must_exist, atoms_must_not_exist, setcurnames)
 
             condition_to_keep = \
                 atoms_must_exist.issubset(setcurnames) and \
                 atoms_must_not_exist.isdisjoint(setcurnames)
             # if the condition is met
             if condition_to_keep:
-                idx = (segid, resid, resname, cgname)
+                idx = (pdb.residues[k].segment.segid,
+                       pdb.residues[k].resid,
+                       pdb.residues[k].resname,
+                       cgname)
+                idxs.append(idx)
+
                 atoms_str = " or name ".join(atoms_must_exist)
                 selection = \
                     uni.select_atoms(selstring.format(\
                         segid, resid, atoms_str))                
                 # update lists of IDs and atom selections
-                idxs.append(idx)
                 chosenselections.append(selection)
                 # log the selection
                 atoms_names_str = ", ".join([a.name for a in selection])
                 logstr = "{:d} {:s} ({:s})"
                 log.info(logstr.format(resid, resname, atoms_names_str))
-                print("INSIDE", (segid, resid, resname, cgname))
-
             else:
                 pass
-                print("NOTIN", (segid, resid, resname, cgname))
 
     # return identifiers, IDs and atom selections
     return (identifiers, idxs, chosenselections)
@@ -824,7 +824,7 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # generate all the possible combinations of the sets of 
     # duplicates (each set represents a residue who found
     # multiple times in percmat)
-    dup_combinations = itertools.combinations(duplicates)
+    dup_combinations = itertools.combinations(duplicates, 2)
     # for each pair of sets of duplicates
     for dup_resi, dup_resj in dup_combinations:
         # get where residue i and residue j should be uniquely
@@ -919,13 +919,15 @@ def do_interact(identfunc, \
     short_ids = [i[0:3] for i in identifiers]
     # set output string and output string format
     outstr = ""
-    outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{3.1f}\n"
+    outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{:3.1f}\n"
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
     for i, j in where_gt_perco:
-        segid1, resid1, resname1 = short_ids[short_ids.index(short_idxs[i])]
-        segid2, resid2, resname2 = short_ids[short_ids.index(short_idxs[j])]
+        print(short_ids)
+        #!!!!
+        segid1, resid1, resname1 = short_ids[short_idxs.index(short_idxs[i])]
+        segid2, resid2, resname2 = short_ids[short_idxs.index(short_idxs[j])]
         outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
                                     segid2, resid2, resname2, idxs[j][3], \
                                     percmat[i,j])
