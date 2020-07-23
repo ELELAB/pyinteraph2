@@ -750,6 +750,7 @@ def generate_sc_identifiers(pdb, uni, **kwargs):
             if res.resname[0:3] == resname_in_list:
                 resid = res.resid
                 segid = res.segid
+                resname = res.resname
                 # get side chain atom names
                 sc_atoms_names = \
                     [a.name for a in res.atoms \
@@ -762,7 +763,7 @@ def generate_sc_identifiers(pdb, uni, **kwargs):
                         segid, resid, sc_atoms_str))
                 chosenselections.append(selection)
                 # log the selection
-                log.info("{:s} {:s} ({:s})".format(\
+                log.info("{:d} {:s} ({:s})".format(\
                     resid, resname, sc_atoms_names_str))
 
     return (identifiers, idxs, chosenselections)
