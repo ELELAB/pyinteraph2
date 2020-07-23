@@ -578,7 +578,7 @@ def calc_dist_matrix(uni, \
         all_coms = np.concatenate(all_coms)
         # compute the distances within the cut-off
         inner_loop = il.LoopDistances(all_coms, all_coms, co)
-        percmat = inner_loop.run_triangular_calc_dist_matrix(coms.shape[0])
+        percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
     
     # convert the matrix into an array
     percmat = np.array(percmat, dtype = np.float64)/numframes*100.0
