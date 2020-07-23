@@ -642,7 +642,6 @@ def generate_custom_identifiers(pdb, uni, **kwargs):
 def generate_cg_identifiers(pdb, uni, **kwargs):
     """Generate charged atoms identifiers."""
 
-
     cgs = kwargs["cgs"]
     # preprocess CGs: divide wolves and lambs
     filter_func_p = lambda x: not x.startswith("!")
@@ -921,10 +920,16 @@ def do_interact(identfunc, \
     outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{:3.1f}\n"
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
+    #print("IDXS", idxs)
+    #print("IDS", ids)
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
     for i, j in where_gt_perco:
-        segid1, resid1, resname1 = short_ids[short_idxs.index(short_idxs[i])]
-        segid2, resid2, resname2 = short_ids[short_idxs.index(short_idxs[j])]
+        #print(i, j)
+        #print("IDXSi", short_idxs[i])
+        #print("IDXSj", short_idxs[j])
+
+        segid1, resid1, resname1 = short_ids[short_ids.index(short_idxs[i])]
+        segid2, resid2, resname2 = short_ids[short_ids.index(short_idxs[j])]
         outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
                                     segid2, resid2, resname2, idxs[j][3], \
                                     percmat[i,j])
