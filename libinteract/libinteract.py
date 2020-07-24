@@ -313,7 +313,7 @@ def do_potential(kbp_atomlist,
                                 kbT = kbT)
     
     # divide the scores for the lenght of the trajectory
-    scores /= float(len(uni.trajectory))
+    scores /= float(numframes)
     # create the output string
     outstr = ""
     # set the format for the representation of each pair of
@@ -347,8 +347,6 @@ def do_potential(kbp_atomlist,
     
     # return the output string and the matrix
     return (outstr, dm)
-
-
 
 def calc_dist_matrix(uni, \
                      idxs, \
