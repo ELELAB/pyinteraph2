@@ -198,9 +198,6 @@ def do_potential(kbp_atomlist, \
                  parse_sparse_func = parse_sparse, \
                  calc_potential_func = calc_potential, \
                  seq_dist_co = 0, \
-                 grof = None, \
-                 xtcf = None, \
-                 pdbf = None, \
                  uni = None, \
                  pdb = None, \
                  do_fullmatrix = True, \
@@ -209,17 +206,6 @@ def do_potential(kbp_atomlist, \
     log.info("Loading potential definition . . .")
     sparses = parse_sparse_func(potential_file)
     log.info("Loading input files...")
-
-    if not pdb or not uni:
-        if not pdbf or not grof or not xtcf:
-            logstr = \
-                "You have to provide either the mda.Universe " \
-                "objects or the PDB, GRO and XTC files"
-            raise ValueError(logstr)
-        
-        pdb, uni = load_sys(pdbf, grof, xtcf)
-        logstr = "mda.Universe objects generated from {:s}"
-        log.debug(logstr.format(", ".join(pdbf, grof, xtcf)))
 
     ok_residues = []
     discarded_residues = set()
