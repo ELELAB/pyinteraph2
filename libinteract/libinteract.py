@@ -192,15 +192,15 @@ def calc_potential(distances,
     return scores/distances.shape[0]
 
 
-def do_potential(kbp_atomlist, \
-                 residues_list, \
-                 potential_file, \
-                 parse_sparse_func = parse_sparse, \
-                 calc_potential_func = calc_potential, \
-                 seq_dist_co = 0, \
-                 uni = None, \
-                 pdb = None, \
-                 do_fullmatrix = True, \
+def do_potential(kbp_atomlist,
+                 residues_list,
+                 potential_file,
+                 parse_sparse_func = parse_sparse,
+                 calc_potential_func = calc_potential,
+                 seq_dist_co = 0,
+                 uni = None,
+                 pdb = None,
+                 do_fullmatrix = True,
                  kbT = 1.0):
 
     log.info("Loading potential definition . . .")
@@ -285,11 +285,11 @@ def do_potential(kbp_atomlist, \
     coords = None
     # for each frame in the trajectory
     numframe = 1
-    for ts in uni.trajectory:
+    for ts_i, ts in enumerate(uni.trajectory):
         # log the progress along the trajectory
         logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
         sys.stdout.write(\
-            logstr.format(numframe, \
+            logstr.format(ts_i + 1, \
                           numframes, \
                           float(numframe)/float(numframes)*100.0))
         sys.stdout.flush()       
