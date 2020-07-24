@@ -21,30 +21,16 @@
 #   along with this program.
 #   If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 import sys
 import logging as log
-
-vinfo = sys.version_info
-if vinfo[0] < 2 or (vinfo[0] == 2 and vinfo[1] < 7):
-    errstr = \
-        "Your Python version is {:s}, but only " \
-        "versions >= 2.7 are supported."
-    log.error(errstr.format(sys.version))
-    exit(1)
-
 import collections
 import itertools
 import json
 import struct
-
-from libinteract import innerloops as il
-
 import numpy as np
 import MDAnalysis as mda
-from MDAnalysis.analysis.distances import distance_array
 
-
+from libinteract import innerloops as il
 
 
 ############################## POTENTIAL ##############################
