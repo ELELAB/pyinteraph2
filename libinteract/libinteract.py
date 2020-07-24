@@ -128,7 +128,7 @@ def parse_sparse(potential_file):
             "Error: could not completely parse the file {:s}" \
             " ({:d} bytes read, {:d} expected)"
         log.error(errstr.format(potential_file, pointer, len(data)))
-        exit(1)
+        raise ValueError(errstr)
 
     sparses_dict = {}
     for i in range(len(kbp_residues_list)):
@@ -151,18 +151,14 @@ def parse_atomlist(fname):
     try:
         fh = open(fname)
     except:
-        errstr = "Could not open file {:s}. Exiting..."
-        log.error(errstr.format(fname), exc_info = True)
-        exit(1)
-    
-    data = {}
-    for line in fh:
-        tmp = line.strip().split(":")
-        data[tmp[0].strip()] = [i.strip() for i in tmp[1].split(",")]
-    
-    fh.close()
-    return data    
+        raise IOError(f"Could not open file {kbpatomsfile}.")
+    with fh:
+        data = {}
+        for line in fh:
+            tmp = line.strip().split(":")
+            data[tmp[0].strip()] = [i.strip() for i in tmp[1].split(",")]
 
+    return data
 
 def calc_potential(distances, \
                    ordered_sparses, \
