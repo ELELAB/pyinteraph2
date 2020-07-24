@@ -25,6 +25,7 @@ import sys
 import logging as log
 import collections
 import itertools
+import configparser as cp
 import json
 import struct
 import numpy as np
@@ -191,6 +192,71 @@ def calc_potential(distances,
     
     return scores/distances.shape[0]
 
+def parse_cgs_file(fname):
+    grps_str = 'CHARGED_GROUPS'
+    res_str = 'RESIDUES'
+    default_grps_str = 'default_charged_groups'
+
+    cfg = cp.ConfigParser()
+    cfg.read(fname)
+    try:
+        cfg.read(fname)
+    except:
+        log.error("file %s not readeable or not in the right format." % fname)
+        exit(1)
+
+    out = {}
+    group_definitions = {}
+
+    charged_groups = cfg.options(grps_str)
+    charged_groups.remove(default_grps_str)
+    charged_groups = [ i.strip() for i in charged_groups ]
+
+    default_charged = cfg.get(grps_str, default_grps_str).split(",")
+    default_charged = [ i.strip() for i in default_charged ]
+
+    residues = cfg.options(res_str)
+
+    for i in charged_groups + default_charged:
+        group_definitions[i] = [s.strip() for s in cfg.get(grps_str, i).split(",")]
+    for j in range(len(group_definitions[i])):
+        group_definitions[i][j] = group_definitions[i][j].strip()
+
+    try:
+        for i in residues:
+            i = i.upper()
+            out[i] = {}
+            for j in default_charged:
+                out[i][j] = group_definitions[j]
+            this_cgs = [s.strip() for s in cfg.get(res_str, i).split(",")]
+            for j in this_cgs:
+                if j:
+                    out[i][j] = group_definitions[j.lower()]
+    except:
+        logging.error("could not parse the charged groups file. Are there any inconsistencies?")
+
+    return out
+
+def parse_hbs_file(fname):
+    hbs_str = 'HYDROGEN_BONDS'
+    acceptors_str = 'ACCEPTORS'
+    donors_str = 'DONORS'
+    cfg = cp.ConfigParser()
+
+    try:
+        cfg.read(fname)
+    except:
+        log.error("file %s not readeable or not in the right format." % fname)
+
+    acceptors = cfg.get(hbs_str, acceptors_str)
+    tmp = acceptors.strip().split(",")
+    acceptors = [ i.strip() for i in tmp ]
+
+    donors = cfg.get(hbs_str, donors_str)
+    tmp = donors.strip().split(",")
+    donors = [ i.strip() for i in tmp ]
+
+    return dict(ACCEPTORS=acceptors, DONORS=donors)
 
 def do_potential(kbp_atomlist,
                  residues_list,

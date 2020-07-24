@@ -6,72 +6,6 @@ import MDAnalysis as mda
 
 import configparser as cp
 
-def parse_cgs_file(fname):
-    grps_str = 'CHARGED_GROUPS'
-    res_str = 'RESIDUES'
-    default_grps_str = 'default_charged_groups'
-
-    cfg = cp.ConfigParser()
-    cfg.read(fname)
-    try:
-        cfg.read(fname)
-    except: 
-        log.error("file %s not readeable or not in the right format." % fname)
-        exit(1)
-
-    out = {}
-    group_definitions = {}
-
-    charged_groups = cfg.options(grps_str)
-    charged_groups.remove(default_grps_str)
-    charged_groups = [ i.strip() for i in charged_groups ]
-
-    default_charged = cfg.get(grps_str, default_grps_str).split(",")
-    default_charged = [ i.strip() for i in default_charged ]
-
-    residues = cfg.options(res_str)
-    
-    for i in charged_groups + default_charged:
-        group_definitions[i] = [s.strip() for s in cfg.get(grps_str, i).split(",")]
-    for j in range(len(group_definitions[i])):
-        group_definitions[i][j] = group_definitions[i][j].strip()
-
-    try:
-        for i in residues:
-            i = i.upper()
-            out[i] = {}
-            for j in default_charged:
-                out[i][j] = group_definitions[j]
-            this_cgs = [s.strip() for s in cfg.get(res_str, i).split(",")]
-            for j in this_cgs:
-                if j:
-                    out[i][j] = group_definitions[j.lower()]
-    except:
-        logging.error("could not parse the charged groups file. Are there any inconsistencies?")
-    
-    return out
-
-def parse_hbs_file(fname):
-    hbs_str = 'HYDROGEN_BONDS'
-    acceptors_str = 'ACCEPTORS'
-    donors_str = 'DONORS'
-    cfg = cp.ConfigParser()
-    
-    try:
-        cfg.read(fname)
-    except: 
-        log.error("file %s not readeable or not in the right format." % fname)
-    
-    acceptors = cfg.get(hbs_str, acceptors_str)
-    tmp = acceptors.strip().split(",")
-    acceptors = [ i.strip() for i in tmp ]
-
-    donors = cfg.get(hbs_str, donors_str)
-    tmp = donors.strip().split(",")
-    donors = [ i.strip() for i in tmp ]
-
-    return dict(ACCEPTORS=acceptors, DONORS=donors)
-
 @pytest.fixture
 def data_files():
     return { 'gro' : '../examples/sim.prot.gro',
@@ -86,7 +20,6 @@ def potential_file():
 @pytest.fixture
 def kbp_atoms_file():
     return '../kbp_atomlist'
-
 
 @pytest.fixture
 def masses_file():
@@ -201,7 +134,6 @@ def hc_residues_list():
     return ['ALA', 'VAL', 'LEU', 'ILE',
             'PHE', 'PRO', 'TRP', 'MET'] 
 
-
 @pytest.fixture
 def simulation(data_files):
     uni = mda.Universe(data_files['gro'], data_files['xtc'])        
@@ -211,11 +143,11 @@ def simulation(data_files):
 
 @pytest.fixture
 def charged_groups(cg_file):
-    return parse_cgs_file(cg_file)
+    return li.parse_cgs_file(cg_file)
 
 @pytest.fixture
 def hb_don_acc(hb_file):
-    return parse_hbs_file(hb_file)
+    return li.parse_hbs_file(hb_file)
 
 class TestSparse:
     def test_Sparse_constructor(self, sparse_list, sparse_obj):
@@ -254,12 +186,12 @@ def test_parse_atomlist(kbp_atoms_file):
     assert(data['GLN'] == ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'OE1', 'NE2'])
 
 def test_do_potential(kbp_atomlist, sc_residues_list, potential_file, simulation, ref_potential, ref_potential_graph):
-    str_out, mat_out =li.do_potential(kbp_atomlist,
-                      sc_residues_list,
-                      potential_file,
-                      uni = simulation['uni'],
-                      pdb = simulation['pdb'],
-                      do_fullmatrix = True)
+    str_out, mat_out = li.do_potential(kbp_atomlist,
+                       sc_residues_list,
+                       potential_file,
+                       uni = simulation['uni'],
+                       pdb = simulation['pdb'],
+                       do_fullmatrix = True)
 
     assert_almost_equal(mat_out, ref_potential_graph, decimal=3)
     split_str = str_out.split("\n")[:-1]
@@ -283,7 +215,7 @@ def test_generate_sc_identifiers(simulation, hc_residues_list):
                                reslist = hc_residues_list)
 
 def test_parse_cg_files(cg_file):
-    data = parse_cgs_file(cg_file)
+    data = li.parse_cgs_file(cg_file)
 """
 """
 
@@ -321,7 +253,7 @@ def test_do_interact_hc(simulation, hc_residues_list, ref_hc_graph, ref_hc):
         assert(s == ref_hc[i].strip())
 
 def test_parse_hb_file(hb_file):
-    parse_hbs_file(hb_file)
+    li.parse_hbs_file(hb_file)
 
 def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
     sel = 'protein'
