@@ -160,11 +160,8 @@ def parse_atomlist(fname):
 
     return data
 
-def calc_potential(distances, \
-                   ordered_sparses, \
-                   pdb, \
-                   uni, \
-                   distco, \
+def calc_potential(distances,
+                   ordered_sparses,
                    kbT = 1.0):
 
     general_cutoff = 5.0  
@@ -327,9 +324,6 @@ def do_potential(kbp_atomlist, \
         scores += \
             calc_potential_func(distances = distances, \
                                 ordered_sparses = ordered_sparses, \
-                                pdb = pdb, \
-                                uni = uni, \
-                                distco = seq_dist_co, \
                                 kbT = kbT)
     
     # divide the scores for the lenght of the trajectory
