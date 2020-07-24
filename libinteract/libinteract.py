@@ -567,38 +567,6 @@ def assign_ff_masses(ffmasses, chosenselections):
                                            atom_resname, \
                                            atom_name))   
 
-
-def generate_custom_identifiers(pdb, uni, **kwargs):
-    # get selection strings
-    selstrings = kwargs["selections"]
-    # get names
-    names = kwargs["names"]
-    # raise an error if their lengths do not match
-    if len(names) != len(selstrings):
-        errstr = "'names' and 'selections' must have the same lenght."
-        raise ValueError(errstr)
-    
-    chosenselections = []
-    identifiers = []
-    idxs = []
-    for selstring, name in zip(selstrings, names):
-        try:
-            chosenselections.append(uni.select_atoms(selstring))
-        except:
-            warnstr = \
-                "Could not select \"{:s}\". Selection will be skipped."
-            log.warning(name)
-            continue
-        
-        identifiers.append((name, "", "", ""))
-        idxs.append((name, name, "", "", ""))
-        # log the selection
-        logstr = "Selection \"{:s}\" found with {:d} atoms."
-        sys.stdout.write(logstr.format(name, len(chosenselections[-1])))
-    
-    return identifiers, idxs, chosenselections
-
-
 def generate_cg_identifiers(pdb, uni, **kwargs):
     """Generate charged atoms identifiers."""
 
@@ -672,8 +640,6 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
 
     # return identifiers, IDs and atom selections
     return (identifiers, idxs, chosenselections)
-
-
       
 def generate_sc_identifiers(pdb, uni, **kwargs):
     """Generate side chain identifiers"""
@@ -726,7 +692,6 @@ def generate_sc_identifiers(pdb, uni, **kwargs):
                     resid, resname, sc_atoms_names_str))
 
     return (identifiers, idxs, chosenselections)
-    
      
 def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
     """Calculate side chain-side chain interaction matrix
@@ -757,7 +722,6 @@ def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
     fullmatrix[j_fullmatrix, i_fullmatrix] = percmat[i_percmat,j_percmat]
     # return the full matrix (square matrix)
     return fullmatrix
-
 
 def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     """Calculate charged atoms interaction matrix (salt bridges)"""
@@ -904,7 +868,6 @@ def do_interact(identfunc, \
     
     # return output string and fullmatrix
     return (outstr, fullmatrix)
-
 
 ############################### HBONDS ################################
 
