@@ -11,15 +11,19 @@ import filter_graph as fg
 import graph_analysis as ga
 
 
-TEST_DIR = os.path.join(os.getcwd(), "tests")
-MATRICES_DIR = os.path.join(TEST_DIR, "matrices")
-RESULTS_DIR = os.path.join(TEST_DIR, "results")
-PDB_FNAME = os.path.join(TEST_DIR, "files/ref.pdb")
-MATRICES_FNAMES = \
-    [os.path.join(MATRICES_DIR, mat) for mat in os.listdir(MATRICES_DIR)]
-
+FILES_DIR = os.path.join("examples")
+MATRICES_FNAMES = [os.path.join(FILES_DIR, "hc-graph.dat"), \
+                   os.path.join(FILES_DIR, "hc-graph-filtered.dat")]
 
 ######################## MODULE-LEVEL FIXTURES ########################
+
+@pytest.fixture(scope = "module")
+def pdb_fname():
+    return os.path.join(FILES_DIR, "sim.prot.A.pdb")
+
+@pytest.fixture(scope = "module")
+def matrices_fnames():
+    return MATRICES_FNAMES
 
 @pytest.fixture(\
     scope = "module", \
@@ -28,20 +32,12 @@ def matrix_fname(request):
     return request.param
 
 @pytest.fixture(scope = "module")
-def pdb_fname():
-    return PDB_FNAME
-
-@pytest.fixture(scope = "module")
-def matrices_fnames():
-    return MATRICES_FNAMES
-
-@pytest.fixture(scope = "module")
 def matrices():
-    return [np.loadtxt(mat) for mat in MATRICES_FNAMES]
+    return [np.loadtxt(fname) for fname in MATRICES_FNAMES]
 
 @pytest.fixture(scope = "module")
 def results_dir():
-    return RESULTS_DIR
+    return os.path.join(FILES_DIR, "results")
 
 
 ######################### FILTER GRAPH TESTS ##########################
@@ -181,11 +177,11 @@ class TestGraphAnalysis(object):
 
     @pytest.fixture(scope = "class")
     def source(self):
-        return "A-111CYS"
+        return "A-56ILE"
 
     @pytest.fixture(scope = "class")
     def target(self):
-        return "A-114SER"
+        return "A-92LEU"
 
     @pytest.fixture(scope = "class")
     def paths(self, G, source, target):
