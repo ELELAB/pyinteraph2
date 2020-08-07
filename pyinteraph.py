@@ -473,7 +473,7 @@ if not ref:
     log.info("Using topology as reference structure.")
 # Load systems
 try:
-    refuni = mda.Universe(ref)
+    pdb = mda.Universe(ref)
     uni = mda.Universe(top, trj)
 except ValueError:
     logstr = \
@@ -488,14 +488,13 @@ except ValueError:
 if do_hc:
     fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
     str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
-                                         refuni = refuni,
+                                         pdb = refuni,
                                          uni = uni,
                                          co = hc_co, 
                                          perco = hc_perco,
                                          ffmasses = ffmasses, 
-                                         calc_fullmatrix_func = fmfunc,
-                                         reslist = hc_reslist, \
-                                         sb = False)
+                                         fullmatrixfunc = fmfunc,
+                                         mindist = False)
 
     # Save .dat
     with open(hc_dat, "w") as out:
@@ -509,7 +508,7 @@ if do_hc:
 
 if do_sb:
     try:
-        cgs = li.parse_cgsfile(cgs_file)
+        cgs = li.parse_cgs_file(cgs_file)
     except IOError:
         logstr = f"Problems reading file {cgs_file}."
         log.error(logstr, exc_info = True)
@@ -530,14 +529,14 @@ if do_sb:
 
     fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
     str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
-                                         refuni = refuni,
+                                         pdb = pdb,
                                          uni = uni,
                                          co = sb_co, 
                                          perco = sb_perco,
                                          ffmasses = ffmasses, 
-                                         calc_fullmatrix_func = fmfunc, 
-                                         sb = True,
-                                         sbmode = sb_mode,
+                                         fullmatrixfunc = fmfunc, 
+                                         mindist = True,
+                                         mindist_mode = sb_mode,
                                          cgs = cgs)
 
     # Save .dat
@@ -614,17 +613,17 @@ if args.do_hb:
         log.error(logstr, exc_info = True)
         exit(1)
 
-    dofullmatrix = True if hb_graph else False
+    do_fullmatrix = True if hb_graph else False
     perresidue = False    
     str_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
                                        sel2 = hb_group2, \
-                                       refuni = refuni, \
+                                       pdb = pdb, \
                                        uni = uni, \
                                        distance = hb_co, \
                                        angle = hb_angle, \
                                        perco = hb_perco, \
-                                       dofullmatrix = dofullmatrix, \
-                                       otherhbs = hbs, \
+                                       do_fullmatrix = dofullmatrix, \
+                                       other_hbs = hbs, \
                                        perresidue = perresidue)                                    
 
     # Save .dat
@@ -644,16 +643,16 @@ if do_kbp:
          "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", \
          "TRP", "TYR", "VAL"]
     
-    kbpatoms = li.parse_kbpatomsfile(kbp_atomlist)
-    dofullmatrix = True if kbp_graph else False
-    str_out, kbp_mat_out = li.do_potential(kbpatoms = kbpatoms, \
-                                           reslist = kbp_reslist, \
-                                           potentialfile = kbp_ff, \
+    kbp_atomlist = li.parse_atomlist(kbp_atomlist)
+    do_fullmatrix = True if kbp_graph else False
+    str_out, kbp_mat_out = li.do_potential(kbp_atomlist = kbp_atomlist, \
+                                           residues_list = kbp_reslist, \
+                                           potential_file = kbp_ff, \
                                            uni = uni, \
-                                           refuni = refuni, \
-                                           dofullmatrix = dofullmatrix, \
+                                           pdb = pdb, \
+                                           do_fullmatrix = do_fullmatrix, \
                                            kbT = kbp_kbt, \
-                                           seqdistco = 0)
+                                           seq_dist_co = 0)
 
     # Save .dat
     with open(kbp_dat, "w") as out:
