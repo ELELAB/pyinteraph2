@@ -28,31 +28,12 @@ import logging as log
 import os
 import os.path
 import sys
-
+import pkg_resources
 import MDAnalysis as mda
 import numpy as np
 from libinteract import libinteract as li
 
 def main():
-
-    ######################## ENVIRONMENT VARIABLES ########################
-
-    INSTALL_DIR = os.getenv("PYINTERAPH")
-
-    if not INSTALL_DIR:
-        log.warn(\
-            "PYINTERAPH system variable should contain the path to the " \
-            "PYINTERAPH installation directory! Defaulting to local dir.")
-        INSTALL_DIR = os.getcwd()
-
-    if not os.path.isdir(INSTALL_DIR):
-        log.warn(\
-            "The path specified by system variable PYINTERAPH does not " \
-            "exist. Defaulting to local dir.")
-        INSTALL_DIR = os.getcwd()
-
-    sys.path.append(INSTALL_DIR)
-
 
     ########################### ARGUMENT PARSER ###########################
 
@@ -209,7 +190,7 @@ def main():
                         default = None, \
                         help = sbgraph_helpstr)
 
-    sbcgfile_default = os.path.join(INSTALL_DIR, "charged_groups.ini")
+    sbcgfile_default = pkg_resources.resource_filename('pyinteraph', "charged_groups.ini")
     sbcgfile_helpstr = "Default charged groups file (default: {:s})"
     parser.add_argument("--sb-cg-file", \
                         action = "store", \
@@ -299,7 +280,7 @@ def main():
                                 ", ".join(hbclass_choices), \
                                 hbclass_default))
 
-    hbadfile_default = os.path.join(INSTALL_DIR, "hydrogen_bonds.ini")
+    hbadfile_default = pkg_resources.resource_filename('pyinteraph', "hydrogen_bonds.ini")
     hbadfile_helpstr = \
         "File defining hydrogen bonds donor and acceptor atoms " \
         "(default: {:s})"
@@ -328,7 +309,7 @@ def main():
 
     #----------------------------- Potential -----------------------------#
 
-    kbpff_default = os.path.join(INSTALL_DIR, "ff.S050.bin64")
+    kbpff_default = pkg_resources.resource_filename('pyinteraph', "ff.S050.bin64")
     kbpff_helpstr = "Statistical potential definition file (default: {:s})"
     parser.add_argument("--kbp-ff", "--force-field", \
                         action = "store", \
@@ -337,7 +318,7 @@ def main():
                         default = kbpff_default, \
                         help = kbpff_helpstr.format(kbpff_default))
 
-    kbpatom_default = os.path.join(INSTALL_DIR, "kbp_atomlist")
+    kbpatom_default = pkg_resources.resource_filename('pyinteraph', "kbp_atomlist")
     kbpatom_helpstr = \
         "Ordered, force-field specific list of atom names (default: {:s})"
     parser.add_argument("--kbp-atomlist", \
@@ -382,7 +363,8 @@ def main():
     #---------------------------- Miscellanea ----------------------------#
 
     ff_masses_dir = "ff_masses"
-    masses_dir = INSTALL_DIR + ff_masses_dir
+    masses_dir = pkg_resources.resource_filename('pyinteraph', ff_masses_dir)
+
     masses_files = os.listdir(masses_dir)
 
     ffmasses_default = "charmm27"
