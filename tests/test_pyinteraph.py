@@ -7,11 +7,11 @@ import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal
 
-import filter_graph as fg
-import graph_analysis as ga
+from pyinteraph import filter_graph as fg
+from pyinteraph import graph_analysis as ga
 
 
-FILES_DIR = os.path.join("examples")
+FILES_DIR = os.path.join("../examples")
 MATRICES_FNAMES = [os.path.join(FILES_DIR, "hc-graph.dat"), \
                    os.path.join(FILES_DIR, "hc-graph-filtered.dat")]
 

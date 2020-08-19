@@ -251,8 +251,8 @@ def write_dat(matrices, \
 
 
 
-if __name__ == "__main__":
 
+def main():
     ########################## ARGUMENT PARSER ############################
 
     description = "Find persistence critical value"
@@ -482,3 +482,8 @@ if __name__ == "__main__":
                   matrix_filter = options.filter, \
                   out_dat = options.out_dat, \
                   weights = options.weights)
+
+
+if __name__ == "__main__":
+    main()
+
