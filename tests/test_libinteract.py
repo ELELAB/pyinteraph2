@@ -1,9 +1,10 @@
 import pytest
 import numpy as np
+import os
 from libinteract import libinteract as li
 from numpy.testing import *
 import MDAnalysis as mda
-
+import pkg_resources
 import configparser as cp
 
 @pytest.fixture
@@ -14,24 +15,23 @@ def data_files():
 
 @pytest.fixture
 def potential_file():
-    #XXX generalise this
-    return '../ff.S050.bin64'
+    return pkg_resources.resource_filename('pyinteraph', "ff.S050.bin64")
 
 @pytest.fixture
 def kbp_atoms_file():
-    return '../kbp_atomlist'
+    return pkg_resources.resource_filename('pyinteraph', "kbp_atomlist")
 
 @pytest.fixture
 def masses_file():
-    return '../ff_masses/charmm27'
+    return os.path.join(pkg_resources.resource_filename('pyinteraph', 'ff_masses'), 'charmm27')
 
 @pytest.fixture
 def cg_file():
-    return '../charged_groups.ini'
+    return pkg_resources.resource_filename('pyinteraph', "charged_groups.ini")
 
 @pytest.fixture
 def hb_file():
-    return '../hydrogen_bonds.ini'
+    return pkg_resources.resource_filename('pyinteraph', "hydrogen_bonds.ini")
 
 @pytest.fixture
 def ref_dir():
