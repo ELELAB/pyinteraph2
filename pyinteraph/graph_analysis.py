@@ -326,8 +326,7 @@ def write_paths_matrices(identifiers, G, paths, fmt, where):
     
 
 
-if __name__ == "__main__":
-
+def main():
     ######################### ARGUMENT PARSER #########################
 
     description = "PyInteraph network analysis module."
@@ -539,3 +538,7 @@ if __name__ == "__main__":
                                      paths = paths, \
                                      fmt = "%.1f", \
                                      where = os.getcwd())
+
+if __name__ == "__main__":
+    main()
+
