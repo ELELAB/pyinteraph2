@@ -11,33 +11,29 @@ from pyinteraph import filter_graph as fg
 from pyinteraph import graph_analysis as ga
 
 
-FILES_DIR = os.path.join("../examples")
-MATRICES_FNAMES = [os.path.join(FILES_DIR, "hc-graph.dat"), \
-                   os.path.join(FILES_DIR, "hc-graph-filtered.dat")]
-
 ######################## MODULE-LEVEL FIXTURES ########################
 
 @pytest.fixture(scope = "module")
-def pdb_fname():
-    return os.path.join(FILES_DIR, "sim.prot.A.pdb")
+def ref_dir(request):
+    return os.path.join(request.fspath.dirname, '../examples')
 
 @pytest.fixture(scope = "module")
-def matrices_fnames():
-    return MATRICES_FNAMES
-
-@pytest.fixture(\
-    scope = "module", \
-    params = MATRICES_FNAMES)
-def matrix_fname(request):
-    return request.param
+def pdb_fname(ref_dir):
+    return os.path.join(ref_dir, "sim.prot.A.pdb")
 
 @pytest.fixture(scope = "module")
-def matrices():
-    return [np.loadtxt(fname) for fname in MATRICES_FNAMES]
+def matrices_fnames(ref_dir):
+    return [ os.path.join(ref_dir, "hc-graph.dat"),
+             os.path.join(ref_dir, "hc-graph-filtered.dat") ]
+
 
 @pytest.fixture(scope = "module")
-def results_dir():
-    return os.path.join(FILES_DIR)
+def matrices(matrices_fnames):
+    return [np.loadtxt(fname) for fname in matrices_fnames]
+
+@pytest.fixture(scope = "module")
+def results_dir(ref_dir):
+    return os.path.join(ref_dir)
 
 
 ######################### FILTER GRAPH TESTS ##########################
@@ -154,13 +150,15 @@ class TestGraphAnalysis(object):
         return request.param
 
     @pytest.fixture(scope = "class")
-    def G(self, matrix_fname, pdb_fname):
+    def G(self, matrices_fnames, pdb_fname):
+        matrix_fname = matrices_fnames[0]
         identifiers, G = ga.build_graph(fname = matrix_fname, \
                                         pdb = pdb_fname)
         return G
 
     @pytest.fixture(scope = "class")
-    def identifiers(self, matrix_fname, pdb_fname):
+    def identifiers(self, matrices_fnames, pdb_fname):
+        matrix_fname = matrices_fnames[0]
         identifiers, G = ga.build_graph(fname = matrix_fname, \
                                         pdb = pdb_fname)
         return identifiers
