@@ -8,12 +8,6 @@ import pkg_resources
 import configparser as cp
 
 @pytest.fixture
-def data_files():
-    return { 'gro' : '../examples/sim.prot.gro',
-             'xtc' : '../examples/traj.xtc',
-             'pdb' : '../examples/sim.prot.A.pdb'}
-
-@pytest.fixture
 def potential_file():
     return pkg_resources.resource_filename('pyinteraph', "ff.S050.bin64")
 
@@ -34,8 +28,16 @@ def hb_file():
     return pkg_resources.resource_filename('pyinteraph', "hydrogen_bonds.ini")
 
 @pytest.fixture
-def ref_dir():
-    return '../examples/'
+def ref_dir(request):
+    return os.path.join(request.fspath.dirname, '../examples')
+
+@pytest.fixture
+def data_files(ref_dir):
+    return { 
+             'gro' : os.path.join(ref_dir, 'sim.prot.gro'),
+             'xtc' : os.path.join(ref_dir, 'traj.xtc'),
+             'pdb' : os.path.join(ref_dir, 'sim.prot.A.pdb')
+           }
 
 @pytest.fixture
 def ref_sb_file(ref_dir):
