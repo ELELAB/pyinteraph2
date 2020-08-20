@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
 from setuptools import setup, Extension
 
 libinteract = Extension('libinteract.innerloops', ['libinteract/innerloops.pyx', 'libinteract/clibinteract.c'])
 
 setup(name = 'pyinteraph',
-      url='http://linux.btbs.unimib.it/pyinteraph/',
+      url='https://www.github.com/ELELAB/pyinteraph',
       author="Matteo Tiberti, Gaetano Invernizzi, Yuval Inbar, Matteo Lambrughi, Gideon Schreiber, Elena Papaleo",
       author_email="matteo.tiberti@gmail.com",
       version = '1.1',
