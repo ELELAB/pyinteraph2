@@ -447,7 +447,7 @@ def main():
     ############################ CHECK INPUTS #############################
 
     # top and trj must be present
-    if not top or not traj:
+    if not top or not trj:
         log.error("Topology and trajectory are required.")
         exit(1)
     # if no reference, topology is reference
@@ -471,19 +471,20 @@ def main():
     if do_hc:
         fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
         str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
-                                             pdb = refuni,
+                                             pdb = pdb,
                                              uni = uni,
                                              co = hc_co, 
                                              perco = hc_perco,
                                              ffmasses = ffmasses, 
                                              fullmatrixfunc = fmfunc,
-                                             mindist = False)
+                                             mindist = False,
+                                             reslist = hc_reslist)
 
         # Save .dat
         with open(hc_dat, "w") as out:
             out.write(str_out)
         # Save .mat (if available)
-        if hc_mat_out:
+        if hc_mat_out is not None:
             np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
 
 
@@ -526,7 +527,7 @@ def main():
         with open(sb_dat, "w") as out:
             out.write(str_out)
         # Save .mat (if available)
-        if sb_mat_out:
+        if sb_mat_out is not None:
             np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
 
 
@@ -605,7 +606,7 @@ def main():
                                            distance = hb_co, \
                                            angle = hb_angle, \
                                            perco = hb_perco, \
-                                           do_fullmatrix = dofullmatrix, \
+                                           do_fullmatrix = do_fullmatrix, \
                                            other_hbs = hbs, \
                                            perresidue = perresidue)                                    
 
@@ -613,7 +614,7 @@ def main():
         with open(hb_dat, "w") as out:
             out.write(str_out)
         # Save .mat (if available)
-        if hb_mat_out:
+        if hb_mat_out is not None:
             np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
 
 
@@ -641,7 +642,7 @@ def main():
         with open(kbp_dat, "w") as out:
             out.write(str_out)
         # Save .mat (if available)
-        if kbp_mat_out:
+        if kbp_mat_out is not None:
             np.savetxt(kbp_graph, kbp_mat_out, fmt = "%.3f")
 
 if __name__ == "__main__":
