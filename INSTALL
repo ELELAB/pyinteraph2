@@ -12,7 +12,7 @@ In order to build PyInteraph from source you will need
 - Python 3.6 or higher with setuptools
 - a C/C++ compiler (e.g. GNU gcc)
 - the Python header files (e.g. package python-dev in Debian-based Linux distributions)
-- several open-source Python packages
+- several open-source Python packages, including numpy and Cython
 
 Please see the setup.py file for the complete list of requirements.
 
@@ -39,7 +39,11 @@ They require that you have the virtualenv package installed system-wide. On Debi
     unzip pyinteraph2-feature_py3.zip
     cd pyinteraph2-feature_py3
 
-4) install PyInteraph. This will also install all the required Python packages in your environment.
+4) install the numpy and cython packages. These are requirements to install PyInteraph.
+
+    pip install numpy cython
+
+5) install PyInteraph. This will also install all the required Python packages in your environment.
 
     python setup.py install
 

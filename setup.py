@@ -1,4 +1,5 @@
 from setuptools import setup, Extension
+import numpy as np
 
 libinteract = Extension('libinteract.innerloops', ['libinteract/innerloops.pyx', 'libinteract/clibinteract.c'])
 
@@ -24,5 +25,7 @@ setup(name = 'pyinteraph',
                         "networkx",
                         "scipy",
                         "pytest"],
-      setup_requires=["numpy"]
+      setup_requires=["numpy",
+                      "cython"],
+      include_dirs=[np.get_include()]
       )
