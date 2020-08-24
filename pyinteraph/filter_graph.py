@@ -410,6 +410,7 @@ def main():
 
     ############################## FITTING ################################
 
+    args = None
     if options.do_fit:
         logstr = \
             '"""\nFitting data points to functional form: ' \
@@ -418,7 +419,6 @@ def main():
         log.info(\
             logstr.format(options.x0, options.k, options.m, options.n))
         # args will be None unless the fitting completes successfully
-        args = None
         args = perform_fitting(f = sigmoid, \
                                xdata = interval, \
                                ydata = maxclustsizes, \
@@ -456,7 +456,7 @@ def main():
 
     ############################## PLOTTING ###############################
 
-    if options.out_plot:
+    if options.out_plot and args is not None:
         perform_plotting(x = interval, \
                          y = maxclustsizes, \
                          lower = options.lower, \
