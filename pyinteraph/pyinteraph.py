@@ -97,10 +97,9 @@ def main():
 
     hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
     hcres_helpstr = \
-        "Comma-separated list of hydrophobic residues (default: {:s})"
+        "comma-separated list of hydrophobic residues (default: {:s})"
     parser.add_argument("--hc-residues", \
                         action = "store", \
-                        nargs = "+", \
                         type = str, \
                         dest = "hc_reslist", \
                         default = hc_reslist, \
@@ -409,7 +408,11 @@ def main():
     ref = args.ref
     # hydrophobic contacts
     do_hc = args.do_hc
-    hc_reslist = args.hc_reslist
+    if type(args.hc_reslist) is str:
+        hc_reslist = [l.strip() for l in args.hc_reslist.split(",")]
+    else:
+        hc_reslist = args.hc_reslist
+
     hc_graph = args.hc_graph
     hc_co = args.hc_co
     hc_perco = args.hc_perco
