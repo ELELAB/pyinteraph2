@@ -232,6 +232,7 @@ def get_paths(G, source, target, maxl, sort_paths_by):
     # both nodes must be in the graph
     if not source in G.nodes() or not target in G.nodes():
         errstr = "Source or target residues have been badly specified."
+        log.error(errstr)
         raise ValueError(errstr)
     # check if there are any paths
     try:
@@ -525,9 +526,10 @@ def main():
                               sort_paths_by = args.sort_paths_by)
         except ValueError:
             errstr = "Could not compute paths."
-            log.error(errstr, exc_info = True)     
+            log.error(errstr)
+            paths = None
         # if paths have been found
-        if paths:
+        if paths is not None:
             # write the paths
             write_paths(paths = paths, outfile = None)
             # if path matrices have been requested           
