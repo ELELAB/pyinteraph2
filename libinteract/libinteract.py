@@ -762,10 +762,10 @@ def generate_sc_identifiers(pdb, uni, **kwargs):
 def calc_sc_fullmatrix(identifiers, idxs, percmat, perco):
     """Calculate side chain-side chain interaction matrix
     (hydrophobic contacts)"""
-
     # create a matrix of size identifiers x identifiers
     fullmatrix = np.zeros((len(identifiers), len(identifiers)))
     # get where (index) the elements of idxs are in identifiers
+    
     where_idxs_in_identifiers = \
         [identifiers.index(item) for item in idxs]
     # get where (index) each element of idxs is in idxs
@@ -910,8 +910,6 @@ def do_interact(identfunc, \
     outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{:3.1f}\n"
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
-    #print("IDXS", idxs)
-    #print("IDS", ids)
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
     for i, j in where_gt_perco:
         #print(i, j)
