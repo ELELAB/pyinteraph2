@@ -538,8 +538,8 @@ def main():
 
     if args.do_hb:
         # atom selection for main chain hydrogen bonds
-        mc_sel = "protein and (backbone or name H or name H1 or name H2 " \
-                 "or name H3 or name O1 or name O2 or name OXT)"
+        mc_sel = "backbone or name H or name H1 or name H2 " \
+                 "or name H3 or name O1 or name O2 or name OXT"
         # atom selection for side chain hydrogen bonds
         sc_sel = f"protein and (not {mc_sel})"
 
