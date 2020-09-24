@@ -136,10 +136,10 @@ def write_connected_components(ccs, outfile = None):
         raise NotImplementedError
 
 
-def write_connected_components_pdb(identifiers, \
-                                   ccs, \
-                                   ref, \
-                                   components_pdb, \
+def write_connected_components_pdb(identifiers,
+                                   ccs,
+                                   ref,
+                                   components_pdb,
                                    replace_bfac_func):
     """Write a PDB file with the input structure but the B factor
     column replaced for each residue with the number of the
@@ -153,8 +153,8 @@ def write_connected_components_pdb(identifiers, \
     # write a PDB file identical to the reference PDB file
     # but with the b-factor column filled with the number of
     # the connected component a residue belongs to
-    replace_bfac_func(pdb = ref, \
-                      vals = conn_comp_array, \
+    replace_bfac_func(pdb = ref,
+                      vals = conn_comp_array,
                       pdb_out = components_pdb)
 
 
@@ -175,13 +175,13 @@ def get_hubs(G, min_k = 3, sorting = None):
         sorted_hubs = hubs
     # sort the hubs in ascending order of degree
     elif sorting == "ascending":
-        sorted_hubs = sorted(hubs.items(), \
-                             key = lambda item: item[1], \
+        sorted_hubs = sorted(hubs.items(),
+                             key = lambda item: item[1],
                              reverse = False)
     # sort hubs in descending order of degree
     elif sorting == "descending":
-        sorted_hubs = sorted(hubs.items(), \
-                             key = lambda item: item[1], \
+        sorted_hubs = sorted(hubs.items(),
+                             key = lambda item: item[1],
                              reverse = True)
     # return the sorted list of hubs
     return sorted_hubs
@@ -201,10 +201,10 @@ def write_hubs(hubs, outfile = None):
         raise NotImplementedError
 
 
-def write_hubs_pdb(identifiers, \
-                   hubs, \
-                   ref, \
-                   hubs_pdb, \
+def write_hubs_pdb(identifiers,
+                   hubs,
+                   ref,
+                   hubs_pdb,
                    replace_bfac_func):
     """Write a PDB file with the input structure but the B factor
     column replaced for each residue with the degree of that
@@ -220,8 +220,8 @@ def write_hubs_pdb(identifiers, \
     # write a PDB file identical to the reference PDB file
     # but with the b-factor column filled with the degree of
     # a residue if it is a hub, zero otherwise       
-    replace_bfac_func(pdb = ref, \
-                      vals = hubs_array, \
+    replace_bfac_func(pdb = ref,
+                      vals = hubs_array,
                       pdb_out = hubs_pdb) 
 
 
@@ -256,9 +256,9 @@ def get_paths(G, source, target, maxl, sort_paths_by):
 
     # calculate all the paths
     paths = list(nx.algorithms.simple_paths.all_simple_paths(\
-                    G = G, \
-                    source = source, \
-                    target = target, \
+                    G = G,
+                    source = source,
+                    target = target,
                     cutoff = maxl))
     # get the length of each path
     lengths = [len(p) for p in paths]         
@@ -334,69 +334,69 @@ def main():
     parser = argparse.ArgumentParser(description = description)
 
     r_helpstr = "Reference topology file"
-    parser.add_argument("-r", "--reference", \
-                        metavar = "TOPOLOGY", \
-                        dest = "top", \
-                        type = str, \
-                        default = None, \
+    parser.add_argument("-r", "--reference",
+                        metavar = "TOPOLOGY",
+                        dest = "top",
+                        type = str,
+                        default = None,
                         help = r_helpstr)
 
     a_helpstr = "Input graph file"
-    parser.add_argument("-a", "--adj-matrix", \
-                        metavar = "DAT", \
-                        dest = "dat", \
-                        type = str, \
-                        default = None, \
+    parser.add_argument("-a", "--adj-matrix",
+                        metavar = "DAT",
+                        dest = "dat",
+                        type = str,
+                        default = None,
                         help = a_helpstr)
 
     c_helpstr = "Calculate connected components"
-    parser.add_argument("-c", "--components", \
-                        dest = "do_components", \
-                        action = "store_true", \
-                        default = False, \
+    parser.add_argument("-c", "--components",
+                        dest = "do_components",
+                        action = "store_true",
+                        default = False,
                         help = c_helpstr)
 
     u_helpstr = "Calculate hubs"
-    parser.add_argument("-u", "--hubs", \
-                        dest = "do_hubs", \
-                        action = "store_true", \
-                        default = False, \
+    parser.add_argument("-u", "--hubs",
+                        dest = "do_hubs",
+                        action = "store_true",
+                        default = False,
                         help = u_helpstr)
 
     k_default = 3
     k_helpstr = "Minimum number of connections for hubs (default: {:d})"
-    parser.add_argument("-k", "--hubs-cutoff", \
-                        dest = "hubs_cutoff", \
-                        default = k_default, \
-                        type = int, \
+    parser.add_argument("-k", "--hubs-cutoff",
+                        dest = "hubs_cutoff",
+                        default = k_default,
+                        type = int,
                         help = k_helpstr.format(k_default))
 
     p_helpstr = "Calculate all simple paths between " \
                 "two residues in the graph"
-    parser.add_argument("-p", "--all-paths", \
-                        dest = "do_paths", \
-                        action = "store_true", \
-                        default = False, \
+    parser.add_argument("-p", "--all-paths",
+                        dest = "do_paths",
+                        action = "store_true",
+                        default = False,
                         help = p_helpstr)
 
     r1_helpstr = "First residue for paths calculation (see option -p)"
-    parser.add_argument("-r1", "--source", \
-                        dest = "source", \
-                        default = None, \
+    parser.add_argument("-r1", "--source",
+                        dest = "source",
+                        default = None,
                         help = r1_helpstr)
 
     r2_helpstr = "Last residue for paths calculation (see option -p)"
-    parser.add_argument("-r2", "--target", \
-                        dest = "target", \
-                        default = None, \
+    parser.add_argument("-r2", "--target",
+                        dest = "target",
+                        default = None,
                         help = r2_helpstr)
 
     l_default = 10
     l_helpstr = "Maximum path length (see option -p) (default: {:d})"
     parser.add_argument("-l", "--maximum-path-length", \
-                        dest = "maxl", \
-                        default = l_default, \
-                        type = int, \
+                        dest = "maxl",
+                        default = l_default,
+                        type = int,
                         help = l_helpstr.format(l_default))
 
     s_choices = ["length", "cumulative_weight", "avg_weight"]
@@ -404,30 +404,30 @@ def main():
     s_helpstr = \
         "How to sort pathways in output. Possible choices are {:s}" \
         " (default: {:s})"
-    parser.add_argument("-s", "--sort-paths", \
-                        dest = "sort_paths_by", \
-                        choices = s_choices, \
-                        default = "length", \
+    parser.add_argument("-s", "--sort-paths",
+                        dest = "sort_paths_by",
+                        choices = s_choices,
+                        default = "length",
                         help = \
                             s_helpstr.format(", ".join(s_choices), s_default))
 
     cb_helpstr = "Save connected components ID in PDB file"
-    parser.add_argument("-cb", "--components-pdb", \
-                        dest = "components_pdb", \
-                        default = None, \
+    parser.add_argument("-cb", "--components-pdb",
+                        dest = "components_pdb",
+                        default = None,
                         help = cb_helpstr)
 
     ub_helpstr = "Save hub degrees in PDB file"
-    parser.add_argument("-ub", "--hubs-pdb", \
-                        dest = "hubs_pdb", \
-                        default = None, \
+    parser.add_argument("-ub", "--hubs-pdb",
+                        dest = "hubs_pdb",
+                        default = None,
                         help = cb_helpstr)
 
     d_helpstr = "Write the paths found as matrices"
-    parser.add_argument("-d", "--write-paths", \
-                        dest = "write_paths", \
-                        default = False, \
-                        action = "store_true", \
+    parser.add_argument("-d", "--write-paths",
+                        dest = "write_paths",
+                        default = False,
+                        action = "store_true",
                         help = d_helpstr)
 
     args = parser.parse_args()
@@ -478,11 +478,11 @@ def main():
         # components
         if args.components_pdb:
             # write PDB file with B-factor column replaced
-            write_connected_components_pdb(\
-                identifiers = identifiers, \
-                ccs = ccs, \
-                ref = args.top, \
-                components_pdb = args.components_pdb, \
+            write_connected_components_pdb(
+                identifiers = identifiers,
+                ccs = ccs,
+                ref = args.top,
+                components_pdb = args.components_pdb,
                 replace_bfac_func = replace_bfac_column)
 
 
@@ -490,8 +490,8 @@ def main():
             
     if args.do_hubs:
         # calculate the hubs
-        hubs = get_hubs(G = G, \
-                        min_k = args.hubs_cutoff, \
+        hubs = get_hubs(G = G,
+                        min_k = args.hubs_cutoff,
                         sorting = "descending")
         # if hubs have been found
         if hubs:
@@ -501,11 +501,13 @@ def main():
             if args.hubs_pdb:
                 # write PDB file with B-factor column replaced
                 write_hubs_pdb(\
-                    identifiers = identifiers, \
-                    hubs = hubs, \
-                    ref = args.top, \
-                    hubs_pdb = args.hubs_pdb, \
+                    identifiers = identifiers,
+                    hubs = hubs,
+                    ref = args.top,
+                    hubs_pdb = args.hubs_pdb,
                     replace_bfac_func = replace_bfac_column)
+        else:
+            log.warning("No hubs were found")
 
 
     ############################## PATHS ##############################
@@ -519,10 +521,10 @@ def main():
             exit(1)
         try:
             # calculate paths between a pair of residues
-            paths = get_paths(G = G, \
-                              source = args.source, \
-                              target = args.target, \
-                              maxl = args.maxl, \
+            paths = get_paths(G = G,
+                              source = args.source,
+                              target = args.target,
+                              maxl = args.maxl,
                               sort_paths_by = args.sort_paths_by)
         except ValueError:
             errstr = "Could not compute paths."
@@ -535,10 +537,10 @@ def main():
             # if path matrices have been requested           
             if args.write_paths:
                 # write paths as matrices
-                write_paths_matrices(identifiers = identifiers, \
-                                     G = G, \
-                                     paths = paths, \
-                                     fmt = "%.1f", \
+                write_paths_matrices(identifiers = identifiers,
+                                     G = G,
+                                     paths = paths,
+                                     fmt = "%.1f",
                                      where = os.getcwd())
 
 if __name__ == "__main__":
