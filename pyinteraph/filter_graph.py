@@ -114,9 +114,9 @@ def perform_fitting(f, xdata, ydata, maxfev, p0):
         # try to perform the curve fitting
         popt, pcov = \
             curve_fit(f = f, \
-                      xdata = xdata, \
-                      ydata = ydata, \
-                      maxfev = maxfev, \
+                      xdata = xdata,
+                      ydata = ydata,
+                      maxfev = maxfev,
                       p0 = p0)
         # results of the fitting
         args = (popt[0], popt[1], popt[2], popt[3])
@@ -149,20 +149,20 @@ def find_flex(func, x0, args, maxfev):
     """Find the point of inflection."""
 
     # flex will be None unless the calculation completes successfully
-    return fsolve(func = seconddevsigmoid, \
-                  x0 = x0, \
-                  args = args, \
-                  maxfev = maxfev, \
+    return fsolve(func = seconddevsigmoid,
+                  x0 = x0,
+                  args = args,
+                  maxfev = maxfev,
                   full_output = True)
 
 
-def perform_plotting(x, \
-                     y, \
-                     lower, \
-                     upper, \
-                     out_plot, \
-                     args = None, \
-                     flex = None, \
+def perform_plotting(x,
+                     y,
+                     lower,
+                     upper,
+                     out_plot,
+                     args = None,
+                     flex = None,
                      func_sigmoid = None):
     """Plot the dependency between the persistence
     cut-off and the size of the biggest cluster."""
@@ -181,10 +181,10 @@ def perform_plotting(x, \
         plt.plot(xplot, yplot, label = "Fitting")
         # plot the inflection point, if found
         if flex is not None:
-            plt.plot(flex, \
-                     func_sigmoid(flex, *args),\
-                     "o", \
-                     label = "Critical value", \
+            plt.plot(flex,
+                     func_sigmoid(flex, *args),
+                     "o",
+                     label = "Critical value",
                      color = "red")
             # plot a vertical line corresponding
             # to the inflection point
@@ -208,9 +208,9 @@ def write_clusters(out_clusters, interval, maxclustsizes):
             fh.write("{:.3f}\t{:d}\n".format(pmin, maxclustsize))
 
 
-def write_dat(matrices, \
-              matrix_filter, \
-              out_dat, \
+def write_dat(matrices,
+              matrix_filter,
+              out_dat,
               weights = None):
 
     """Write matrices to a .dat file (logical OR applied if
@@ -220,8 +220,8 @@ def write_dat(matrices, \
         # where the mask is True, the corresponding value 
         # in the array is invalid    
         mask = (matrices[0] <= matrix_filter)
-        out_matrix = np.ma.masked_array(data = matrices[0], \
-                                        mask = mask, \
+        out_matrix = np.ma.masked_array(data = matrices[0],
+                                        mask = mask,
                                         fill_value = 0.0).filled()
     else:
         # boolean matrices indicating where the original
@@ -240,11 +240,11 @@ def write_dat(matrices, \
             raise IOError("Could not read weights matrix.")
         # check the shape of the matrix of weights
         if weights_matrix.shape != out_matrix.shape:
-            raise ValueError("Output and weight matrix " \
+            raise ValueError("Output and weight matrix "
                              "have different shapes.")
         # update out matrix
-        out_matrix = np.ma.masked_array(data = weights_matrix, \
-                                        mask = out_matrix > 0.0, \
+        out_matrix = np.ma.masked_array(data = weights_matrix,
+                                        mask = out_matrix > 0.0,
                                         fill_value = 0.0).filled()
     # save the output matrix
     np.savetxt(out_dat, out_matrix, fmt = "%3.2f")
@@ -260,119 +260,119 @@ def main():
 
     d_helpstr = \
         ".dat file matrices (multiple: -d file.dat -d file2.dat ...)"
-    parser.add_argument("-d", "--input-dat", \
-                        dest = "datfiles", \
-                        help = d_helpstr, \
-                        action = "append", \
+    parser.add_argument("-d", "--input-dat",
+                        dest = "datfiles",
+                        help = d_helpstr,
+                        action = "append",
                         default = None)
 
     o_helpstr = "Output .dat file matrix"
-    parser.add_argument("-o", "--output-dat", \
-                        dest = "out_dat", \
-                        help = o_helpstr, \
-                        action = "store", \
-                        type = str, \
+    parser.add_argument("-o", "--output-dat",
+                        dest = "out_dat",
+                        help = o_helpstr,
+                        action = "store",
+                        type = str,
                         default = None)
 
     c_helpstr = "Output clusters file"
-    parser.add_argument("-c", "--output-clusters", \
-                        dest = "out_clusters", \
-                        help = c_helpstr, \
-                        action = "store", \
-                        type = str, \
+    parser.add_argument("-c", "--output-clusters",
+                        dest = "out_clusters",
+                        help = c_helpstr,
+                        action = "store",
+                        type = str,
                         default = None)
 
     t_default = 0.0
     t_helpstr = \
         "Filter input matrices according to this threshold (default: {:f})"
-    parser.add_argument("-t", "--filter-threshold", \
-                        dest = "filter", \
-                        help = t_helpstr.format(t_default), \
-                        type = float, \
+    parser.add_argument("-t", "--filter-threshold",
+                        dest = "filter",
+                        help = t_helpstr.format(t_default),
+                        type = float,
                         default = t_default)
 
     p_helpstr = "Name of the file where to plot clusters"
-    parser.add_argument("-p", "--plot", \
-                        dest = "out_plot", \
-                        help = p_helpstr, \
+    parser.add_argument("-p", "--plot",
+                        dest = "out_plot",
+                        help = p_helpstr,
                         default = None)
 
     f_helpstr = \
         "Try to fit the plot to a sigmoid y = m / (1 + exp(k*(x-x0))) + n"
-    parser.add_argument("-f", "--fit", \
-                        dest = "do_fit", \
-                        help = f_helpstr, \
+    parser.add_argument("-f", "--fit",
+                        dest = "do_fit",
+                        help = f_helpstr,
                         action = "store_true")
 
     u_default = 100.0
     u_helpstr = \
         "Maxium range value to be considered (default: {:f})"
-    parser.add_argument("-u", "--range-upper", \
-                        dest = "upper", \
-                        help = u_helpstr.format(u_default), \
-                        type = float, \
+    parser.add_argument("-u", "--range-upper",
+                        dest = "upper",
+                        help = u_helpstr.format(u_default),
+                        type = float,
                         default = u_default)
 
     l_default = 0.0
     l_helpstr = "Minimum range value to be considered (default: {:f})"
-    parser.add_argument("-l", "--range-lower", \
-                        dest = "lower", \
-                        help = l_helpstr.format(l_default), \
-                        type = float, \
+    parser.add_argument("-l", "--range-lower",
+                        dest = "lower",
+                        help = l_helpstr.format(l_default),
+                        type = float,
                         default = l_default)
 
     s_default = 5.0
     s_helpstr = \
         "Step range value to be considered (default: {:f})"
-    parser.add_argument("-s", "--range-step", \
-                        dest = "step", \
-                        help = s_helpstr.format(s_default), \
-                        type = float, \
+    parser.add_argument("-s", "--range-step",
+                        dest = "step",
+                        help = s_helpstr.format(s_default),
+                        type = float,
                         default = s_default)
 
     w_helpstr = \
         "Use values in this matrix as weights for the output " \
         "adjacency matrix"
-    parser.add_argument("-w", "--weight-matrix", \
-                        dest = "weights", \
-                        help = w_helpstr, \
-                        type = str, \
+    parser.add_argument("-w", "--weight-matrix",
+                        dest = "weights",
+                        help = w_helpstr,
+                        type = str,
                         default = None)
 
     x_default = 20.0
     x_helpstr = \
         "Starting x0 parameter for sigmoid fitting (default: {:f})"
-    parser.add_argument("-x", "--x0", \
-                        dest = "x0", \
-                        help = x_helpstr.format(x_default), \
-                        type = float, \
+    parser.add_argument("-x", "--x0",
+                        dest = "x0",
+                        help = x_helpstr.format(x_default),
+                        type = float,
                         default = x_default)
 
     k_default = 2.0
     k_helpstr = \
         "Starting k parameter for sigmoid fitting (default: {:f})"
-    parser.add_argument("-k", \
-                        dest = "k", \
+    parser.add_argument("-k",
+                        dest = "k",
                         help = k_helpstr.format(k_default),
-                        type = float, \
+                        type = float,
                         default = k_default)
 
     m_default = 20.0
     m_helpstr = \
         "Starting m parameter for sigmoid fitting (default: {:f})"
-    parser.add_argument("-m", \
-                        dest = "m", \
-                        help = m_helpstr.format(m_default), \
-                        type = float, \
+    parser.add_argument("-m",
+                        dest = "m",
+                        help = m_helpstr.format(m_default),
+                        type = float,
                         default = m_default)
 
     n_default = 10.0
     n_helpstr = \
         "Starting n parameter for sigmoid fitting (default: {:f})"
-    parser.add_argument("-n", \
-                        dest = "n", \
-                        help = n_helpstr.format(n_default), \
-                        type = float, \
+    parser.add_argument("-n",
+                        dest = "n",
+                        help = n_helpstr.format(n_default),
+                        type = float,
                         default = n_default)
 
     options = parser.parse_args()
@@ -404,7 +404,7 @@ def main():
     # set the interval of persistence cut-offs
     interval = np.arange(options.lower, options.upper, options.step)
     # find the maximum cluster size at each cut-off
-    maxclustsizes = get_maxclustsizes(matrices = matrices, \
+    maxclustsizes = get_maxclustsizes(matrices = matrices,
                                       interval = interval)
 
 
@@ -419,13 +419,12 @@ def main():
         log.info(\
             logstr.format(options.x0, options.k, options.m, options.n))
         # args will be None unless the fitting completes successfully
-        args = perform_fitting(f = sigmoid, \
-                               xdata = interval, \
-                               ydata = maxclustsizes, \
-                               maxfev = 100000, \
-                               p0 = (options.x0, options.k, \
+        args = perform_fitting(f = sigmoid,
+                               xdata = interval,
+                               ydata = maxclustsizes,
+                               maxfev = 100000,
+                               p0 = (options.x0, options.k,
                                      options.m, options.n))
-
 
         ####################### SECOND DERIVATIVE #########################
         
@@ -441,9 +440,9 @@ def main():
             log.info("Starting from: {:3.5f} ...".format(solvestart))
             # find the inflection point
             flex, infodict, ier, mesg = \
-                find_flex(func = seconddevsigmoid, \
-                          x0 = solvestart, \
-                          args = args, \
+                find_flex(func = seconddevsigmoid,
+                          x0 = solvestart,
+                          args = args,
                           maxfev = 5000)
             # log the result of the flex search
             if ier == 1:
@@ -452,35 +451,38 @@ def main():
                 log.info("No inflection point found. " \
                          "Reason: {:s}. Last iteration value: " \
                          " {:3.2f}".format(mesg, flex[0]))
-
+    else:
+        args = None
+        flex = None
+        func_sigmoid = None
 
     ############################## PLOTTING ###############################
 
-    if options.out_plot and args is not None:
-        perform_plotting(x = interval, \
-                         y = maxclustsizes, \
-                         lower = options.lower, \
-                         upper = options.upper, \
-                         out_plot = options.out_plot, \
-                         args = args, \
-                         flex = flex, \
+    if options.out_plot:
+        perform_plotting(x = interval,
+                         y = maxclustsizes,
+                         lower = options.lower,
+                         upper = options.upper,
+                         out_plot = options.out_plot,
+                         args = args,
+                         flex = flex,
                          func_sigmoid = sigmoid)
 
 
     ########################### OUTPUT CLUSTERS ###########################
 
     if options.out_clusters:
-        write_clusters(out_clusters = options.out_clusters, \
-                       interval = interval, \
+        write_clusters(out_clusters = options.out_clusters,
+                       interval = interval,
                        maxclustsizes = maxclustsizes)
 
 
     ############################# OUTPUT DAT ##############################
 
     if options.out_dat:
-        write_dat(matrices = matrices, \
-                  matrix_filter = options.filter, \
-                  out_dat = options.out_dat, \
+        write_dat(matrices = matrices,
+                  matrix_filter = options.filter,
+                  out_dat = options.out_dat,
                   weights = options.weights)
 
 
