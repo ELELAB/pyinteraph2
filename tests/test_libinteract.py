@@ -218,8 +218,6 @@ def test_generate_sc_identifiers(simulation, hc_residues_list):
 
 def test_parse_cg_files(cg_file):
     data = li.parse_cgs_file(cg_file)
-"""
-"""
 
 def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
     str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
@@ -237,7 +235,6 @@ def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
     split_str = str_out.split("\n")[:-1]
     for i, s in enumerate(split_str):
         assert(s == ref_sb[i].strip())
-
 
 def test_do_interact_hc(simulation, hc_residues_list, ref_hc_graph, ref_hc):
     str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
