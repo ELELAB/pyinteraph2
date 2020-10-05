@@ -113,7 +113,7 @@ def build_graph(fname, pdb = None):
 
 def get_connected_components(G):
     """Get the connected components of the graph."""
-    
+    print(list(nx.connected_components(G)))
     return list(nx.connected_components(G))
 
 
@@ -172,7 +172,7 @@ def get_hubs(G, min_k = 3, sorting = None):
         return
     # if no sorting was requested
     if sorting is None:
-        sorted_hubs = hubs
+        sorted_hubs = hubs.items()
     # sort the hubs in ascending order of degree
     elif sorting == "ascending":
         sorted_hubs = sorted(hubs.items(),
@@ -184,6 +184,7 @@ def get_hubs(G, min_k = 3, sorting = None):
                              key = lambda item: item[1],
                              reverse = True)
     # return the sorted list of hubs
+    print(sorted_hubs)
     return sorted_hubs
 
 
@@ -287,6 +288,7 @@ def get_paths(G, source, target, maxl, sort_paths_by):
         key = lambda x: x[3]
         reverse = True
     # return the sortes list of paths
+    print(sorted(full_paths, key = key, reverse = reverse))
     return sorted(full_paths, key = key, reverse = reverse)
 
 
