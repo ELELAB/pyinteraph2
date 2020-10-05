@@ -158,7 +158,7 @@ class TestGraphAnalysis(object):
 
     @pytest.fixture(scope = "class")
     def identifiers(self, matrices_fnames, pdb_fname):
-        matrix_fname = matrices_fnames[0]
+        matrix_fname = matrices_fnames[1]
         identifiers, G = ga.build_graph(fname = matrix_fname,
                                         pdb = pdb_fname)
         return identifiers
@@ -183,7 +183,7 @@ class TestGraphAnalysis(object):
 
     @pytest.fixture(scope = "class")
     def paths(self, G, source, target):
-        maxl = 10
+        maxl = 3
         sort_paths_by = "cumulative_weight"
         return ga.get_paths(G = G,
                             source = source,
@@ -193,7 +193,7 @@ class TestGraphAnalysis(object):
 
     #---------------------------- Tests ------------------------------#
 
-    def test_hubs(self, G, hubs):
+    def test_hubs(self, hubs):
         expected = [('A-69MET', 7), ('A-24LEU', 6), ('A-106LEU', 6), ('A-22ILE', 5), 
                     ('A-67PRO', 5), ('A-105ALA', 5), ('A-11ILE', 4), ('A-20ALA', 4),
                     ('A-35LEU', 4), ('A-56ILE', 4), ('A-71PHE', 4), ('A-78PRO', 4),
@@ -204,7 +204,7 @@ class TestGraphAnalysis(object):
                     ('A-141ALA', 3)]
         assert_equal(hubs, expected)
 
-    def test_ccs(self, G, ccs):
+    def test_ccs(self, ccs):
         expected = [{'A-2SER'}, {'A-3ARG'}, {'A-35LEU', 'A-4ALA', 'A-64PHE', 'A-20ALA',
                      'A-56ILE', 'A-105ALA', 'A-89LEU', 'A-63PRO', 'A-100ILE', 'A-71PHE',
                      'A-98PRO', 'A-7ILE', 'A-112LEU', 'A-18PRO', 'A-107ILE', 'A-66PRO',
@@ -234,6 +234,16 @@ class TestGraphAnalysis(object):
                      {'A-136SER'}, {'A-138ASN'}, {'A-139LYS'}, {'A-140THR'}, {'A-143LEU', 'A-147LEU'},
                      {'A-144TRP'}, {'A-145THR'}, {'A-146ARG'}, {'A-148TYR'}, {'A-150SER'}]
         assert_equal(ccs, expected)
+
+    def test_paths(self, paths):
+        expected = [(['A-56ILE', 'A-69MET', 'A-92LEU'], 3, 97.4, 48.7),
+                    (['A-56ILE', 'A-69MET', 'A-105ALA', 'A-92LEU'], 4, 93.4, 31.133333333333336),
+                    (['A-56ILE', 'A-54VAL', 'A-69MET', 'A-92LEU'], 4, 32.5, 10.833333333333334), 
+                    (['A-56ILE', 'A-102LEU', 'A-105ALA', 'A-92LEU'], 4, 4.7, 1.5666666666666667)]
+        print(expected)
+        print("-------")
+        print(paths)
+        assert_equal(paths, expected)
 
     def test_get_resnum(self, resstring):
         return ga.get_resnum(resstring = resstring)
