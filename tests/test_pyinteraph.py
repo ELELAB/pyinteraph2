@@ -171,7 +171,7 @@ class TestGraphAnalysis(object):
     def hubs(self, G):
         return ga.get_hubs(G = G, \
                            min_k = 3,
-                           sorting = "ascending")
+                           sorting = "descending")
 
     @pytest.fixture(scope = "class")
     def source(self):
@@ -193,7 +193,7 @@ class TestGraphAnalysis(object):
 
     #---------------------------- Tests ------------------------------#
 
-    def test_hubs(self, G):
+    def test_hubs(self, G, hubs):
         expected = [('A-69MET', 7), ('A-24LEU', 6), ('A-106LEU', 6), ('A-22ILE', 5), 
                     ('A-67PRO', 5), ('A-105ALA', 5), ('A-11ILE', 4), ('A-20ALA', 4),
                     ('A-35LEU', 4), ('A-56ILE', 4), ('A-71PHE', 4), ('A-78PRO', 4),
@@ -202,9 +202,6 @@ class TestGraphAnalysis(object):
                     ('A-54VAL', 3), ('A-58VAL', 3), ('A-75VAL', 3), ('A-80ILE', 3),
                     ('A-87ILE', 3), ('A-91ILE', 3), ('A-109LEU', 3), ('A-127ALA', 3),
                     ('A-141ALA', 3)]
-        hubs = ga.get_hubs(G = G,
-                           min_k = 3,
-                           sorting = "descending")
         assert_equal(hubs, expected)
 
     def test_get_resnum(self, resstring):
