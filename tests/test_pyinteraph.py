@@ -5,7 +5,7 @@ import os
 import os.path
 import numpy as np
 import pytest
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_equal
 
 from pyinteraph import filter_graph as fg
 from pyinteraph import graph_analysis as ga
@@ -192,6 +192,20 @@ class TestGraphAnalysis(object):
                             sort_paths_by = sort_paths_by)
 
     #---------------------------- Tests ------------------------------#
+
+    def test_hubs(self, G):
+        expected = [('A-69MET', 7), ('A-24LEU', 6), ('A-106LEU', 6), ('A-22ILE', 5), 
+                    ('A-67PRO', 5), ('A-105ALA', 5), ('A-11ILE', 4), ('A-20ALA', 4),
+                    ('A-35LEU', 4), ('A-56ILE', 4), ('A-71PHE', 4), ('A-78PRO', 4),
+                    ('A-89LEU', 4), ('A-92LEU', 4), ('A-96TRP', 4), ('A-98PRO', 4),
+                    ('A-102LEU', 4), ('A-14VAL', 3), ('A-26PHE', 3), ('A-32ILE', 3),
+                    ('A-54VAL', 3), ('A-58VAL', 3), ('A-75VAL', 3), ('A-80ILE', 3),
+                    ('A-87ILE', 3), ('A-91ILE', 3), ('A-109LEU', 3), ('A-127ALA', 3),
+                    ('A-141ALA', 3)]
+        hubs = ga.get_hubs(G = G,
+                           min_k = 3,
+                           sorting = "descending")
+        assert_equal(hubs, expected)
 
     def test_get_resnum(self, resstring):
         return ga.get_resnum(resstring = resstring)
