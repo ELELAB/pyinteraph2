@@ -204,6 +204,37 @@ class TestGraphAnalysis(object):
                     ('A-141ALA', 3)]
         assert_equal(hubs, expected)
 
+    def test_ccs(self, G, ccs):
+        expected = [{'A-2SER'}, {'A-3ARG'}, {'A-35LEU', 'A-4ALA', 'A-64PHE', 'A-20ALA',
+                     'A-56ILE', 'A-105ALA', 'A-89LEU', 'A-63PRO', 'A-100ILE', 'A-71PHE',
+                     'A-98PRO', 'A-7ILE', 'A-112LEU', 'A-18PRO', 'A-107ILE', 'A-66PRO',
+                     'A-14VAL', 'A-87ILE', 'A-149ALA', 'A-26PHE', 'A-32ILE', 'A-106LEU',
+                     'A-11ILE', 'A-109LEU', 'A-91ILE', 'A-24LEU', 'A-67PRO', 'A-80ILE',
+                     'A-59PRO', 'A-58VAL', 'A-99VAL', 'A-39PHE', 'A-22ILE', 'A-54VAL',
+                     'A-102LEU', 'A-19ALA', 'A-92LEU', 'A-69MET', 'A-96TRP', 'A-75VAL',
+                     'A-8MET', 'A-52PHE'}, {'A-5LYS'}, {'A-6ARG'}, {'A-9LYS'}, {'A-10GLU'},
+                     {'A-12GLN'}, {'A-13ALA'}, {'A-15LYS'}, {'A-16ASP'}, {'A-17ASP'},
+                     {'A-21HIS'}, {'A-23THR'}, {'A-25GLU'}, {'A-27VAL'}, {'A-28SER'},
+                     {'A-29GLU'}, {'A-30SER'}, {'A-31ASP'}, {'A-33HIS'}, {'A-34HIS'},
+                     {'A-36LYS'}, {'A-37GLY'}, {'A-38THR'}, {'A-40LEU'}, {'A-41GLY'},
+                     {'A-42PRO', 'A-113LEU'}, {'A-43PRO'}, {'A-44GLY'}, {'A-45THR'},
+                     {'A-137PHE', 'A-141ALA', 'A-46PRO', 'A-142ALA'}, {'A-47TYR'},
+                     {'A-48GLU'}, {'A-49GLY'}, {'A-50GLY'}, {'A-51LYS'}, {'A-53VAL'},
+                     {'A-55ASP'}, {'A-57GLU'}, {'A-60MET'}, {'A-61GLU'}, {'A-62TYR'},
+                     {'A-65LYS'}, {'A-68LYS'}, {'A-70GLN'}, {'A-72ASP'}, {'A-73THR'}, 
+                     {'A-74LYS'}, {'A-76TYR'}, {'A-77HIS'}, {'A-131LEU', 'A-127ALA', 
+                     'A-121PRO', 'A-118PRO', 'A-78PRO', 'A-116PRO', 'A-124ALA', 
+                     'A-126VAL'}, {'A-79ASN'}, {'A-81SER'}, {'A-82SER'}, {'A-83VAL'}, 
+                     {'A-84THR'}, {'A-85GLY'}, {'A-86ALA'}, {'A-88CYS'}, {'A-90ASP'}, 
+                     {'A-93LYS'}, {'A-94ASN'}, {'A-95ALA'}, {'A-97SER'}, {'A-101THR'}, 
+                     {'A-103LYS'}, {'A-104SER'}, {'A-108SER'}, {'A-110GLN'}, {'A-111ALA'}, 
+                     {'A-114GLN'}, {'A-115SER'}, {'A-117GLU'}, {'A-119ASN'}, {'A-120ASP'},
+                     {'A-122GLN'}, {'A-123ASP'}, {'A-125GLU'}, {'A-128GLN'}, {'A-129HIS'},
+                     {'A-130TYR'}, {'A-132ARG'}, {'A-133ASP'}, {'A-134ARG'}, {'A-135GLU'},
+                     {'A-136SER'}, {'A-138ASN'}, {'A-139LYS'}, {'A-140THR'}, {'A-143LEU', 'A-147LEU'},
+                     {'A-144TRP'}, {'A-145THR'}, {'A-146ARG'}, {'A-148TYR'}, {'A-150SER'}]
+        assert_equal(ccs, expected)
+
     def test_get_resnum(self, resstring):
         return ga.get_resnum(resstring = resstring)
 
