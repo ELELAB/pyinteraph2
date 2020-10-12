@@ -288,7 +288,6 @@ def get_paths(G, source, target, maxl, sort_paths_by):
         key = lambda x: x[3]
         reverse = True
     # return the sortes list of paths
-    print(sorted(full_paths, key = key, reverse = reverse))
     return sorted(full_paths, key = key, reverse = reverse)
 
 
