@@ -16,7 +16,8 @@ setup(name = 'pyinteraph',
       entry_points={ "console_scripts" : [
                          "pyinteraph = pyinteraph.pyinteraph:main",
                          "graph_analysis = pyinteraph.graph_analysis:main",
-                         "filter_graph = pyinteraph.filter_graph:main"] 
+                         "filter_graph = pyinteraph.filter_graph:main",
+                         "parse_masses = pyinteraph.parse_masses:main" ] 
                    },
       install_requires=["biopython",
                         "MDAnalysis==1.0.0",
