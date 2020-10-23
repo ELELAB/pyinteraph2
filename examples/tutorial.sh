@@ -169,7 +169,7 @@ pyinteraph -s $top -t $traj -r $ref -p --kbp-graph kbp-graph.dat
 
 filter_graph -d hc-graph.dat -c clusters_sizes.dat -p clusters_plot.pdf
 
-# 2) It is also possible to try and fit the curve to a sigmoid curve  y = m / (1 +exp(k*(x-x0))) + n
+# It is also possible to try and fit the curve to a sigmoid curve  y = m / (1 +exp(k*(x-x0))) + n
 # and try to identify the flexus point by solving the second derivative. However, this is not 
 # guaranteed to work, depending on how off are the default parameters for the function
 # (starting guesses can be supplied manually) and how well the solution converges.
@@ -196,3 +196,26 @@ filter_graph -d sb-graph.dat -o sb-graph-filtered.dat -t $threshold
 filter_graph -d hc-graph-filtered.dat -d hb-graph-filtered.dat -d sb-graph-filtered.dat -o macro-IIN-weighted.dat -w kbp-graph.dat 
 filter_graph -d hc-graph-filtered.dat -d hb-graph-filtered.dat -d sb-graph-filtered.dat -o macro-IIN.dat
 
+# 3) perform graph analysis on any of the obtained graphs. It is possible to obtain the list of hubs
+# as follows using option -u. Option -ub writes a PDB file with the degree of the hub residues in the 
+# B-factor field. The output of the analysis is printed in standard output. In graph_analysis,
+# the reference structure is only useful to generate node names - otherwise the program will just 
+# use numbers instead - and for generating PDB files with data from the analysis.
+
+graph_analysis -u -r sim.prot.A.pdb -a macro-IIN.dat -ub macro-IIN-hubs.pdb
+
+# Next we analyze the connected components in the graph, similarly as what done for hubs. In this
+# case the output PDB file includes in the B-factor field the number of the respective connected
+# component that residue belongs to. Once again, the output is printed in standard output.
+
+graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pdb
+
+# Finally, we calculate paths. between residues. graph_analysis calculates by default all simple
+# paths between pairs of residues, up to a certain length defined by option -l. If -l is not large
+# enough to find paths between such residues, the program will suggest a minimum path length
+# which corresponds to the length of the shortest paths. The program accepts the usual inputs plus
+# options -r1 and -r2 which are the source and target residues. These are specified according to node
+# names that are printed by graph_analysis. Option -d saves each path indipendently as an adjacency
+# matrix encoding exclusively that residue. 
+
+graph_analysis -p -r sim.prot.A.pdb -a macro-IIN.dat -r1 A-10GLU -r2 A-20ALA -l 4
