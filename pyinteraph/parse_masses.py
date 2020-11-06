@@ -22,8 +22,6 @@ import json
 import sys
 import argparse
 
-
-
 def parse_gmxff(atp,rtp,doc,outfile):
     wrongheaders=["[ bondedtypes ]\n","[ atoms ]\n","[ bonds ]\n","[ impropers ]\n","[ dihedrals ]\n"]
 
@@ -58,10 +56,10 @@ def parse_gmxff(atp,rtp,doc,outfile):
                 if rtplines[k].startswith(" [") or rtplines[k].startswith("\n"):
                     break
                 tmp = rtplines[k].rstrip().split()
-		try:
+                try:
                     residues[resname][tmp[0]] = atomtypes[tmp[1]]
                 except:
-		    pass
+                    pass
                 k+=1
             if len(residues[resname]) == 0:
                 residues.pop(resname)
@@ -69,18 +67,19 @@ def parse_gmxff(atp,rtp,doc,outfile):
     json.dump([name,residues],_outfile)
     _outfile.close
 
+def main():
 
+    parser = argparse.ArgumentParser(description='Create a PyInteraph mass file from a GROMACS-defined force-field.')
 
-import argparse
+    parser.add_argument('-a', '--atp',dest='atp',help="Gromacs force-field atp file", required=True)
+    parser.add_argument('-r', '--rtp',dest='rtp',help="Gromacs force-field rtp file", required=True)
+    parser.add_argument('-d', '--doc',dest='doc',help="Gromacs force-field dtp file", required=True)
+    parser.add_argument('-o', '--out',dest='out',help="Output file", required=True)
 
-parser = argparse.ArgumentParser(description='Create a PyInteraph mass file from a GROMACS-defined force-field.')
-
-parser.add_argument('-a', '--atp',dest='atp',help="Gromacs force-field atp file", required=True)
-parser.add_argument('-r', '--rtp',dest='rtp',help="Gromacs force-field ttp file", required=True)
-parser.add_argument('-d', '--doc',dest='doc',help="Gromacs force-field dtp file", required=True)
-parser.add_argument('-o', '--out',dest='out',help="Output file", required=True)
-
-args = parser.parse_args()
-
-parse_gmxff(args.atp, args.rtp, args.doc, args.out)
+    args = parser.parse_args()
+    
+    try:
+        parse_gmxff(args.atp, args.rtp, args.doc, args.out)
+    except IOError:
+        print("An error occurred parsing the input files; exiting..")
 
