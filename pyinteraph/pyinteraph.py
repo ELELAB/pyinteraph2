@@ -233,7 +233,7 @@ def main():
                         default = hbang_default, \
                         help = hbang_helpstr.format(hbang_default))
 
-    hbdat_default = "hydrogen-bonds.dat"
+    hbdat_default = "hydrogen-bonds"
     hbdat_helpstr = \
         "Name of the file where to store the list of " \
         "hydrogen bonds found (default: {:s})"
@@ -604,7 +604,7 @@ def main():
 
         do_fullmatrix = True if hb_graph else False
         perresidue = False    
-        str_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
+        list_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
                                            sel2 = hb_group2, \
                                            pdb = pdb, \
                                            uni = uni, \
@@ -616,8 +616,10 @@ def main():
                                            perresidue = perresidue)                                    
 
         # Save .dat
-        with open(hb_dat, "w") as out:
-            out.write(str_out)
+        #with open(hb_dat, "w") as out:
+        #    out.write(str_out)
+        list_out = li.create_output_list(list_out, hb = True)
+        li.save_output_file(list_out, hb_dat, hb = True)
         # Save .mat (if available)
         if hb_mat_out is not None:
             np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
