@@ -37,7 +37,7 @@ def matrices():
 
 @pytest.fixture(scope = "module")
 def results_dir():
-    return os.path.join(FILES_DIR, "results")
+    return os.path.join(FILES_DIR)
 
 
 ######################### FILTER GRAPH TESTS ##########################
