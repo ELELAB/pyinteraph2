@@ -515,7 +515,7 @@ def main():
             sb_mode = "both"
 
         fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
-        str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
+        list_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
                                              pdb = pdb,
                                              uni = uni,
                                              co = sb_co, 
@@ -526,9 +526,19 @@ def main():
                                              mindist_mode = sb_mode,
                                              cgs = cgs)
 
-        # Save .dat
-        with open(sb_dat, "w") as out:
-            out.write(str_out)
+        # Save .csv
+        list_out = li.create_output_list(list_out)
+        for i in range(len(list_out)):
+            if i == 0:
+                np.savetxt(sb_dat + "_all_bonds.csv", list_out[i], delimiter=",", fmt='%s')
+            else:
+                chain1 = list_out[i][0][0]
+                chain2 = list_out[i][0][3]
+                if chain1 == chain2:
+                    np.savetxt(sb_dat+"_intra_chain_"+str(chain1)+".csv", list_out[i], delimiter=",", fmt='%s')
+                else:
+                    np.savetxt(sb_dat+"_inter_chain"+".csv", list_out[i], delimiter=",", fmt='%s')
+
         # Save .mat (if available)
         if sb_mat_out is not None:
             np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
