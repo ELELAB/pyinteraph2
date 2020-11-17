@@ -484,12 +484,13 @@ def main():
                                              reslist = hc_reslist)
 
         # Save .csv
-        list_out = li.create_output_list(list_out)
-        li.save_output_file(list_out, hc_dat)
+        table_list_out = li.create_table_list(list_out)
+        li.save_output_list(table_list_out, hc_dat)
 
         # Save .mat (if available)
         if hc_mat_out is not None:
-            np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
+            mat_list_out = li.create_matrix_list(hc_mat_out, table_list_out, pdb)
+            li.save_output_list(table_list_out, hc_graph, mat_list = mat_list_out)
 
 
     ############################ SALT BRIDGES #############################
@@ -616,14 +617,14 @@ def main():
                                            other_hbs = hbs, \
                                            perresidue = perresidue)                                    
 
-        # Save .dat
-        #with open(hb_dat, "w") as out:
-        #    out.write(str_out)
-        list_out = li.create_output_list(list_out, hb = True)
-        li.save_output_file(list_out, hb_dat, hb = True)
+        # Save .csv
+        table_list_out = li.create_table_list(list_out, hb = True)
+        li.save_output_list(table_list_out, hb_dat, hb = True)
+
         # Save .mat (if available)
         if hb_mat_out is not None:
-            np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
+            mat_list_out = li.create_matrix_list(hb_mat_out, table_list_out, pdb, hb = True)
+            li.save_output_list(table_list_out, hb_graph, mat_list = mat_list_out, hb = True)
 
 
     ######################## STATISTICAL POTENTIAL ########################
