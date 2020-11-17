@@ -868,66 +868,87 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
 
 
 def create_table_list(contact_list, hb=False):
-    """Takes in a list of tuples and returns a list of arrays where the first
-    array contains all contacts and subsequent arrays are split by chain"""
+    """Takes in a list of tuples and returns a list of arrays where
+    the first array contains all contacts and subsequent arrays are 
+    split by chain (if present). The final array contains interchain
+    contacts (if present).
+    """
+
     array = np.array(contact_list)
-    output = []
-    output.append(array)
+    output = [array]
     array_T = array.T
     chains = np.unique(array_T[0])
-    #choose which column has the second residue
+    # Choose which column has the second residue
     if hb:
         sec_res = 4
     else:
         sec_res = 3
-    #if multiple chains are present, split the contacts by chain
+    # If multiple chains are present, split the contacts by chain
     if len(chains) > 1:
-	#for each chain, add the nodes that are only in contact with the same chain
+	# For each chain, add the nodes that are only in contact with the same chain
         for i in range(len(chains)):
-            logical_vector = np.logical_and(chains[i] == array_T[0], chains[i] == array_T[sec_res])
+            logical_vector = np.logical_and(chains[i] == array_T[0], \
+                                            chains[i] == array_T[sec_res])
             output_chain = array[logical_vector]
-            output.append(output_chain)
-        #add all nodes that are in contact with different chains
+            if output_chain.shape[0] == 0:
+                warnstr = "No intrachain contacts found in chain " + str(chains[i])
+                log.warning(warnstr)
+            else:
+                output.append(output_chain)
+        # Add all nodes that are in contact with different chains
         logical_vector = array_T[0] != array_T[sec_res]
         output_diff_chain = array[logical_vector]
-        output.append(output_diff_chain)
-    #remove any empty arrays
-    output = [array for array in output if array.shape[0] != 0]
-    return(output)
+        if output_diff_chain.shape[0] == 0:
+            warnstr = "No interchain contacts found" 
+            log.warning(warnstr)
+        else:
+            output.append(output_diff_chain)
+    return output
 
-def create_matrix_list(full_matrix, table_list, pdb, hb = False):
-    """Takes in the full matrix and returns a list of matrices split by chain.
-    Returns list of size 1 if only one chain."""
-    mat_list = []
-    mat_list.append(full_matrix)
+def create_matrix_list(fullmatrix, table_list, pdb, hb = False):
+    """Takes in the full matrix and returns a list of matrices. The
+    first matrix is the full matrix while the following matrices contain
+    intrachain persistences (if present). The final matrix contains 
+    interchain persistences (if present).
+    """
+
+    mat_list = [fullmatrix]
+    # Select which column has the resid
     if hb:
         sec_res_id = 5
     else:
         sec_res_id = 4
+    # If contacts exist in multiple chains
     if len(table_list) > 1:
-        mat_len = full_matrix.shape[0]
-        #map each residue id to a position in the matrix
+        # Map each residue id to a position in the matrix
         resids = pdb.residues.resids
-        res_dict = {str(resids[i]):i for i in range(mat_len)}
-        #for all tables excluding the first one, create an empty
-        #matrix and fill it with the appropriate values
+        res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
+        # For all tables excluding the first one
         for i in range(1, len(table_list)):
-            matrix = np.zeros((mat_len, mat_len))
-            for row in table_list[i]:
-                mat_i = res_dict[row[1]]
-                mat_j = res_dict[row[sec_res_id]]
-                matrix[mat_i][mat_j] = full_matrix[mat_i][mat_j]
-                matrix[mat_j][mat_i] = full_matrix[mat_j][mat_i]
+            # Create empty matrix
+            matrix = np.zeros(fullmatrix.shape)
+            # Get list of indexes for the matrix
+            table = table_list[i].T
+            mat_i = [res_dict[i] for i in table[1]]
+            mat_j = [res_dict[j] for j in table[sec_res_id]]
+            # Fill the matrix with appropriate values
+            matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
+            matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
             mat_list.append(matrix)
-    return(mat_list)
+    #mat_sums = [mat.sum() for mat in mat_list]
+    #print(mat_sums[0], sum(mat_sums[1:]))
+    return mat_list
 
 
 def save_output_list(table_list, filename, mat_list=None, hb=False):
-    """Save each item in the list as a separate file. The first
-    item in the list contains the whole dataset, the last item contains
-    interchain data. Rest are intrachain"""
+    """Save each element in the list as a separate file. The first
+    element contains the whole dataset, followed by intrachain
+    data (if present). The final element contains interchain data.
+    """
+
+    # Check if the table or the matrix is being saved and change the parameters
     if mat_list is not None:
-        ext = ".mat"
+        ext = ".dat"
         data = mat_list
         delim = ''
         format = "%.1f"
@@ -937,19 +958,23 @@ def save_output_list(table_list, filename, mat_list=None, hb=False):
         delim = ','
         format = '%s'
     for i in range(len(table_list)):
+        # For each element, change the filename and save the file
         if i == 0:
-            np.savetxt(filename + "_all_bonds" + ext, data[i], delimiter=delim, fmt=format)
+            fname = filename + "_all_bonds" + ext
         else:
-            chain1 = table_list[i][0][0]
+            # Check which column has the second residue
             if hb:
                 sec_res = 4
             else:
                 sec_res = 3
+            chain1 = table_list[i][0][0]
             chain2 = table_list[i][0][sec_res]
+            # Determine if intra or interchain
             if chain1 == chain2:
-                np.savetxt(filename + "_intra_chain_" + str(chain1) + ext, data[i], delimiter=delim, fmt=format)
+                fname = filename + "_intra_chain_" + str(chain1) + ext
             else:
-                np.savetxt(filename + "_inter_chain"+ ext, data[i], delimiter=delim, fmt=format)
+                fname = filename + "_inter_chain" + ext
+        np.savetxt(fname, data[i], delimiter = delim, fmt = format)
 
 
 
