@@ -867,7 +867,7 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     return fullmatrix
 
 
-def create_output_list(contact_list, hb=False):
+def create_table_list(contact_list, hb=False):
     """Takes in a list of tuples and returns a list of arrays where the first
     array contains all contacts and subsequent arrays are split by chain"""
     array = np.array(contact_list)
@@ -895,23 +895,61 @@ def create_output_list(contact_list, hb=False):
     output = [array for array in output if array.shape[0] != 0]
     return(output)
 
-def save_output_file(list, filename, hb=False):
-    """Save the output list of arrays"""
-    for i in range(len(list)):
+def create_matrix_list(full_matrix, table_list, pdb, hb = False):
+    """Takes in the full matrix and returns a list of matrices split by chain.
+    Returns list of size 1 if only one chain."""
+    mat_list = []
+    mat_list.append(full_matrix)
+    if hb:
+        sec_res_id = 5
+    else:
+        sec_res_id = 4
+    if len(table_list) > 1:
+        mat_len = full_matrix.shape[0]
+        #map each residue id to a position in the matrix
+        resids = pdb.residues.resids
+        res_dict = {str(resids[i]):i for i in range(mat_len)}
+        #for all tables excluding the first one, create an empty
+        #matrix and fill it with the appropriate values
+        for i in range(1, len(table_list)):
+            matrix = np.zeros((mat_len, mat_len))
+            for row in table_list[i]:
+                mat_i = res_dict[row[1]]
+                mat_j = res_dict[row[sec_res_id]]
+                matrix[mat_i][mat_j] = full_matrix[mat_i][mat_j]
+                matrix[mat_j][mat_i] = full_matrix[mat_j][mat_i]
+            mat_list.append(matrix)
+    return(mat_list)
+
+
+def save_output_list(table_list, filename, mat_list=None, hb=False):
+    """Save each item in the list as a separate file. The first
+    item in the list contains the whole dataset, the last item contains
+    interchain data. Rest are intrachain"""
+    if mat_list is not None:
+        ext = ".mat"
+        data = mat_list
+        delim = ''
+        format = "%.1f"
+    else:
+        ext = ".csv"
+        data = table_list
+        delim = ','
+        format = '%s'
+    for i in range(len(table_list)):
         if i == 0:
-            np.savetxt(filename + "_all_bonds.csv", list[i], delimiter=",", fmt='%s')
+            np.savetxt(filename + "_all_bonds" + ext, data[i], delimiter=delim, fmt=format)
         else:
-            chain1 = list[i][0][0]
+            chain1 = table_list[i][0][0]
             if hb:
                 sec_res = 4
             else:
                 sec_res = 3
-            chain2 = list[i][0][sec_res]
+            chain2 = table_list[i][0][sec_res]
             if chain1 == chain2:
-                np.savetxt(filename+"_intra_chain_"+str(chain1)+".csv", list[i], delimiter=",", fmt='%s')
+                np.savetxt(filename + "_intra_chain_" + str(chain1) + ext, data[i], delimiter=delim, fmt=format)
             else:
-                np.savetxt(filename+"_inter_chain"+".csv", list[i], delimiter=",", fmt='%s')
-
+                np.savetxt(filename + "_inter_chain"+ ext, data[i], delimiter=delim, fmt=format)
 
 
 

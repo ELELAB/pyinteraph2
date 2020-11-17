@@ -528,12 +528,13 @@ def main():
                                              cgs = cgs)
 
         # Save .csv
-        list_out = li.create_output_list(list_out)
-        li.save_output_file(list_out, sb_dat)
+        table_list_out = li.create_table_list(list_out)
+        li.save_output_list(table_list_out, sb_dat)
 
         # Save .mat (if available)
         if sb_mat_out is not None:
-            np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
+            mat_list_out = li.create_matrix_list(sb_mat_out, table_list_out, pdb)
+            li.save_output_list(table_list_out, sb_graph, mat_list = mat_list_out)
 
 
     ########################### HYDROGEN BONDS ############################
