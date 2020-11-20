@@ -874,6 +874,7 @@ def create_table_list(contact_list, hb=False):
     contacts (if present).
     """
 
+    # Convert to array and keep transpose for selection
     array = np.array(contact_list)
     output = [array]
     array_T = array.T
@@ -935,8 +936,6 @@ def create_matrix_list(fullmatrix, table_list, pdb, hb = False):
             matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
             matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
             mat_list.append(matrix)
-    #mat_sums = [mat.sum() for mat in mat_list]
-    #print(mat_sums[0], sum(mat_sums[1:]))
     return mat_list
 
 
@@ -950,7 +949,7 @@ def save_output_list(table_list, filename, mat_list=None, hb=False):
     if mat_list is not None:
         ext = ".dat"
         data = mat_list
-        delim = ''
+        delim = ' '
         format = "%.1f"
     else:
         ext = ".csv"
@@ -960,7 +959,7 @@ def save_output_list(table_list, filename, mat_list=None, hb=False):
     for i in range(len(table_list)):
         # For each element, change the filename and save the file
         if i == 0:
-            fname = filename + "_all_bonds" + ext
+            fname = filename + "_all_chains" + ext
         else:
             # Check which column has the second residue
             if hb:

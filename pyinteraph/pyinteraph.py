@@ -473,7 +473,7 @@ def main():
 
     if do_hc:
         fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
-        list_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
+        table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                              pdb = pdb,
                                              uni = uni,
                                              co = hc_co, 
@@ -484,7 +484,7 @@ def main():
                                              reslist = hc_reslist)
 
         # Save .csv
-        table_list_out = li.create_table_list(list_out)
+        table_list_out = li.create_table_list(table_out)
         li.save_output_list(table_list_out, hc_dat)
 
         # Save .dat (if available)
@@ -517,7 +517,7 @@ def main():
             sb_mode = "both"
 
         fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
-        list_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
+        table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
                                              pdb = pdb,
                                              uni = uni,
                                              co = sb_co, 
@@ -529,7 +529,7 @@ def main():
                                              cgs = cgs)
 
         # Save .csv
-        table_list_out = li.create_table_list(list_out)
+        table_list_out = li.create_table_list(table_out)
         li.save_output_list(table_list_out, sb_dat)
 
         # Save .dat (if available)
@@ -606,7 +606,7 @@ def main():
 
         do_fullmatrix = True if hb_graph else False
         perresidue = False    
-        list_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
+        table_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
                                            sel2 = hb_group2, \
                                            pdb = pdb, \
                                            uni = uni, \
@@ -618,7 +618,7 @@ def main():
                                            perresidue = perresidue)                                    
 
         # Save .csv
-        table_list_out = li.create_table_list(list_out, hb = True)
+        table_list_out = li.create_table_list(table_out, hb = True)
         li.save_output_list(table_list_out, hb_dat, hb = True)
 
         # Save .dat (if available)
