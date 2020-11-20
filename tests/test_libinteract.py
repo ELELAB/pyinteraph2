@@ -328,48 +328,48 @@ def hb_don_acc(hb_file):
 # do_interact functions
 @pytest.fixture
 def do_interact_sb(simulation_twochains, charged_groups):
-    out_tuple = li.do_interact(li.generate_cg_identifiers,
-                                        pdb = simulation_twochains['pdb'],
-                                        uni = simulation_twochains['uni'],
-                                        co = 4.5,
-                                        perco = 0,
-                                        ffmasses = 'charmm27',
-                                        fullmatrixfunc = li.calc_cg_fullmatrix,
-                                        mindist = True,
-                                        mindist_mode = 'diff',
-                                        cgs = charged_groups)
+    tab_out, mat_out = li.do_interact(li.generate_cg_identifiers,
+                                      pdb = simulation_twochains['pdb'],
+                                      uni = simulation_twochains['uni'],
+                                      co = 4.5,
+                                      perco = 0,
+                                      ffmasses = 'charmm27',
+                                      fullmatrixfunc = li.calc_cg_fullmatrix,
+                                      mindist = True,
+                                      mindist_mode = 'diff',
+                                      cgs = charged_groups)
 
-    return {'table': out_tuple[0], 'matrix': out_tuple[1]}
+    return {'table': tab_out, 'matrix': mat_out}
 
 @pytest.fixture
 def do_interact_hc(simulation_twochains, hc_residues_list):
-    out_tuple  = li.do_interact(li.generate_sc_identifiers,
-                                     pdb = simulation_twochains['pdb'],
-                                     uni = simulation_twochains['uni'],
-                                     co = 5.0,
-                                     perco = 0.0,
-                                     ffmasses = 'charmm27',
-                                     fullmatrixfunc = li.calc_sc_fullmatrix,
-                                     reslist = hc_residues_list,
-                                     mindist = False)
+    tab_out, mat_out  = li.do_interact(li.generate_sc_identifiers,
+                                       pdb = simulation_twochains['pdb'],
+                                       uni = simulation_twochains['uni'],
+                                       co = 5.0,
+                                       perco = 0.0,
+                                       ffmasses = 'charmm27',
+                                       fullmatrixfunc = li.calc_sc_fullmatrix,
+                                       reslist = hc_residues_list,
+                                       mindist = False)
 
 
-    return {'table': out_tuple[0], 'matrix': out_tuple[1]}
+    return {'table': tab_out, 'matrix': mat_out}
 
 @pytest.fixture
 def do_interact_hb(simulation_twochains, hb_don_acc):
     sel = 'protein'
-    out_tuple = li.do_hbonds(sel1 = sel,
-                                   sel2 = sel,
-                                   pdb = simulation_twochains['pdb'],
-                                   uni = simulation_twochains['uni'],
-                                   distance = 3.5,
-                                   angle = 120.0,
-                                   perco = 0.0,
-                                   perresidue = False,
-                                   do_fullmatrix = True,
-                                   other_hbs = hb_don_acc)
-    return {'table': out_tuple[0], 'matrix': out_tuple[1]}
+    tab_out, mat_out = li.do_hbonds(sel1 = sel,
+                                    sel2 = sel,
+                                    pdb = simulation_twochains['pdb'],
+                                    uni = simulation_twochains['uni'],
+                                    distance = 3.5,
+                                    angle = 120.0,
+                                    perco = 0.0,
+                                    perresidue = False,
+                                    do_fullmatrix = True,
+                                    other_hbs = hb_don_acc)
+    return {'table': tab_out, 'matrix': mat_out}
 
 # table lists
 @pytest.fixture
@@ -455,15 +455,15 @@ def test_parse_cg_files(cg_file):
 # check do interact functions
 def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
     table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
-                                        pdb = simulation['pdb'],
-                                        uni = simulation['uni'],
-                                        co = 4.5,
-                                        perco = 0,
-                                        ffmasses = 'charmm27',
-                                        fullmatrixfunc = li.calc_cg_fullmatrix,
-                                        mindist = True,
-                                        mindist_mode = 'diff',
-                                        cgs = charged_groups)
+                                           pdb = simulation['pdb'],
+                                           uni = simulation['uni'],
+                                           co = 4.5,
+                                           perco = 0,
+                                           ffmasses = 'charmm27',
+                                           fullmatrixfunc = li.calc_cg_fullmatrix,
+                                           mindist = True,
+                                           mindist_mode = 'diff',
+                                           cgs = charged_groups)
 
     assert_almost_equal(sb_mat_out, ref_sb_graph, decimal=1)
     for i, t in enumerate(table_out):
@@ -471,14 +471,14 @@ def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
 
 def test_do_interact_hc(simulation, hc_residues_list, ref_hc_graph, ref_hc):
     table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
-                                     pdb = simulation['pdb'],
-                                     uni = simulation['uni'],
-                                     co = 5.0, 
-                                     perco = 0.0,
-                                     ffmasses = 'charmm27', 
-                                     fullmatrixfunc = li.calc_sc_fullmatrix, 
-                                     reslist = hc_residues_list,
-                                     mindist = False)
+                                           pdb = simulation['pdb'],
+                                           uni = simulation['uni'],
+                                           co = 5.0, 
+                                           perco = 0.0,
+                                           ffmasses = 'charmm27', 
+                                           fullmatrixfunc = li.calc_sc_fullmatrix, 
+                                           reslist = hc_residues_list,
+                                           mindist = False)
     assert_almost_equal(hc_mat_out, ref_hc_graph, decimal=1)
 
     for i, t in enumerate(table_out):
@@ -490,15 +490,15 @@ def test_parse_hb_file(hb_file):
 def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
     sel = 'protein'
     table_out, hb_mat_out = li.do_hbonds(sel1 = sel,
-                                   sel2 = sel,
-                                   pdb = simulation['pdb'],
-                                   uni = simulation['uni'],
-                                   distance = 3.5,
-                                   angle = 120.0,
-                                   perco = 0.0,
-                                   perresidue = False,
-                                   do_fullmatrix = True,
-                                   other_hbs = hb_don_acc)
+                                         sel2 = sel,
+                                         pdb = simulation['pdb'],
+                                         uni = simulation['uni'],
+                                         distance = 3.5,
+                                         angle = 120.0,
+                                         perco = 0.0,
+                                         perresidue = False,
+                                         do_fullmatrix = True,
+                                         other_hbs = hb_don_acc)
 
     assert_almost_equal(hb_mat_out, ref_hb_graph, decimal=1)
     for i, t in enumerate(table_out):
@@ -520,8 +520,8 @@ def test_create_table_list_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
 
 def test_create_matrix_list_sb(do_interact_sb, create_table_list_sb, simulation_twochains, ref_sb_graph_twochains, ref_sb_graph_chains):
     mat_list = li.create_matrix_list(do_interact_sb['matrix'],
-                                        create_table_list_sb,
-                                        simulation_twochains['pdb'])
+                                     create_table_list_sb,
+                                     simulation_twochains['pdb'])
     assert_almost_equal(mat_list[0], ref_sb_graph_twochains, decimal=1)
     assert_almost_equal(mat_list[1], ref_sb_graph_chains['intra_A'], decimal=1)
     assert_almost_equal(mat_list[2], ref_sb_graph_chains['inter'], decimal=1)
@@ -545,8 +545,8 @@ def test_create_table_list_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
 
 def test_create_matrix_list_hc(do_interact_hc, create_table_list_hc, simulation_twochains, ref_hc_graph_twochains, ref_hc_graph_chains):
     mat_list = li.create_matrix_list(do_interact_hc['matrix'],
-                                        create_table_list_hc,
-                                        simulation_twochains['pdb'])
+                                     create_table_list_hc,
+                                     simulation_twochains['pdb'])
     assert_almost_equal(mat_list[0], ref_hc_graph_twochains, decimal=1)
     assert_almost_equal(mat_list[1], ref_hc_graph_chains['intra_A'], decimal=1)
     assert_almost_equal(mat_list[2], ref_hc_graph_chains['inter'], decimal=1)
@@ -571,9 +571,9 @@ def test_create_table_list_hb(do_interact_hb, ref_hb_twochains, ref_hb_chains):
 
 def test_create_matrix_list_hb(do_interact_hb, create_table_list_hb, simulation_twochains, ref_hb_graph_twochains, ref_hb_graph_chains):
     mat_list = li.create_matrix_list(do_interact_hb['matrix'],
-                                        create_table_list_hb,
-                                        simulation_twochains['pdb'],
-                                        hb = True)
+                                     create_table_list_hb,
+                                     simulation_twochains['pdb'],
+                                     hb = True)
     assert_almost_equal(mat_list[0], ref_hb_graph_twochains, decimal=1)
     assert_almost_equal(mat_list[1], ref_hb_graph_chains['intra_A'], decimal=1)
     assert_almost_equal(mat_list[2], ref_hb_graph_chains['intra_B'], decimal=1)
