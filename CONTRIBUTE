@@ -1,0 +1,14 @@
+If you want to contribute to the development of PyInteraph, please use the following procedure:
+
+* Open an Issue and discuss with the developers the changes you are proposing
+* Clone the PyInteraph repository locally. Create a new branch with a meaningful name and
+add your changes as commits.
+* Add or modify automated tests in the test folder, using pytest. Check if all tests pass.
+* Once you're ready, push your branch to remote.
+* Open a Pull Request asking to merge your branch to master
+* Undergo the code review process until the final merge
+
+You're welcome to contact the original authors of the package informally, before or after
+opening an issue - so that your contribution can be properly considered and acknowledged for
+future publications.
+
