@@ -5,7 +5,8 @@ If you want to contribute to the development of PyInteraph, please use the follo
 add your changes as commits.
 * Add or modify automated tests in the test folder, using pytest. Check if all tests pass.
 * Once you're ready, push your branch to remote.
-* Open a Pull Request merging your pull request to the master branch 
+* Open a Pull Request asking to merge your branch to master
+* Undergo the code review process until the final merge
 
 You're welcome to contact the original authors of the package informally, before or after
 opening an issue - so that your contribution can be properly considered and acknowledged for
