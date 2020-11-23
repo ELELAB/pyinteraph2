@@ -1,4 +1,8 @@
-Here we showcase the output of the PyInKnife pipeline (https://github.com/ELELAB/PyInKnife2) for hydrogen bonds as calculated on our microsecond molecular dynamics trajectory of CypA.
+Here we showcase the output of the PyInKnife pipeline (https://github.com/ELELAB/PyInKnife2) 
+for hydrogen bonds analysis as calculated on our microsecond molecular dynamics trajectory of CypA.
+
+We have used the same trajectory as the scPSN example, after fitering it by keeping one frame 
+every 100ps, to save on calculation time.
 
 As the complete set of output file was too large to be stored here, you can find the final aggregated outputs and plots:
 
