@@ -869,13 +869,15 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
 def filter_by_chain(chain1, chain2, sec_res, array, array_T):
     """Takes in a table with 2 residue columns and filters it to 
     return only rows where the first column contains chain1 and the
-    second column contains chain 2. Returns filtered table.
+    second column contains chain2. Returns filtered table.
     """
 
+    # Filter and create filtered array
     logical_vector = np.logical_and(chain1 == array_T[0], \
                                     chain2 == array_T[sec_res])
     filtered_array = array[logical_vector]
     output = None
+    # Warn if no contacts found
     if filtered_array.shape[0] == 0:
         if chain1 == chain2:
             warnstr = f"No intrachain contacts found in chain {chain1}"
@@ -891,9 +893,9 @@ def filter_by_chain(chain1, chain2, sec_res, array, array_T):
 
 def create_table_list(contact_list, hb=False):
     """Takes in a list of tuples and returns a list of arrays where
-    the first array contains all contacts and subsequent arrays are 
-    split by chain (if present). The final array contains interchain
-    contacts (if present).
+    the first array contains all contacts followed by intrachain 
+    contants split by chain (if present) and interchain contacts split 
+    by chain (if present).
     """
 
     # Convert to array and keep transpose for selection
@@ -924,11 +926,23 @@ def create_table_list(contact_list, hb=False):
         else:
             # For all combinations of different chains, find nodes that are in
             # contact with different chains
-            for chain1, chain2 in itertools.permutations(chains, 2):
-                filtered_array = filter_by_chain(chain1, chain2, sec_res, \
+            for chain1, chain2 in itertools.combinations(chains, 2):
+                # Check both combinations (e.g. A, B and B, A)
+                filtered_array1 = filter_by_chain(chain1, chain2, sec_res, \
                                                array, array_T)
-                if filtered_array is not None:
+                filtered_array2 = filter_by_chain(chain2, chain1, sec_res, \
+                                               array, array_T)
+                # If both outputs exist, concatenate and append
+                if filtered_array1 is not None and filtered_array2 is not None:
+                    filtered_array = np.concatenate((filtered_array1, \
+                                                     filtered_array2))
                     array_list.append(filtered_array)
+                # Only add (A, B)
+                elif filtered_array1 is not None:
+                    array_list.append(filtered_array1)
+                # Only add (B, A)
+                else:
+                    array_list.append(filtered_array2)
     return array_list
 
 def create_matrix_list(fullmatrix, table_list, pdb, hb = False):
