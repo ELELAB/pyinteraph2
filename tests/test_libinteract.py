@@ -91,14 +91,14 @@ def ref_hc_twochains_file(ref_dir):
 def ref_sb_chains_file(ref_dir):
     return {
             'intra_A' : '{0}/salt-bridges_twochains_intra_chain_A.csv'.format(ref_dir),
-            'inter' : '{0}/salt-bridges_twochains_inter_chain.csv'.format(ref_dir)
+            'inter' : '{0}/salt-bridges_twochains_inter_chain_B-A.csv'.format(ref_dir)
            }
 
 @pytest.fixture
 def ref_hc_chains_file(ref_dir):
     return {
             'intra_A' : '{0}/hydrophobic-clusters_twochains_intra_chain_A.csv'.format(ref_dir),
-            'inter' : '{0}/hydrophobic-clusters_twochains_inter_chain.csv'.format(ref_dir)
+            'inter' : '{0}/hydrophobic-clusters_twochains_inter_chain_A-B.csv'.format(ref_dir)
            }
 
 @pytest.fixture
@@ -106,7 +106,7 @@ def ref_hb_chains_file(ref_dir):
     return {
             'intra_A' : '{0}/hydrogen-bonds_twochains_intra_chain_A.csv'.format(ref_dir),
             'intra_B' : '{0}/hydrogen-bonds_twochains_intra_chain_B.csv'.format(ref_dir),
-            'inter' : '{0}/hydrogen-bonds_twochains_inter_chain.csv'.format(ref_dir)
+            'inter' : '{0}/hydrogen-bonds_twochains_inter_chain_A-B.csv'.format(ref_dir)
            }
 
 # two chain matrix file names
@@ -127,14 +127,14 @@ def ref_hc_graph_twochains_file(ref_dir):
 def ref_sb_graph_chains_file(ref_dir):
     return {
             'intra_A' : '{0}/sb-graph_twochains_intra_chain_A.dat'.format(ref_dir),
-            'inter' : '{0}/sb-graph_twochains_inter_chain.dat'.format(ref_dir)
+            'inter' : '{0}/sb-graph_twochains_inter_chain_B-A.dat'.format(ref_dir)
            }
 
 @pytest.fixture
 def ref_hc_graph_chains_file(ref_dir):
     return {
             'intra_A' : '{0}/hc-graph_twochains_intra_chain_A.dat'.format(ref_dir),
-            'inter' : '{0}/hc-graph_twochains_inter_chain.dat'.format(ref_dir)
+            'inter' : '{0}/hc-graph_twochains_inter_chain_A-B.dat'.format(ref_dir)
            }
 
 @pytest.fixture
@@ -142,7 +142,7 @@ def ref_hb_graph_chains_file(ref_dir):
     return {
             'intra_A' : '{0}/hb-graph_twochains_intra_chain_A.dat'.format(ref_dir),
             'intra_B' : '{0}/hb-graph_twochains_intra_chain_B.dat'.format(ref_dir),
-            'inter' : '{0}/hb-graph_twochains_inter_chain.dat'.format(ref_dir)
+            'inter' : '{0}/hb-graph_twochains_inter_chain_A-B.dat'.format(ref_dir)
            }
 
 # tables files
