@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 import itertools
 
-def get_shortest_paths(graph, source, target, maxl=10, res_space=2):
+def get_shortest_paths(graph, source, target, maxl, res_space):
     combinations = itertools.combinations(range(source, 
                                                 target + 1, 
                                                 res_space), 2)
@@ -13,9 +13,10 @@ def get_shortest_paths(graph, source, target, maxl=10, res_space=2):
         try:
             path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(graph, node1, node2))
             for p in path:
-                paths.append(p)
+                if len(p) <= maxl:
+                    paths.append(p)
         except nx.NetworkXNoPath:
-            print("No path found")
+            log.info(f"No path found between {node1} and {node2}")
     return paths
 
 
@@ -60,7 +61,7 @@ def main():
     G.add_nodes_from([1,2,3,4,5,6])
     G.add_edges_from([(2,3), (3,4), (3,6)])
 
-    print(get_shortest_paths(G, 1, 6))
+    print(get_shortest_paths(G, 1, 6, options.maxl, options.res_space))
 
 
 if __name__ == "__main__":
