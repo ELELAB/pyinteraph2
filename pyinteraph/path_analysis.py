@@ -110,6 +110,13 @@ def main():
                         type = int,
                         help = b_helpstr)
 
+    o_default = "paths.txt"
+    o_helpstr = "Output file name"
+    parser.add_argument("-o", "--output",
+                        dest = "output",
+                        default = o_default,
+                        help = b_helpstr)
+
     options = parser.parse_args()
 
     # Load file
@@ -123,7 +130,7 @@ def main():
     path_table = sort_paths(graph, all_paths, options.sort_by)
 
     # Write file
-    with open("out.txt", "w") as f:
+    with open(options.output, "w") as f:
         for path, length, sum_weight, avg_weight in path_table:
             f.write(f"{path}\t{length}\t{sum_weight}\t{avg_weight}\n")
 
