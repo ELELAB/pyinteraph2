@@ -60,7 +60,6 @@ def get_all_paths(graph, source, target, maxl, res_space):
                 paths.append(p)
     return paths
 
-
 def sort_paths(graph, paths, sort_by):
     """Takes in a list of paths and sorts them."""
 
@@ -85,6 +84,54 @@ def sort_paths(graph, paths, sort_by):
     sorted_paths = sorted(paths, key = key, reverse = reverse)
     return sorted_paths
 
+def get_common_nodes(path_array, threshold):
+    """Takes in an array of paths of equal sizes and returns the nodes
+    which are more common than the provided threshold
+    """
+
+    # Get unique nodes
+    unique_nodes = np.unique(path_array)
+    unique_nodes = unique_nodes[unique_nodes > 0]
+    # Get node percentage
+    node_count = np.array([(node == path_array).sum() for node in unique_nodes])
+    node_perc = node_count/node_count.sum()
+    # Select common nodes
+    common_nodes = unique_nodes[node_perc > threshold]
+    return common_nodes
+
+def get_metapath(paths, table):
+    #print(paths)
+    #path_dict = {}
+    #for p in paths:
+    #    edges = []
+    #    for i in range(len(p) - 1):
+    #        edge = (p[i], p[i+1])
+    #        edges.append(edge)
+    #    path_dict[tuple(p)] = edges
+    #x = [2,3] in paths
+    #print(path_dict)
+    
+
+    node_threshold = 0.3
+    edge_threshold = 0.3
+    # get maximum size of path
+    #max_length = table[-1][1]
+    max_length = 3
+    # Convert list of paths to an array of equal size paths
+    path_array = np.array([p + [-1]*(max_length-len(p)) for p in paths])
+    common_nodes = get_common_nodes(path_array, node_threshold)
+    print(common_nodes)
+    #paths_flat = path_array.flatten()
+    #paths_flat = paths_flat[paths_flat > 0]
+    # Get all nodes in the path
+    #
+    #print(nodes)
+    #print(path_array)
+    #print(path_array.flatten())
+    #it = iter(paths_flat)
+    #edges = np.array(list(zip(it, it)))
+    #edges = edges[(edges > -1).sum(axis = 1) == 2]
+    #print(edges)
 
 def main():
     ######################### ARGUMENT PARSER #########################
@@ -153,7 +200,7 @@ def main():
     parser.add_argument("-o", "--output",
                         dest = "output",
                         default = o_default,
-                        help = b_helpstr)
+                        help = o_helpstr)
 
     options = parser.parse_args()
 
@@ -177,7 +224,9 @@ def main():
 
     path_table = sort_paths(graph, paths, options.sort_by)
 
-    print(paths)
+    # Metapath
+    #get_metapath(paths, path_table)
+
 
     # Write file
     with open(options.output, "w") as f:
@@ -187,11 +236,11 @@ def main():
 
 
     #test graph
-    #G = nx.Graph()
-    #G.add_nodes_from([1,2,3,4,5,6])
-    #G.add_edges_from([(2,3), (3,4), (3,6)])
-    
-    #print(graph.nodes)
+    G = nx.Graph()
+    G.add_nodes_from([1,2,3,4,5,6])
+    G.add_edges_from([(2,3), (3,4), (3,6)])
+    P = get_shortest_paths(G, 1, 6, 10, 1)
+    get_metapath(P, P)
 
 
 
