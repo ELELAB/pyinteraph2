@@ -4,15 +4,24 @@ import numpy as np
 import networkx as nx
 import itertools
 
+def get_combinations(source, target, res_space):
+    """Return an iterator that contains all combinations between source 
+    and target that are at least res_space apart. 
+    """
+
+    combinations = itertools.combinations(range(source, 
+                                                target + 1, 
+                                                res_space), 2)
+    return combinations
+
 def get_shortest_paths(graph, source, target, maxl, res_space):
     """Find all shortest paths between all combinations of source and
     target.
     """
     
     # Get all combinations
-    combinations = itertools.combinations(range(source, 
-                                                target + 1, 
-                                                res_space), 2)
+    combinations = get_combinations(source, target, res_space)
+    # Get all shortest paths
     paths = []
     for node1, node2 in combinations:
         try:
@@ -30,6 +39,27 @@ def get_shortest_paths(graph, source, target, maxl, res_space):
             # If no path is found log info
             log.info(f"No path found between {node1} and {node2}")
     return paths
+
+def get_all_paths(graph, source, target, maxl, res_space):
+    """Find all simple paths between all combinations of source and
+    target.
+    """
+
+    # Get all combinations
+    combinations = get_combinations(source, target, res_space)
+    # Get all simple paths
+    paths = []
+    for node1, node2 in combinations:
+        path = list(nx.algorithms.simple_paths.all_simple_paths(\
+                        G = graph, \
+                        source = node1, \
+                        target = node2, \
+                        cutoff= maxl))
+        for p in path:
+            if len(p) > 0:
+                paths.append(p)
+    return paths
+
 
 def sort_paths(graph, paths, sort_by):
     """Takes in a list of paths and sorts them."""
@@ -84,6 +114,14 @@ def main():
                         type = int,
                         help = r_helpstr.format(r_default))
 
+    p_helpstr = "Calculate all simple paths between " \
+                "two residues in the graph"
+    parser.add_argument("-p", "--all-paths",
+                        dest = "do_paths",
+                        action = "store_true",
+                        default = False,
+                        help = p_helpstr)
+
     s_choices = ["length", "cumulative_weight", "avg_weight"]
     s_default = "length"
     s_helpstr = \
@@ -92,7 +130,7 @@ def main():
     parser.add_argument("-s", "--sort-paths",
                         dest = "sort_by",
                         choices = s_choices,
-                        default = "length",
+                        default = s_default,
                         help = \
                             s_helpstr.format(", ".join(s_choices), s_default))
 
@@ -122,12 +160,24 @@ def main():
     # Load file
     matrix = np.loadtxt(options.input_matrix)
     graph = nx.Graph(matrix)
-    all_paths = get_shortest_paths(graph = graph, \
-                                   source = options.source, \
-                                   target = options.target, \
-                                   maxl = options.maxl, \
-                                   res_space = options.res_space)
-    path_table = sort_paths(graph, all_paths, options.sort_by)
+
+    # Choose whether to get shortest paths or all paths
+    if options.do_paths:
+        paths = get_all_paths(graph = graph, \
+                              source = options.source, \
+                              target = options.target, \
+                              maxl = options.maxl, \
+                              res_space = options.res_space)
+    else:
+        paths = get_shortest_paths(graph = graph, \
+                                    source = options.source, \
+                                    target = options.target, \
+                                    maxl = options.maxl, \
+                                    res_space = options.res_space)
+
+    path_table = sort_paths(graph, paths, options.sort_by)
+
+    print(paths)
 
     # Write file
     with open(options.output, "w") as f:
