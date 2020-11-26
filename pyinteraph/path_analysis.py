@@ -84,58 +84,78 @@ def sort_paths(graph, paths, sort_by):
     sorted_paths = sorted(paths, key = key, reverse = reverse)
     return sorted_paths
 
-def get_common_nodes(path_array, threshold):
-    """Takes in an array of paths of equal sizes and returns the nodes
-    which are more common than the provided threshold
+def get_common_nodes(paths, threshold, maxl):
+    """Takes in an list of paths and returns the nodes which are more 
+    common than the provided threshold.
     """
 
+    # Convert path list to array where all paths are equal sized
+    # Use the maximum path length as an upper bound
+    paths_array = np.array([p + [-1]*(maxl-len(p)) for p in paths])
     # Get unique nodes
-    unique_nodes = np.unique(path_array)
+    unique_nodes = np.unique(paths_array)
     unique_nodes = unique_nodes[unique_nodes > 0]
     # Get node percentage
-    node_count = np.array([(node == path_array).sum() for node in unique_nodes])
+    node_count = np.array([(node == paths_array).sum() for node in unique_nodes])
     node_perc = node_count/node_count.sum()
     # Select common nodes
     common_nodes = unique_nodes[node_perc > threshold]
+    common_nodes = list(common_nodes)
     return common_nodes
 
-def get_metapath(paths, table):
-    #print(paths)
-    #path_dict = {}
-    #for p in paths:
-    #    edges = []
-    #    for i in range(len(p) - 1):
-    #        edge = (p[i], p[i+1])
-    #        edges.append(edge)
-    #    path_dict[tuple(p)] = edges
-    #x = [2,3] in paths
-    #print(path_dict)
-    
+def get_common_edges(paths, threshold):
+    """Takes in a list of paths and returns a list of edges which are
+    more common than the provided threshold.
+    """
 
-    node_threshold = 0.3
-    edge_threshold = 0.3
-    # get maximum size of path
-    #max_length = table[-1][1]
-    max_length = 3
-    # Convert list of paths to an array of equal size paths
-    path_array = np.array([p + [-1]*(max_length-len(p)) for p in paths])
-    common_nodes = get_common_nodes(path_array, node_threshold)
-    print(common_nodes)
-    #paths_flat = path_array.flatten()
-    #paths_flat = paths_flat[paths_flat > 0]
-    # Get all nodes in the path
-    #
-    #print(nodes)
-    #print(path_array)
-    #print(path_array.flatten())
-    #it = iter(paths_flat)
-    #edges = np.array(list(zip(it, it)))
-    #edges = edges[(edges > -1).sum(axis = 1) == 2]
-    #print(edges)
+    # Initialize lists of edges and their count
+    edges = []
+    counts = []
+    for p in paths:
+        for i in range(len(p) - 1):
+            # For every path find the edges
+            edge = (p[i], p[i+1])
+            # If edge is already in the list, increase the out
+            if edge in edges:
+                index = edges.index(edge)
+                counts[index] += 1
+            # Else add it to the list, and add a count of 1
+            else:
+                edges.append(edge)
+                counts.append(1)
+    edges = np.array(edges)
+    counts = np.array(counts)
+    # Calculate percentage occurance for each path
+    perc = counts/counts.sum()
+    # Choose paths larger than the threshold
+    common_edges = edges[perc > threshold]
+    common_edges = list(map(tuple, common_edges))
+    return common_edges
+
+def get_metapath(paths, node_threshold, edge_threshold, maxl):
+    """Metapth
+    """
+    
+    # Get common nodes
+    common_nodes = get_common_nodes(paths, node_threshold, maxl)
+    print("common_nodes", common_nodes)
+    # Get common edges
+    common_edges = get_common_edges(paths, edge_threshold)
+    print("common_edges", common_edges)
+    common_paths = []
+    # DIDN'T CHECK FOR COMMON NODES, FIGURE IT OUT LATER
+    for p in paths:
+        nodes = p
+        edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
+        for c in common_edges:
+            if c in edges and p not in common_paths:
+                common_paths.append(p)
+    return common_paths
+
 
 def main():
     ######################### ARGUMENT PARSER #########################
-    description = "Find shortest path"
+    description = "Path analysis"
     parser = argparse.ArgumentParser(description= description)
 
     i_helpstr = ".dat file matrix"
@@ -225,7 +245,8 @@ def main():
     path_table = sort_paths(graph, paths, options.sort_by)
 
     # Metapath
-    #get_metapath(paths, path_table)
+    metapath = get_metapath(paths, 0.1, 0.1, options.maxl)
+    print(metapath)
 
 
     # Write file
@@ -236,11 +257,12 @@ def main():
 
 
     #test graph
-    G = nx.Graph()
-    G.add_nodes_from([1,2,3,4,5,6])
-    G.add_edges_from([(2,3), (3,4), (3,6)])
-    P = get_shortest_paths(G, 1, 6, 10, 1)
-    get_metapath(P, P)
+    # G = nx.Graph()
+    # G.add_nodes_from([1,2,3,4,5,6])
+    # G.add_edges_from([(2,3), (3,4), (3,6)])
+    # P = get_shortest_paths(G, 1, 6, 10, 1)
+    # metapath = get_metapath(P, 0.3, 0.3, options.maxl)
+    # print(metapath)
 
 
 
