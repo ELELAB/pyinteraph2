@@ -2,7 +2,90 @@ import argparse
 import logging as log
 import numpy as np
 import networkx as nx
+import MDAnalysis as mda
 import itertools
+import re
+
+def build_graph(fname, pdb = None):
+    """Build a graph from the provided matrix"""
+
+    try:
+        data = np.loadtxt(fname)
+    except:
+        errstr = "Could not load file {:s} or wrong file format."
+        raise ValueError(errstr.format(fname))
+    # if the user provided a reference structure
+    if pdb is not None:
+        try:
+            # generate a Universe object from the PDB file
+            u = mda.Universe(pdb)
+        except Exception:
+            errstr = \
+                "Exception caught during creation of the Universe."
+            raise ValueError(errstr)      
+        # generate identifiers for the nodes of the graph
+        idfmt = "{:s}{:d}"
+        identifiers = \
+            [idfmt.format(r.segment.segid, r.resnum) \
+             for r in u.residues]
+    # if the user did not provide a reference structure
+    else:
+        # generate automatic identifiers going from 1 to the
+        # total number of residues considered
+        identifiers = [str(i) for i in range(1, data.shape[0]+1)]
+    
+    # generate a graph from the data loaded
+    G = nx.Graph(data)
+    # set the names of the graph nodes (in place)
+    node_names = dict(zip(range(data.shape[0]), identifiers))
+    nx.relabel_nodes(G, mapping = node_names, copy = False)
+    # return the idenfiers and the graph
+    return identifiers, G
+
+
+def convert_input_to_list(user_input, identifiers):
+    """Take in a string e.g. A12:A22,A13... and res names. Replaces the 
+    range indicated by the colon with all resiues in that range and keeps
+    all residues separated by commas. Removes duplicates.
+    """
+
+    # Find all residues seperated by commas
+    input_comma = re.sub('\w\d+:\w\d+', '', user_input)
+    comma_list = input_comma.split(',')
+    # Remove empty residues
+    comma_list = [res for res in comma_list if res != '']
+    # Report if any residues are not in the PDB
+    try:
+        for res in comma_list:
+            identifiers.index(res)
+    except Exception:
+        error_str = "Residue not in PDB: {:s}"
+        raise ValueError(error_str.format(res))
+    # FInd all residues seperated by colons
+    input_colon = re.findall('\w\d+:\w\d+', user_input)
+    colon_replace = []
+    # Subsitite range of residues with the actual residues
+    for inp in input_colon:
+        try:
+            # Create list of size two with start and end of range
+            colon_split = inp.split(':')
+            # Find the index of those res in the indentifiers list
+            index = [identifiers.index(res) for res in colon_split]
+            # Replace with the residues in that range
+            inp_replace = identifiers[index[0]:index[1]+1]
+            # Concatenate to list
+            colon_replace += inp_replace
+        except Exception:
+            # Report if the specified range does not exist in the PDB
+            error_str = "Residue range not in PDB: {:s}"
+            raise ValueError(error_str.format(inp))
+    # Add both lists
+    input_list = comma_list + colon_replace
+    # Remove duplicates
+    input_list = list(set(input_list))
+    return input_list
+
+
 
 def get_combinations(source, target, res_space):
     """Return an iterator that contains all combinations between source 
@@ -147,15 +230,15 @@ def get_metapath(paths, paths_graph, node_threshold, edge_threshold, maxl):
     
     # Get common nodes
     common_nodes = get_common_nodes(paths, node_threshold, maxl)
-    print("common_nodes", common_nodes)
+    #print("common_nodes", common_nodes)
     # Get common edges
     common_edges = get_common_edges(paths_graph, edge_threshold)
-    print("common_edges", common_edges)
+    #print("common_edges", common_edges)
 
     common_paths = []
     # Find which paths have the common nodes and edges
     for p in paths:
-        print(p)
+        #print(p)
         edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
         # Check if required nodes are in path
         for c_node in common_nodes:
@@ -179,9 +262,17 @@ def main():
                         help= i_helpstr,
                         action= "store",
                         type= str)
+    
+    p_helpstr = "Reference PDB file"
+    parser.add_argument("-p", "--pdb",
+                        metavar = "TOPOLOGY",
+                        dest = "pdb",
+                        type = str,
+                        default = None,
+                        help = p_helpstr)
 
     l_default = 10
-    l_helpstr = "Maximum path length (see option -p) (default: {:d})"
+    l_helpstr = "Maximum path length (default: {:d})"
     parser.add_argument("-l", "--maximum-path-length", \
                         dest = "maxl",
                         default = l_default,
@@ -189,46 +280,46 @@ def main():
                         help = l_helpstr.format(l_default))
 
     r_default  = 1
-    r_helpstr = "Residue spacing (see option -p) (default: {:d})"
+    r_helpstr = "Residue spacing (default: {:d})"
     parser.add_argument("-r", "--residue-spacing", \
                         dest = "res_space",
                         default = r_default,
                         type = int,
                         help = r_helpstr.format(r_default))
 
-    p_helpstr = "Calculate all simple paths between " \
+    a_helpstr = "Calculate all simple paths between " \
                 "two residues in the graph"
-    parser.add_argument("-p", "--all-paths",
+    parser.add_argument("-a", "--all-paths",
                         dest = "do_paths",
                         action = "store_true",
                         default = False,
-                        help = p_helpstr)
-
-    s_choices = ["length", "cumulative_weight", "avg_weight"]
-    s_default = "length"
-    s_helpstr = \
-        "How to sort pathways in output. Possible choices are {:s}" \
-        " (default: {:s})"
-    parser.add_argument("-s", "--sort-paths",
-                        dest = "sort_by",
-                        choices = s_choices,
-                        default = s_default,
-                        help = \
-                            s_helpstr.format(", ".join(s_choices), s_default))
-
-    a_helpstr = "Source residue for paths calculation (see option -p)"
-    parser.add_argument("-a", "--source",
-                        dest = "source",
-                        default = None,
-                        type = int,
                         help = a_helpstr)
 
-    b_helpstr = "Target residue for paths calculation (see option -p)"
-    parser.add_argument("-b", "--target",
+    b_choices = ["length", "cumulative_weight", "avg_weight"]
+    b_default = "length"
+    b_helpstr = \
+        "How to sort pathways in output. Possible choices are {:s}" \
+        " (default: {:s})"
+    parser.add_argument("-b", "--sort-paths",
+                        dest = "sort_by",
+                        choices = b_choices,
+                        default = b_default,
+                        help = \
+                            b_helpstr.format(", ".join(b_choices), b_default))
+
+    s_helpstr = "Source residue for paths calculation (see option -p)"
+    parser.add_argument("-s", "--source",
+                        dest = "source",
+                        default = None,
+                        type = str,
+                        help = s_helpstr)
+
+    t_helpstr = "Target residue for paths calculation (see option -p)"
+    parser.add_argument("-t", "--target",
                         dest = "target",
                         default = None,
-                        type = int,
-                        help = b_helpstr)
+                        type = str,
+                        help = t_helpstr)
 
     o_default = "paths.txt"
     o_helpstr = "Output file name"
@@ -240,9 +331,20 @@ def main():
     options = parser.parse_args()
 
     # Load file
-    matrix = np.loadtxt(options.input_matrix)
-    graph = nx.Graph(matrix)
+    identifiers, graph = build_graph(options.input_matrix, pdb = options.pdb)
+    source_list = convert_input_to_list(options.source, identifiers)
+    target_list = convert_input_to_list(options.target, identifiers)
+    print(source_list)
+    print(target_list)
+    #nodes = G.nodes()
+    #edges = G.edges()
+    #print("nodes", nodes)
+    #print("edges", edges)
+    #print("identifiers", identifiers)
 
+ #matrix = np.loadtxt(options.input_matrix)
+    #graph = nx.Graph(matrix)
+    """
     # Choose whether to get shortest paths or all paths
     if options.do_paths:
         all_paths = get_all_simple_paths(graph = graph, \
@@ -257,23 +359,22 @@ def main():
                                     maxl = options.maxl, \
                                     res_space = options.res_space)
 
-    all_paths_table = sort_paths(graph, all_paths, options.sort_by)
-    all_paths_graph = get_graph(all_paths)
+    print(all_paths)
+    """
+    #all_paths_table = sort_paths(graph, all_paths, options.sort_by)
+    #all_paths_graph = get_graph(all_paths)
 
     # Metapath
-    metapath = get_metapath(all_paths, all_paths_graph, 0.1, 0.1, options.maxl)
-    print(metapath)
+    #metapath = get_metapath(all_paths, all_paths_graph, 0.1, 0.1, options.maxl)
+    #print(metapath)
     #metapath_table = sort_paths()
-    #G = get_graph(all_paths)
-    #print(G.edges)
-    #print([G[edge[0]][edge[1]]["weight"] for edge in G.edges])
-    #print(G.nodes)
 
     # Write file
+    """
     with open(options.output, "w") as f:
         for path, length, sum_weight, avg_weight in all_paths_table:
             f.write(f"{path}\t{length}\t{sum_weight}\t{avg_weight}\n")
-
+    """
 
 
     #test graph
