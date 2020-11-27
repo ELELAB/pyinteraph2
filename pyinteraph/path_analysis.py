@@ -133,7 +133,9 @@ def get_common_edges(paths, threshold):
     return common_edges
 
 def get_metapath(paths, node_threshold, edge_threshold, maxl):
-    """Metapth
+    """Takes in a list of paths, an edge threshoold and a node threshold
+    and returns a list of metapaths where each metapath contains all 
+    nodes and edges above their respective thresholds.
     """
     
     # Get common nodes
@@ -143,13 +145,18 @@ def get_metapath(paths, node_threshold, edge_threshold, maxl):
     common_edges = get_common_edges(paths, edge_threshold)
     print("common_edges", common_edges)
     common_paths = []
-    # DIDN'T CHECK FOR COMMON NODES, FIGURE IT OUT LATER
+    # Find which paths have the common nodes and edges
     for p in paths:
-        nodes = p
+        # print(p)
         edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
-        for c in common_edges:
-            if c in edges and p not in common_paths:
-                common_paths.append(p)
+        # Check if required nodes are in path
+        for c_node in common_nodes:
+            if c_node in p:
+                # Check if required edges are in path
+                for c_edge in common_edges:
+                    # Add path if not already added
+                    if c_edge in edges and p not in common_paths:
+                        common_paths.append(p)
     return common_paths
 
 
@@ -247,6 +254,7 @@ def main():
     # Metapath
     metapath = get_metapath(paths, 0.1, 0.1, options.maxl)
     print(metapath)
+    #metapath_table = sort_paths()
 
 
     # Write file
