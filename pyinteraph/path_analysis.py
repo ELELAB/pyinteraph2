@@ -85,17 +85,16 @@ def convert_input_to_list(user_input, identifiers):
     input_list = list(set(input_list))
     return input_list
 
+#def get_combinations(source, target, res_space):
+#    """Return an iterator that contains all combinations between source 
+#    and target that are at least res_space apart. 
+#    """
+#
+#    combinations = itertools.combinations(range(source, 
+#                                                target + 1, 
+#                                                res_space), 2)
+#    return combinations
 
-
-def get_combinations(source, target, res_space):
-    """Return an iterator that contains all combinations between source 
-    and target that are at least res_space apart. 
-    """
-
-    combinations = itertools.combinations(range(source, 
-                                                target + 1, 
-                                                res_space), 2)
-    return combinations
 
 def get_shortest_paths(graph, source, target, maxl, res_space):
     """Find all shortest paths between all combinations of source and
@@ -103,24 +102,25 @@ def get_shortest_paths(graph, source, target, maxl, res_space):
     """
     
     # Get all combinations
-    combinations = get_combinations(source, target, res_space)
+    combinations = itertools.product(source, target)
     # Get all shortest paths
     paths = []
     for node1, node2 in combinations:
-        try:
-            # Get a list of shortest paths and append to output
-            path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(\
-                            G = graph, \
-                            source = node1, \
-                            target = node2))
-            for p in path:
-                # Check that path is not longer than the maximum allowed length
-                if len(p) <= maxl:
-                    paths.append(p)
-        except nx.NetworkXNoPath:
-            pass
-            # If no path is found log info
-            log.info(f"No path found between {node1} and {node2}")
+        if node1 != node2:
+            try:
+                # Get a list of shortest paths and append to output
+                path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(\
+                                G = graph, \
+                                source = node1, \
+                                target = node2))
+                for p in path:
+                    # Check that path is not longer than the maximum allowed length
+                    if len(p) <= maxl:
+                        paths.append(p)
+            except nx.NetworkXNoPath:
+                pass
+                # If no path is found log info
+                log.warning(f"No path found between {node1} and {node2}")
     return paths
 
 def get_all_simple_paths(graph, source, target, maxl, res_space):
@@ -129,7 +129,7 @@ def get_all_simple_paths(graph, source, target, maxl, res_space):
     """
 
     # Get all combinations
-    combinations = get_combinations(source, target, res_space)
+    combinations = itertools.product(source, target)
     # Get all simple paths
     paths = []
     for node1, node2 in combinations:
@@ -145,26 +145,31 @@ def get_all_simple_paths(graph, source, target, maxl, res_space):
 
 def sort_paths(graph, paths, sort_by):
     """Takes in a list of paths and sorts them."""
-
+    #MIGHT WANT TO REDO THIS, REPLACE 3 LIST COMPREHENSIONS
+    # Get source and target
+    source = [p[0] for p in paths]
+    target = [p[-1] for p in paths]
     # Calculate length of path
     lengths = [len(p) for p in paths]
+    #print(lengths)
     # Calculate weights of path
     weights = \
     [[graph[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)] for p in paths]
     sum_weights = [np.sum(w) for w in weights]
     avg_weights = [np.mean(w) for w in weights]
     # Sort paths
-    paths = zip(paths, lengths, sum_weights, avg_weights)
+    paths = zip(paths, source, target, lengths, sum_weights, avg_weights)
     if sort_by == "length":
-        key = lambda x: x[1]
+        key = lambda x: x[3]
         reverse = False
     elif sort_by == "cumulative_weight":
-        key = lambda x: x[2]
+        key = lambda x: x[4]
         reverse = True
     elif sort_by == "average_weight":
-        key = lambda x: x[3]
+        key = lambda x: x[5]
         reverse = True
     sorted_paths = sorted(paths, key = key, reverse = reverse)
+    #print(sorted_paths)
     return sorted_paths
 
 def get_common_nodes(paths, threshold, maxl):
@@ -334,34 +339,36 @@ def main():
     identifiers, graph = build_graph(options.input_matrix, pdb = options.pdb)
     source_list = convert_input_to_list(options.source, identifiers)
     target_list = convert_input_to_list(options.target, identifiers)
-    print(source_list)
-    print(target_list)
+    #print(source_list)
+    #print(target_list)
+    #x = get_combinations(source_list, target_list, options.res_space)
+    #pritn(x)
     #nodes = G.nodes()
     #edges = G.edges()
     #print("nodes", nodes)
     #print("edges", edges)
     #print("identifiers", identifiers)
 
- #matrix = np.loadtxt(options.input_matrix)
+#matrix = np.loadtxt(options.input_matrix)
     #graph = nx.Graph(matrix)
-    """
+    
     # Choose whether to get shortest paths or all paths
     if options.do_paths:
         all_paths = get_all_simple_paths(graph = graph, \
-                              source = options.source, \
-                              target = options.target, \
+                              source = source_list, \
+                              target = target_list, \
                               maxl = options.maxl, \
                               res_space = options.res_space)
     else:
         all_paths = get_shortest_paths(graph = graph, \
-                                    source = options.source, \
-                                    target = options.target, \
+                                    source = source_list, \
+                                    target = target_list, \
                                     maxl = options.maxl, \
                                     res_space = options.res_space)
 
-    print(all_paths)
-    """
-    #all_paths_table = sort_paths(graph, all_paths, options.sort_by)
+    #print(all_paths)
+    
+    all_paths_table = sort_paths(graph, all_paths, options.sort_by)
     #all_paths_graph = get_graph(all_paths)
 
     # Metapath
@@ -370,11 +377,11 @@ def main():
     #metapath_table = sort_paths()
 
     # Write file
-    """
+    
     with open(options.output, "w") as f:
-        for path, length, sum_weight, avg_weight in all_paths_table:
-            f.write(f"{path}\t{length}\t{sum_weight}\t{avg_weight}\n")
-    """
+        for p, s, t, l, sum_w, avg_w in all_paths_table:
+            f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
+    
 
 
     #test graph
