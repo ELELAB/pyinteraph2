@@ -40,7 +40,7 @@ def get_shortest_paths(graph, source, target, maxl, res_space):
             log.info(f"No path found between {node1} and {node2}")
     return paths
 
-def get_all_paths(graph, source, target, maxl, res_space):
+def get_all_simple_paths(graph, source, target, maxl, res_space):
     """Find all simple paths between all combinations of source and
     target.
     """
@@ -103,28 +103,35 @@ def get_common_nodes(paths, threshold, maxl):
     common_nodes = list(common_nodes)
     return common_nodes
 
-def get_common_edges(paths, threshold):
-    """Takes in a list of paths and returns a list of edges which are
-    more common than the provided threshold.
+def get_graph(paths):
+    """Takes in a list of paths and returns a corresponding graph where
+    the weight of each edge is its count.
     """
 
-    # Initialize lists of edges and their count
-    edges = []
-    counts = []
-    for p in paths:
-        for i in range(len(p) - 1):
-            # For every path find the edges
-            edge = (p[i], p[i+1])
-            # If edge is already in the list, increase the out
-            if edge in edges:
-                index = edges.index(edge)
-                counts[index] += 1
-            # Else add it to the list, and add a count of 1
+    graph = nx.Graph()
+    for path in paths:
+        for i in range(len(path) - 1):
+            # Get edge
+            node1 = path[i]
+            node2 = path[i+1]
+            # Increment weight if edge exists
+            if graph.has_edge(node1, node2):
+                graph[node1][node2]["weight"] += 1
+            # Add edge otherwise
             else:
-                edges.append(edge)
-                counts.append(1)
-    edges = np.array(edges)
-    counts = np.array(counts)
+                graph.add_edge(node1, node2, weight = 1)
+    return graph
+
+
+def get_common_edges(graph, threshold):
+    """Takes in a graph where the edge weights are the count of the edge
+    and returns a list of edges which are larger than the provided 
+    threshold.
+    """
+
+    # Initialize arrays of edges and their count
+    edges = np.array(graph.edges)
+    counts = np.array([graph[e[0]][e[1]]["weight"] for e in edges])
     # Calculate percentage occurance for each path
     perc = counts/counts.sum()
     # Choose paths larger than the threshold
@@ -132,7 +139,7 @@ def get_common_edges(paths, threshold):
     common_edges = list(map(tuple, common_edges))
     return common_edges
 
-def get_metapath(paths, node_threshold, edge_threshold, maxl):
+def get_metapath(paths, paths_graph, node_threshold, edge_threshold, maxl):
     """Takes in a list of paths, an edge threshoold and a node threshold
     and returns a list of metapaths where each metapath contains all 
     nodes and edges above their respective thresholds.
@@ -142,12 +149,13 @@ def get_metapath(paths, node_threshold, edge_threshold, maxl):
     common_nodes = get_common_nodes(paths, node_threshold, maxl)
     print("common_nodes", common_nodes)
     # Get common edges
-    common_edges = get_common_edges(paths, edge_threshold)
+    common_edges = get_common_edges(paths_graph, edge_threshold)
     print("common_edges", common_edges)
+
     common_paths = []
     # Find which paths have the common nodes and edges
     for p in paths:
-        # print(p)
+        print(p)
         edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
         # Check if required nodes are in path
         for c_node in common_nodes:
@@ -237,29 +245,33 @@ def main():
 
     # Choose whether to get shortest paths or all paths
     if options.do_paths:
-        paths = get_all_paths(graph = graph, \
+        all_paths = get_all_simple_paths(graph = graph, \
                               source = options.source, \
                               target = options.target, \
                               maxl = options.maxl, \
                               res_space = options.res_space)
     else:
-        paths = get_shortest_paths(graph = graph, \
+        all_paths = get_shortest_paths(graph = graph, \
                                     source = options.source, \
                                     target = options.target, \
                                     maxl = options.maxl, \
                                     res_space = options.res_space)
 
-    path_table = sort_paths(graph, paths, options.sort_by)
+    all_paths_table = sort_paths(graph, all_paths, options.sort_by)
+    all_paths_graph = get_graph(all_paths)
 
     # Metapath
-    metapath = get_metapath(paths, 0.1, 0.1, options.maxl)
+    metapath = get_metapath(all_paths, all_paths_graph, 0.1, 0.1, options.maxl)
     print(metapath)
     #metapath_table = sort_paths()
-
+    #G = get_graph(all_paths)
+    #print(G.edges)
+    #print([G[edge[0]][edge[1]]["weight"] for edge in G.edges])
+    #print(G.nodes)
 
     # Write file
     with open(options.output, "w") as f:
-        for path, length, sum_weight, avg_weight in path_table:
+        for path, length, sum_weight, avg_weight in all_paths_table:
             f.write(f"{path}\t{length}\t{sum_weight}\t{avg_weight}\n")
 
 
