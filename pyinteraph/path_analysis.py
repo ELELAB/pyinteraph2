@@ -191,7 +191,7 @@ def get_common_nodes(paths, threshold, maxl):
     common_nodes = list(common_nodes)
     return common_nodes
 
-def get_graph(paths):
+def get_graph_from_paths(paths):
     """Takes in a list of paths and returns a corresponding graph where
     the weight of each edge is its count.
     """
@@ -326,7 +326,7 @@ def main():
                         type = str,
                         help = t_helpstr)
 
-    o_default = "paths.txt"
+    o_default = "paths"
     o_helpstr = "Output file name"
     parser.add_argument("-o", "--output",
                         dest = "output",
@@ -369,18 +369,22 @@ def main():
     #print(all_paths)
     
     all_paths_table = sort_paths(graph, all_paths, options.sort_by)
-    #all_paths_graph = get_graph(all_paths)
+    all_paths_graph = get_graph_from_paths(all_paths)
 
     # Metapath
     #metapath = get_metapath(all_paths, all_paths_graph, 0.1, 0.1, options.maxl)
     #print(metapath)
     #metapath_table = sort_paths()
 
-    # Write file
+    # Write table
     
-    with open(options.output, "w") as f:
+    with open(options.output + ".txt", "w") as f:
         for p, s, t, l, sum_w, avg_w in all_paths_table:
             f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
+
+    # Write matrix
+    path_matrix = nx.to_numpy_matrix(all_paths_graph)
+    np.savetxt(options.output + ".dat", path_matrix)
     
 
 
