@@ -335,6 +335,22 @@ def main():
                         type = int,
                         help = r_helpstr.format(r_default))
 
+    e_default  = 0.1
+    e_helpstr = "Edge Threshold (default: {:f})"
+    parser.add_argument("-e", "--edge-threshold", \
+                        dest = "edge_thresh",
+                        default = e_default,
+                        type = float,
+                        help = e_helpstr.format(e_default))
+
+    n_default  = 0.1
+    n_helpstr = "Node Threshold (default: {:f})"
+    parser.add_argument("-n", "--node-threshold", \
+                        dest = "node_thresh",
+                        default = n_default,
+                        type = float,
+                        help = n_helpstr.format(n_default))
+
     a_helpstr = "Calculate all simple paths between " \
                 "two residues in the graph"
     parser.add_argument("-a", "--all-paths",
@@ -376,43 +392,55 @@ def main():
                         default = o_default,
                         help = o_helpstr)
 
-    options = parser.parse_args()
+    args = parser.parse_args()
 
-    # Load file
-    identifiers, graph = build_graph(options.input_matrix, pdb = options.pdb)
-    source_list = convert_input_to_list(options.source, identifiers)
-    target_list = convert_input_to_list(options.target, identifiers)
+    # Load file, build graphs and get identifiers for graph nodes
+    identifiers, graph = build_graph(fname =args.input_matrix, \
+                                     pdb = args.pdb)
+    # Convert user input to a list of nodes
+    source_list = convert_input_to_list(user_input = args.source, \
+                                        identifiers = identifiers)
+    target_list = convert_input_to_list(user_input = args.target, \
+                                        identifiers = identifiers)
     
     # Choose whether to get shortest paths or all paths
-    if options.do_paths:
+    if args.do_paths:
         all_paths = get_all_simple_paths(graph = graph, \
                               source = source_list, \
                               target = target_list, \
-                              maxl = options.maxl)
+                              maxl = args.maxl)
     else:
         all_paths = get_shortest_paths(graph = graph, \
                                     source = source_list, \
                                     target = target_list, \
-                                    maxl = options.maxl)
-
-    #print(all_paths)
+                                    maxl = args.maxl)
     
-    all_paths_table = sort_paths(graph, all_paths, options.sort_by)
+    # Create sorted table from paths
+    all_paths_table = sort_paths(graph = graph, \
+                                 paths = all_paths, \
+                                 sort_by = args.sort_by)
     all_paths_graph = get_graph_from_paths(all_paths)
 
-   
-    # Write table
-    write_table(options.output, all_paths_table)
-
+    # Save table
+    write_table(args.output, all_paths_table)
     # Write matrix
     path_matrix = nx.to_numpy_matrix(all_paths_graph)
-    np.savetxt(options.output + ".dat", path_matrix)
+    np.savetxt(f"{args.output}.dat", path_matrix)
     
-    # Metapath
-    metapath, metapath_graph = get_metapath(graph, \
-        identifiers, options.res_space, 0.1, 0.1)
-    metapath_table = sort_paths(metapath_graph, metapath, options.sort_by)
-    write_table("metapath", all_paths_table)
+    # Get list of metapaths and graph of metapaths
+    metapath, metapath_graph = get_metapath(\
+                                    graph = graph, \
+                                    res_id = identifiers, \
+                                    res_space = args.res_space, \
+                                    node_threshold = args.node_thresh, \
+                                    edge_threshold = args.edge_thresh)
+    # Create sorted table from Metapaths
+    metapath_table = sort_paths(graph = metapath_graph, \
+                                paths = metapath,\
+                                sort_by = args.sort_by)
+
+    # Save table
+    write_table("metapath", metapath_table)
 
 if __name__ == "__main__":
     main()
