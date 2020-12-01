@@ -76,7 +76,7 @@ def convert_input_to_list(user_input, identifiers):
             colon_replace += inp_replace
         except Exception:
             # Report if the specified range does not exist in the PDB
-            error_str = "Residue range not in PDB: {:s}"
+            error_str = "Residue range not in PDB or incorrect format: {:s}"
             raise ValueError(error_str.format(inp))
     # Add both lists
     input_list = comma_list + colon_replace
