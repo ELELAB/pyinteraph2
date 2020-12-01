@@ -135,7 +135,7 @@ def get_all_simple_paths(graph, source, target, maxl):
 
 def sort_paths(graph, paths, sort_by):
     """Takes in a list of paths and sorts them."""
-    #MIGHT WANT TO REDO THIS, REPLACE 3 LIST COMPREHENSIONS
+    
     # Get source and target
     source = [p[0] for p in paths]
     target = [p[-1] for p in paths]
@@ -313,11 +313,10 @@ def main():
     
     p_helpstr = "Reference PDB file"
     parser.add_argument("-p", "--pdb",
-                        metavar = "TOPOLOGY",
                         dest = "pdb",
-                        type = str,
-                        default = None,
-                        help = p_helpstr)
+                        help= p_helpstr,
+                        action= "store",
+                        type= str)
 
     l_default = 10
     l_helpstr = "Maximum path length (default: {:d})"
@@ -393,7 +392,17 @@ def main():
                         help = o_helpstr)
 
     args = parser.parse_args()
-
+    
+    # Check user input
+    if not args.input_matrix:
+        # exit if the adjacency matrix was not speficied
+        log.error("Graph adjacency matrix must be specified. Exiting ...")
+        exit(1)
+    if not args.pdb:
+        # exit if the reference PDB was not specifies
+        log.error("A reference PDB must be specified. Exiting ...")
+        exit(1)
+    
     # Load file, build graphs and get identifiers for graph nodes
     identifiers, graph = build_graph(fname =args.input_matrix, \
                                      pdb = args.pdb)
