@@ -42,7 +42,6 @@ def build_graph(fname, pdb = None):
     # return the idenfiers and the graph
     return identifiers, G
 
-
 def convert_input_to_list(user_input, identifiers):
     """Take in a string e.g. A12:A22,A13... and res names. Replaces the 
     range indicated by the colon with all resiues in that range and keeps
@@ -85,18 +84,7 @@ def convert_input_to_list(user_input, identifiers):
     input_list = list(set(input_list))
     return input_list
 
-#def get_combinations(source, target, res_space):
-#    """Return an iterator that contains all combinations between source 
-#    and target that are at least res_space apart. 
-#    """
-#
-#    combinations = itertools.combinations(range(source, 
-#                                                target + 1, 
-#                                                res_space), 2)
-#    return combinations
-
-
-def get_shortest_paths(graph, source, target, maxl, res_space):
+def get_shortest_paths(graph, source, target, maxl):
     """Find all shortest paths between all combinations of source and
     target.
     """
@@ -123,7 +111,7 @@ def get_shortest_paths(graph, source, target, maxl, res_space):
                 log.warning(f"No path found between {node1} and {node2}")
     return paths
 
-def get_all_simple_paths(graph, source, target, maxl, res_space):
+def get_all_simple_paths(graph, source, target, maxl):
     """Find all simple paths between all combinations of source and
     target.
     """
@@ -133,11 +121,13 @@ def get_all_simple_paths(graph, source, target, maxl, res_space):
     # Get all simple paths
     paths = []
     for node1, node2 in combinations:
+        # Get all simple paths for each combination of source and target
         path = list(nx.algorithms.simple_paths.all_simple_paths(\
                         G = graph, \
                         source = node1, \
                         target = node2, \
                         cutoff= maxl))
+        # Only add paths to output if they exist
         for p in path:
             if len(p) > 0:
                 paths.append(p)
@@ -172,17 +162,60 @@ def sort_paths(graph, paths, sort_by):
     #print(sorted_paths)
     return sorted_paths
 
-def get_common_nodes(paths, threshold, maxl):
+def get_combinations(res_id, res_space):
+    """ Takes in a list of residue identifiers and returns all pairs of
+    residues that are at least res_space apart if they are on the same
+    chain.
+    """
+    
+    # Get all index combinations
+    combinations = itertools.combinations(range(len(res_id)), 2)
+    # Get all residue combinations if they are res_space distance apart
+    # Or they are on different chains
+    combinations = [(res_id[idx1], res_id[idx2]) for idx1, idx2 in combinations \
+        if abs(idx1 - idx2) > res_space or res_id[idx1][0] != res_id[idx2][0]]
+    #print(combinations)
+    return combinations
+
+
+def get_all_shortest_paths(graph, res_id, res_space):
+    """Find all shortest paths between all combinations of nodes in the
+    graph that are at least res_space distance apart.
+    """
+    
+    # Get all combinations
+    combinations = get_combinations(res_id, res_space)
+    # Get all shortest paths
+    paths = []
+    for node1, node2 in combinations:
+        try:
+            # Get a list of shortest paths and append to output
+            path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(\
+                            G = graph, \
+                            source = node1, \
+                            target = node2))
+            for p in path:
+                # Check that path is not longer than the maximum allowed length
+                paths.append(p)
+        except Exception:
+            pass
+            # If no path is found log info
+            #log.warning(f"No path found between {node1} and {node2}")
+    return paths
+
+def get_common_nodes(paths, threshold):
     """Takes in an list of paths and returns the nodes which are more 
     common than the provided threshold.
     """
-
+    
+    # Get length of longest path
+    maxl = max([len(p) for p in paths])
     # Convert path list to array where all paths are equal sized
     # Use the maximum path length as an upper bound
-    paths_array = np.array([p + [-1]*(maxl-len(p)) for p in paths])
+    paths_array = np.array([p + [0]*(maxl-len(p)) for p in paths])
     # Get unique nodes
     unique_nodes = np.unique(paths_array)
-    unique_nodes = unique_nodes[unique_nodes > 0]
+    unique_nodes = unique_nodes[unique_nodes != "0"]
     # Get node percentage
     node_count = np.array([(node == paths_array).sum() for node in unique_nodes])
     node_perc = node_count/node_count.sum()
@@ -227,14 +260,17 @@ def get_common_edges(graph, threshold):
     common_edges = list(map(tuple, common_edges))
     return common_edges
 
-def get_metapath(paths, paths_graph, node_threshold, edge_threshold, maxl):
+def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     """Takes in a list of paths, an edge threshoold and a node threshold
     and returns a list of metapaths where each metapath contains all 
     nodes and edges above their respective thresholds.
     """
     
+    paths = get_all_shortest_paths(graph, res_id, res_space)
+    paths_graph = get_graph_from_paths(paths)
+
     # Get common nodes
-    common_nodes = get_common_nodes(paths, node_threshold, maxl)
+    common_nodes = get_common_nodes(paths, node_threshold)
     #print("common_nodes", common_nodes)
     # Get common edges
     common_edges = get_common_edges(paths_graph, edge_threshold)
@@ -253,7 +289,14 @@ def get_metapath(paths, paths_graph, node_threshold, edge_threshold, maxl):
                     # Add path if not already added
                     if c_edge in edges and p not in common_paths:
                         common_paths.append(p)
-    return common_paths
+    #print(common_paths)
+    return common_paths, paths_graph
+
+def write_table(fname, table):
+    """Save sorted table as txt file. """
+    with open(f"{fname}.txt", "w") as f:
+        for p, s, t, l, sum_w, avg_w in table:
+            f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
 
 
 def main():
@@ -339,65 +382,37 @@ def main():
     identifiers, graph = build_graph(options.input_matrix, pdb = options.pdb)
     source_list = convert_input_to_list(options.source, identifiers)
     target_list = convert_input_to_list(options.target, identifiers)
-    #print(source_list)
-    #print(target_list)
-    #x = get_combinations(source_list, target_list, options.res_space)
-    #pritn(x)
-    #nodes = G.nodes()
-    #edges = G.edges()
-    #print("nodes", nodes)
-    #print("edges", edges)
-    #print("identifiers", identifiers)
-
-#matrix = np.loadtxt(options.input_matrix)
-    #graph = nx.Graph(matrix)
     
     # Choose whether to get shortest paths or all paths
     if options.do_paths:
         all_paths = get_all_simple_paths(graph = graph, \
                               source = source_list, \
                               target = target_list, \
-                              maxl = options.maxl, \
-                              res_space = options.res_space)
+                              maxl = options.maxl)
     else:
         all_paths = get_shortest_paths(graph = graph, \
                                     source = source_list, \
                                     target = target_list, \
-                                    maxl = options.maxl, \
-                                    res_space = options.res_space)
+                                    maxl = options.maxl)
 
     #print(all_paths)
     
     all_paths_table = sort_paths(graph, all_paths, options.sort_by)
     all_paths_graph = get_graph_from_paths(all_paths)
 
-    # Metapath
-    #metapath = get_metapath(all_paths, all_paths_graph, 0.1, 0.1, options.maxl)
-    #print(metapath)
-    #metapath_table = sort_paths()
-
+   
     # Write table
-    
-    with open(options.output + ".txt", "w") as f:
-        for p, s, t, l, sum_w, avg_w in all_paths_table:
-            f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
+    write_table(options.output, all_paths_table)
 
     # Write matrix
     path_matrix = nx.to_numpy_matrix(all_paths_graph)
     np.savetxt(options.output + ".dat", path_matrix)
     
-
-
-    #test graph
-    # G = nx.Graph()
-    # G.add_nodes_from([1,2,3,4,5,6])
-    # G.add_edges_from([(2,3), (3,4), (3,6)])
-    # P = get_shortest_paths(G, 1, 6, 10, 1)
-    # metapath = get_metapath(P, 0.3, 0.3, options.maxl)
-    # print(metapath)
-
-
-
+    # Metapath
+    metapath, metapath_graph = get_metapath(graph, \
+        identifiers, options.res_space, 0.1, 0.1)
+    metapath_table = sort_paths(metapath_graph, metapath, options.sort_by)
+    write_table("metapath", all_paths_table)
 
 if __name__ == "__main__":
     main()
