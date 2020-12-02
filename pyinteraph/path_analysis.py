@@ -12,22 +12,19 @@ def build_graph(fname, pdb = None):
     try:
         data = np.loadtxt(fname)
     except:
-        errstr = "Could not load file {:s} or wrong file format."
-        raise ValueError(errstr.format(fname))
+        errstr = f"Could not load file {fname} or wrong file format."
+        raise ValueError(errstr)
     # if the user provided a reference structure
     if pdb is not None:
         try:
             # generate a Universe object from the PDB file
             u = mda.Universe(pdb)
-        except Exception:
+        except Exception as e:
             errstr = \
-                "Exception caught during creation of the Universe."
+                f"Exception caught during creation of the Universe: {e}"
             raise ValueError(errstr)      
         # generate identifiers for the nodes of the graph
-        idfmt = "{:s}{:d}"
-        identifiers = \
-            [idfmt.format(r.segment.segid, r.resnum) \
-             for r in u.residues]
+        identifiers = [f"{r.segment.segid}{r.resnum}" for r in u.residues]
     # if the user did not provide a reference structure
     else:
         # generate automatic identifiers going from 1 to the
@@ -43,19 +40,20 @@ def build_graph(fname, pdb = None):
     return identifiers, G
 
 def convert_input_to_list(user_input, identifiers, pdb = False):
-    """Take in a string e.g. A12:A22,A13... and res names if a PDB file 
-    is supplied. Replaces the range indicated by the colon with all 
-    resiues in that range and keeps all residues separated by commas. 
-    Removes duplicates. Takes in a string e.g.1,3,4:56 if no PDB file
-    is supplied.
+    """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
+    and a list of names of all the residues (graph nodes). Replaces the 
+    range indicated by the colon with all resiues in that range and 
+    keeps all residues separated by commas. Removes duplicates. Takes in
+    a string e.g. 1,3,4:56 if no PDB file is supplied.
     """
 
     # Check if PDB file is supplied
     if pdb:
-        # Find all residues sepearted by commas
-        input_comma = re.sub('\w\d+:\w\d+', '', user_input)
-        # Find all residues sepearted by xolona
-        input_colon = re.findall('\w\d+:\w\d+', user_input)
+        # Find all residues separated by commas by
+        # replacing all colon residues with ''
+        input_comma = re.sub('\w+:\w+', '', user_input)
+        # Find all residues separated by colons
+        input_colon = re.findall('\w+:\w+', user_input)
     else:
         # No PDB file present
         input_comma = re.sub('\d+:\d+', '', user_input)
@@ -68,10 +66,9 @@ def convert_input_to_list(user_input, identifiers, pdb = False):
         for res in comma_list:
             identifiers.index(res)
     except Exception:
-        error_str = "Residue not in PDB: {:s}"
-        raise ValueError(error_str.format(res))
+        raise ValueError(f"Residue not in PDB or incorrect format: {res}")
     colon_replace = []
-    # Subsitite range of residues with the actual residues
+    # Substitute range of residues with the actual residues
     for inp in input_colon:
         try:
             # Create list of size two with start and end of range
@@ -84,8 +81,7 @@ def convert_input_to_list(user_input, identifiers, pdb = False):
             colon_replace += inp_replace
         except Exception:
             # Report if the specified range does not exist in the PDB
-            error_str = "Residue range not in PDB or incorrect format: {:s}"
-            raise ValueError(error_str.format(inp))
+            raise ValueError(f"Residue range not in PDB or incorrect format: {inp}")
     # Add both lists
     input_list = comma_list + colon_replace
     # Remove duplicates
@@ -114,7 +110,6 @@ def get_shortest_paths(graph, source, target, maxl):
                     if len(p) <= maxl:
                         paths.append(p)
             except nx.NetworkXNoPath:
-                pass
                 # If no path is found log info
                 log.warning(f"No path found between {node1} and {node2}")
     return paths
@@ -149,10 +144,10 @@ def sort_paths(graph, paths, sort_by):
     target = [p[-1] for p in paths]
     # Calculate length of path
     lengths = [len(p) for p in paths]
-    #print(lengths)
     # Calculate weights of path
     weights = \
-    [[graph[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)] for p in paths]
+              [[graph[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)] \
+                  for p in paths]
     sum_weights = [np.sum(w) for w in weights]
     avg_weights = [np.mean(w) for w in weights]
     # Sort paths
@@ -167,7 +162,6 @@ def sort_paths(graph, paths, sort_by):
         key = lambda x: x[5]
         reverse = True
     sorted_paths = sorted(paths, key = key, reverse = reverse)
-    #print(sorted_paths)
     return sorted_paths
 
 def get_combinations(res_id, res_space):
@@ -181,8 +175,8 @@ def get_combinations(res_id, res_space):
     # Get all residue combinations if they are res_space distance apart
     # Or they are on different chains
     combinations = [(res_id[idx1], res_id[idx2]) for idx1, idx2 in combinations \
-        if abs(idx1 - idx2) > res_space or res_id[idx1][0] != res_id[idx2][0]]
-    #print(combinations)
+                    if abs(idx1 - idx2) > res_space \
+                    or res_id[idx1][0] != res_id[idx2][0]]
     return combinations
 
 
@@ -206,9 +200,8 @@ def get_all_shortest_paths(graph, res_id, res_space):
                 # Check that path is not longer than the maximum allowed length
                 paths.append(p)
         except Exception:
-            pass
             # If no path is found log info
-            #log.warning(f"No path found between {node1} and {node2}")
+            log.debug(f"No path found between {node1} and {node2}")
     return paths
 
 def get_common_nodes(paths, threshold):
@@ -265,11 +258,12 @@ def get_common_edges(graph, threshold):
     perc = counts/counts.sum()
     # Choose paths larger than the threshold
     common_edges = edges[perc > threshold]
+    # Convert array to list of tuples
     common_edges = list(map(tuple, common_edges))
     return common_edges
 
 def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
-    """Takes in a list of paths, an edge threshoold and a node threshold
+    """Takes in a list of paths, an edge threshold and a node threshold
     and returns a list of metapaths where each metapath contains all 
     nodes and edges above their respective thresholds.
     """
@@ -286,19 +280,18 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
 
     # Warn if no common nodes found
     if len(common_nodes) == 0:
-        warn_str = "No Nodes found with a frequency higher than: {:f}"
-        log.warning(warn_str.format(node_threshold))
+        warn_str = f"No Nodes found with a frequency higher than: {node_threshold}"
+        log.warning(warn_str)
     # Warn if no common edges found
     if len(common_edges) == 0:
-        warn_str = "No Edges found with a frequency higher than: {:f}"
-        log.warning(warn_str.format(edge_threshold))
+        warn_str = f"No Edges found with a frequency higher than: {edge_threshold}"
+        log.warning(warn_str)
 
     common_paths = []
     # Common edges and nodes exist
     if len(common_nodes) != 0 and len(common_edges) != 0:
         # Find which paths have the common nodes and edges
         for p in paths:
-            #print(p)
             edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
             # Check if required nodes are in path
             for c_node in common_nodes:
@@ -310,8 +303,7 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
                             common_paths.append(p)
         # Warn if no metapaths found
         if len(common_paths) == 0:
-            warn_str = "No metapaths found."
-            log.warning(warn_str)
+            log.warning("No metapaths found.")
     return common_paths, paths_graph
 
 def write_table(fname, table):
@@ -330,48 +322,46 @@ def main():
     parser.add_argument("-i", "--input-dat",
                         dest = "input_matrix",
                         help = i_helpstr,
-                        action = "store",
                         type = str)
     
     p_helpstr = "Reference PDB file"
     parser.add_argument("-p", "--pdb",
                         dest = "pdb",
                         help = p_helpstr,
-                        action = "store",
                         default = None,
                         type = str)
 
     l_default = 10
-    l_helpstr = "Maximum path length (default: {:d})"
+    l_helpstr = f"Maximum path length (default: {l_default})"
     parser.add_argument("-l", "--maximum-path-length", 
                         dest = "maxl",
                         default = l_default,
                         type = int,
-                        help = l_helpstr.format(l_default))
+                        help = l_helpstr)
 
     r_default  = 1
-    r_helpstr = "Residue spacing (default: {:d})"
+    r_helpstr = f"Residue spacing (default: {r_default})"
     parser.add_argument("-r", "--residue-spacing", 
                         dest = "res_space",
                         default = r_default,
                         type = int,
-                        help = r_helpstr.format(r_default))
+                        help = r_helpstr)
 
     e_default  = 0.1
-    e_helpstr = "Edge Threshold (default: {:f})"
+    e_helpstr = f"Edge threshold (default: {e_default})"
     parser.add_argument("-e", "--edge-threshold", 
                         dest = "edge_thresh",
                         default = e_default,
                         type = float,
-                        help = e_helpstr.format(e_default))
+                        help = e_helpstr)
 
     n_default  = 0.1
-    n_helpstr = "Node Threshold (default: {:f})"
+    n_helpstr = f"Node threshold (default: {n_default})"
     parser.add_argument("-n", "--node-threshold", 
                         dest = "node_thresh",
                         default = n_default,
                         type = float,
-                        help = n_helpstr.format(n_default))
+                        help = n_helpstr)
 
     a_helpstr = "Calculate all simple paths between " \
                 "two residues in the graph"
@@ -383,15 +373,13 @@ def main():
 
     b_choices = ["length", "cumulative_weight", "avg_weight"]
     b_default = "length"
-    b_helpstr = \
-        "How to sort pathways in output. Possible choices are {:s}" \
-        " (default: {:s})"
+    b_helpstr = "How to sort pathways in output. Possible choices are: " \
+                f"{b_choices} (default: {b_default}"
     parser.add_argument("-b", "--sort-paths",
                         dest = "sort_by",
                         choices = b_choices,
                         default = b_default,
-                        help = \
-                            b_helpstr.format(", ".join(b_choices), b_default))
+                        help =  b_helpstr)
 
     s_helpstr = "Source residue for paths calculation (see option -p)"
     parser.add_argument("-s", "--source",
@@ -421,6 +409,7 @@ def main():
         # exit if the adjacency matrix was not speficied
         log.error("Graph adjacency matrix must be specified. Exiting ...")
         exit(1)
+    
     # Check if pdb file is present
     if not args.pdb:
         pdb_boolean = False
@@ -430,6 +419,7 @@ def main():
     # Load file, build graphs and get identifiers for graph nodes
     identifiers, graph = build_graph(fname = args.input_matrix, \
                                      pdb = args.pdb)
+
     # Convert user input to a list of nodes
     source_list = convert_input_to_list(user_input = args.source, \
                                         identifiers = identifiers, \
@@ -458,6 +448,7 @@ def main():
 
     # Save table
     write_table(args.output, all_paths_table)
+
     # Write matrix
     path_matrix = nx.to_numpy_matrix(all_paths_graph)
     np.savetxt(f"{args.output}.dat", path_matrix)
@@ -469,6 +460,7 @@ def main():
                                     res_space = args.res_space, \
                                     node_threshold = args.node_thresh, \
                                     edge_threshold = args.edge_thresh)
+
     # Create sorted table from Metapaths
     metapath_table = sort_paths(graph = metapath_graph, \
                                 paths = metapath,\
