@@ -878,7 +878,6 @@ def filter_by_chain(chain1, chain2, sec_res, rows, cols):
     logical_vector = np.logical_and(chain1 == cols[0], \
                                     chain2 == cols[sec_res])
     filtered_rows = rows[logical_vector]
-    output = None
     # Warn if no contacts found
     if filtered_rows.shape[0] == 0:
         if chain1 == chain2:
@@ -930,7 +929,7 @@ def create_table_dict(table, hb=False):
                                                table_rows, table_cols)
                 # If both outputs exist, concatenate and append
                 if filtered_rows1 is not None and filtered_rows2 is not None:
-                    filtered_rows = np.concatenate((filtered_rows1, \
+                    filtered_rows = np.concatenate((filtered_rows1, 
                                                      filtered_rows2))
                     table_dict[(chain1, chain2)] = filtered_rows
                 # Only add (A, B)
@@ -942,7 +941,7 @@ def create_table_dict(table, hb=False):
     return table_dict
 
 def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
-    """Takes in the full matrix of persistence values, a dictionary of 
+    """Takes in the full matrix of persistence values and a dictionary of 
     tables where each key represents all/intrachain/interchain contacts 
     and returns a dictionary of matrices for each key.
     """
@@ -967,6 +966,7 @@ def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
             # Fill the matrix with appropriate values
             matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
             matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
+            # Insert matrix into dictionary
             mat_dict[key] = matrix
     return mat_dict
 
