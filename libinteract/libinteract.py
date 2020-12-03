@@ -866,7 +866,7 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def filter_by_chain(chain1, chain2, sec_res, rows, cols):
+def filter_by_chain(chain1, chain2, sec_res, table):
     """Takes in a table, its transpose, two chain names and the column
     number of the second chain. Filters the table to only keep rows 
     where the first column contains chain1 and the second column contains
@@ -881,8 +881,7 @@ def filter_by_chain(chain1, chain2, sec_res, rows, cols):
     # Warn if no contacts found
     if filtered_rows.shape[0] == 0:
         if chain1 == chain2:
-            warnstr = f"No intrachain contacts found in chain {chain1}"
-            log.warning(warnstr)
+            log.warning(f"No intrachain contacts found in chain {chain1}")
         else:
             warnstr = f"No interchain contacts found between chains " \
                       f"{chain1} and {chain2}"
@@ -946,39 +945,36 @@ def create_table_list(table, hb=False):
     return table_dict
 
 def create_matrix_list(fullmatrix, table_dict, pdb, hb = False):
-    """Takes in the full matrix and returns a list of matrices. The
-    first matrix is the full matrix while the following matrices contain
-    intrachain persistences (if present) and interchain persistences 
-    (if present).
+    """Takes in the full matrix of persistence values, a dictionary of 
+    tables where each key represents all/intrachain/interchain contacts 
+    and returns a dictionary of matrices for each key.
     """
 
     # Initialize output dictionary of matrices
-    mat_dict = {}
+    mat_dict = {"all": fullmatrix}
     # Select which column has the resid
     if hb:
         sec_res_id = 5
     else:
         sec_res_id = 4
-    # If contacts exist in multiple chains
-    tab table_dict.keys()
-    if len(table_list) > 1:
-        # Map each residue id to a position in the matrix
-        resids = pdb.residues.resids
-        res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
-        # For all tables excluding the first one
-        #for i 
-        # for i in range(1, len(table_list)):
-        #     # Create empty matrix
-        #     matrix = np.zeros(fullmatrix.shape)
-        #     # Get list of indexes for the matrix
-        #     table = table_list[i].T
-        #     mat_i = [res_dict[i] for i in table[1]]
-        #     mat_j = [res_dict[j] for j in table[sec_res_id]]
-        #     # Fill the matrix with appropriate values
-        #     matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
-        #     matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
-        #     mat_list.append(matrix)
-    return mat_list
+    # Map each residue id to a position in the matrix
+    resids = pdb.residues.resids
+    res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
+    # Create a matrix for each table and store it with the same key
+    for key in table_dict.keys():
+        # Exclude the all chains table
+        if key != "all":
+            # Create empty matrix
+            matrix = np.zeros(fullmatrix.shape)
+            # Get list of indexes for the matrix
+            table_cols = table_dict[key].T
+            mat_i = [res_dict[i] for i in table_cols[1]]
+            mat_j = [res_dict[j] for j in table_cols[sec_res_id]]
+            # Fill the matrix with appropriate values
+            matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
+            matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
+            mat_dict[key] = matrix
+    return mat_dict
 
 
 def save_output_list(table_list, filename, mat_list=None, hb=False):
