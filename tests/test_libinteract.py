@@ -373,16 +373,22 @@ def do_interact_hb(simulation_twochains, hb_don_acc):
 
 # table lists
 @pytest.fixture
-def create_table_list_sb(do_interact_sb):
-    return li.create_table_list(do_interact_sb['table'])
+def create_table_dict_sb(do_interact_sb):
+    return li.create_table_dict(do_interact_sb['table'])
 
 @pytest.fixture
-def create_table_list_hc(do_interact_hc):
-    return li.create_table_list(do_interact_hc['table'])
+def create_table_dict_hc(do_interact_hc):
+    return li.create_table_dict(do_interact_hc['table'])
 
 @pytest.fixture
-def create_table_list_hb(do_interact_hb):
-    return li.create_table_list(do_interact_hb['table'], hb = True)
+def create_table_dict_hb(do_interact_hb):
+    return li.create_table_dict(do_interact_hb['table'], hb = True)
+
+def split_dict(dictionary):
+    keys = list(dictionary.keys())
+    keys.remove("all")
+    split_list = [dictionary[key] for key in keys]
+    return split_list
 
 class TestSparse:
     def test_Sparse_constructor(self, sparse_list, sparse_obj):
@@ -452,6 +458,7 @@ def test_generate_sc_identifiers(simulation, hc_residues_list):
 def test_parse_cg_files(cg_file):
     data = li.parse_cgs_file(cg_file)
 
+
 # check do interact functions
 def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
     table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
@@ -505,80 +512,80 @@ def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
         assert(','.join(str(x) for x in t) == ref_hb[i].strip())
 
 # check sb tables and matrix
-def test_create_table_list_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
-   table_list = li.create_table_list(do_interact_sb['table'])
-   for i, t in enumerate(table_list[0]):
+def test_create_table_dict_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
+   table_dict = li.create_table_dict(do_interact_sb['table'])
+   for i, t in enumerate(table_dict["all"]):
        assert(','.join(str(x) for x in t) == ref_sb_twochains[i].strip())
-   for i, t in enumerate(table_list[1]):
+   for i, t in enumerate(table_dict['A']):
        assert(','.join(str(x) for x in t) == ref_sb_chains['intra_A'][i].strip())
-   for i, t in enumerate(table_list[2]):
+   for i, t in enumerate(table_dict[('B', 'A')]):
        assert(','.join(str(x) for x in t) == ref_sb_chains['inter'][i].strip())
 
-   first_table = np.sort(table_list[0], axis = 0)
-   split_tables = np.sort(np.vstack(table_list[1:]), axis = 0)
+   first_table = np.sort(table_dict["all"], axis = 0)
+   split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-def test_create_matrix_list_sb(do_interact_sb, create_table_list_sb, simulation_twochains, ref_sb_graph_twochains, ref_sb_graph_chains):
-    mat_list = li.create_matrix_list(do_interact_sb['matrix'],
-                                     create_table_list_sb,
+def test_create_matrix_dict_sb(do_interact_sb, create_table_dict_sb, simulation_twochains, ref_sb_graph_twochains, ref_sb_graph_chains):
+    mat_dict = li.create_matrix_dict(do_interact_sb['matrix'],
+                                     create_table_dict_sb,
                                      simulation_twochains['pdb'])
-    assert_almost_equal(mat_list[0], ref_sb_graph_twochains, decimal=1)
-    assert_almost_equal(mat_list[1], ref_sb_graph_chains['intra_A'], decimal=1)
-    assert_almost_equal(mat_list[2], ref_sb_graph_chains['inter'], decimal=1)
-    split_matrix = sum(mat_list[1:])
-    assert_almost_equal(mat_list[0], split_matrix, decimal=1)
+    assert_almost_equal(mat_dict["all"], ref_sb_graph_twochains, decimal=1)
+    assert_almost_equal(mat_dict["A"], ref_sb_graph_chains['intra_A'], decimal=1)
+    assert_almost_equal(mat_dict[("B", "A")], ref_sb_graph_chains['inter'], decimal=1)
+    split_matrix = sum(split_dict(mat_dict))
+    assert_almost_equal(mat_dict["all"], split_matrix, decimal=1)
 
 # check hydrophobic tables and matrix
-def test_create_table_list_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
-   table_list = li.create_table_list(do_interact_hc['table'])
-   for i, t in enumerate(table_list[0]):
+def test_create_table_dict_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
+   table_dict = li.create_table_dict(do_interact_hc['table'])
+   for i, t in enumerate(table_dict["all"]):
        assert(','.join(str(x) for x in t) == ref_hc_twochains[i].strip())
-   for i, t in enumerate(table_list[1]):
+   for i, t in enumerate(table_dict["A"]):
        assert(','.join(str(x) for x in t) == ref_hc_chains['intra_A'][i].strip())
-   for i, t in enumerate(table_list[2]):
+   for i, t in enumerate(table_dict[("A", "B")]):
        assert(','.join(str(x) for x in t) == ref_hc_chains['inter'][i].strip())
 
-   first_table = np.sort(table_list[0], axis = 0)
-   split_tables = np.sort(np.vstack(table_list[1:]), axis = 0)
+   first_table = np.sort(table_dict["all"], axis = 0)
+   split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
 
-def test_create_matrix_list_hc(do_interact_hc, create_table_list_hc, simulation_twochains, ref_hc_graph_twochains, ref_hc_graph_chains):
-    mat_list = li.create_matrix_list(do_interact_hc['matrix'],
-                                     create_table_list_hc,
+def test_create_matrix_dict_hc(do_interact_hc, create_table_dict_hc, simulation_twochains, ref_hc_graph_twochains, ref_hc_graph_chains):
+    mat_dict = li.create_matrix_dict(do_interact_hc['matrix'],
+                                     create_table_dict_hc,
                                      simulation_twochains['pdb'])
-    assert_almost_equal(mat_list[0], ref_hc_graph_twochains, decimal=1)
-    assert_almost_equal(mat_list[1], ref_hc_graph_chains['intra_A'], decimal=1)
-    assert_almost_equal(mat_list[2], ref_hc_graph_chains['inter'], decimal=1)
-    split_matrix = sum(mat_list[1:])
-    assert_almost_equal(mat_list[0], split_matrix, decimal=1)
+    assert_almost_equal(mat_dict["all"], ref_hc_graph_twochains, decimal=1)
+    assert_almost_equal(mat_dict["A"], ref_hc_graph_chains['intra_A'], decimal=1)
+    assert_almost_equal(mat_dict[("A", "B")], ref_hc_graph_chains['inter'], decimal=1)
+    split_matrix = sum(split_dict(mat_dict))
+    assert_almost_equal(mat_dict["all"], split_matrix, decimal=1)
 
 #check hydrogen bonds tables and matrix
-def test_create_table_list_hb(do_interact_hb, ref_hb_twochains, ref_hb_chains):
-   table_list = li.create_table_list(do_interact_hb['table'], hb = True)
-   for i, t in enumerate(table_list[0]):
+def test_create_table_dict_hb(do_interact_hb, ref_hb_twochains, ref_hb_chains):
+   table_dict = li.create_table_dict(do_interact_hb['table'], hb = True)
+   for i, t in enumerate(table_dict["all"]):
        assert(','.join(str(x) for x in t) == ref_hb_twochains[i].strip())
-   for i, t in enumerate(table_list[1]):
+   for i, t in enumerate(table_dict["A"]):
        assert(','.join(str(x) for x in t) == ref_hb_chains['intra_A'][i].strip())
-   for i, t in enumerate(table_list[2]):
+   for i, t in enumerate(table_dict["B"]):
        assert(','.join(str(x) for x in t) == ref_hb_chains['intra_B'][i].strip())
-   for i, t in enumerate(table_list[3]):
+   for i, t in enumerate(table_dict[("A", "B")]):
        assert(','.join(str(x) for x in t) == ref_hb_chains['inter'][i].strip())
 
-   first_table = np.sort(table_list[0], axis = 0)
-   split_tables = np.sort(np.vstack(table_list[1:]), axis = 0)
+   first_table = np.sort(table_dict["all"], axis = 0)
+   split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-def test_create_matrix_list_hb(do_interact_hb, create_table_list_hb, simulation_twochains, ref_hb_graph_twochains, ref_hb_graph_chains):
-    mat_list = li.create_matrix_list(do_interact_hb['matrix'],
-                                     create_table_list_hb,
+def test_create_matrix_dict_hb(do_interact_hb, create_table_dict_hb, simulation_twochains, ref_hb_graph_twochains, ref_hb_graph_chains):
+    mat_dict = li.create_matrix_dict(do_interact_hb['matrix'],
+                                     create_table_dict_hb,
                                      simulation_twochains['pdb'],
                                      hb = True)
-    assert_almost_equal(mat_list[0], ref_hb_graph_twochains, decimal=1)
-    assert_almost_equal(mat_list[1], ref_hb_graph_chains['intra_A'], decimal=1)
-    assert_almost_equal(mat_list[2], ref_hb_graph_chains['intra_B'], decimal=1)
-    assert_almost_equal(mat_list[3], ref_hb_graph_chains['inter'], decimal=1)
-    split_matrix = sum(mat_list[1:])
-    assert_almost_equal(mat_list[0], split_matrix, decimal=1)
+    assert_almost_equal(mat_dict["all"], ref_hb_graph_twochains, decimal=1)
+    assert_almost_equal(mat_dict["A"], ref_hb_graph_chains['intra_A'], decimal=1)
+    assert_almost_equal(mat_dict["B"], ref_hb_graph_chains['intra_B'], decimal=1)
+    assert_almost_equal(mat_dict[("A", "B")], ref_hb_graph_chains['inter'], decimal=1)
+    split_matrix = sum(split_dict(mat_dict))
+    assert_almost_equal(mat_dict["all"], split_matrix, decimal=1)
 
 
