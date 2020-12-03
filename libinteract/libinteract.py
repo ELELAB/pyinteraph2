@@ -866,19 +866,20 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def filter_by_chain(chain1, chain2, sec_res, array, array_T):
-    """Takes in a table with 2 residue columns and filters it to 
-    return only rows where the first column contains chain1 and the
-    second column contains chain2. Returns filtered table.
+def filter_by_chain(chain1, chain2, sec_res, rows, cols):
+    """Takes in a table, its transpose, two chain names and the column
+    number of the second chain. Filters the table to only keep rows 
+    where the first column contains chain1 and the second column contains
+    chain2. Returns filtered table.
     """
 
     # Filter and create filtered array
-    logical_vector = np.logical_and(chain1 == array_T[0], \
-                                    chain2 == array_T[sec_res])
-    filtered_array = array[logical_vector]
+    logical_vector = np.logical_and(chain1 == cols[0], \
+                                    chain2 == cols[sec_res])
+    filtered_rows = rows[logical_vector]
     output = None
     # Warn if no contacts found
-    if filtered_array.shape[0] == 0:
+    if filtered_rows.shape[0] == 0:
         if chain1 == chain2:
             warnstr = f"No intrachain contacts found in chain {chain1}"
             log.warning(warnstr)
@@ -886,96 +887,97 @@ def filter_by_chain(chain1, chain2, sec_res, array, array_T):
             warnstr = f"No interchain contacts found between chains " \
                       f"{chain1} and {chain2}"
             log.warning(warnstr)
+        return None
     else:
-        output = filtered_array
-    return output
+        return filtered_rows
 
 
-def create_table_list(contact_list, hb=False):
-    """Takes in a list of tuples and returns a list of arrays where
-    the first array contains all contacts followed by intrachain 
+def create_table_list(table, hb=False):
+    """Takes in a table (list of tuples) and returns a dictionary of 
+    tables (arrays). The tab the first array contains all contacts followed by intrachain 
     contants split by chain (if present) and interchain contacts split 
     by chain (if present).
     """
 
     # Convert to array and keep transpose for selection
-    array = np.array(contact_list)
-    array_T = array.T
-    # Initialize output
-    array_list = [array]
-    # Find unique chains in the array
-    chains = np.unique(array_T[0])
+    table_rows = np.array(table)
+    table_cols = table_rows.T
+    # Initialize output dictionary of tables
+    table_dict = {"all": table_rows}
     # Choose which column has the second residue
     if hb:
         sec_res = 4
     else:
         sec_res = 3
+    # Find unique chains in the table
+    chains = np.unique(np.concatenate((table_cols[0], table_cols[sec_res])))
     # If multiple chains are present, split the contacts by chain
     if len(chains) > 1:
 	# For each chain, add the nodes that are only in contact with the same chain
         for chain in chains:
-            filtered_array = filter_by_chain(chain, chain, sec_res, \
-                                            array, array_T)
-            if filtered_array is not None:
-                array_list.append(filtered_array)
+            filtered_rows = filter_by_chain(chain, chain, sec_res, \
+                                            table_rows, table_cols)
+            if filtered_rows is not None:
+                table_dict[chain] = filtered_rows
         # Create vector of all nodes that are in contact with different chains
-        logical_vector = array_T[0] != array_T[sec_res]
+        logical_vector = table_cols[0] != table_cols[sec_res]
         if logical_vector.sum == 0:
-            warnstr = "No interchain contacts found" 
-            log.warning(warnstr)
+            log.warning("No interchain contacts found")
         else:
             # For all combinations of different chains, find nodes that are in
             # contact with different chains
             for chain1, chain2 in itertools.combinations(chains, 2):
                 # Check both combinations (e.g. A, B and B, A)
-                filtered_array1 = filter_by_chain(chain1, chain2, sec_res, \
-                                               array, array_T)
-                filtered_array2 = filter_by_chain(chain2, chain1, sec_res, \
-                                               array, array_T)
+                filtered_rows1 = filter_by_chain(chain1, chain2, sec_res, \
+                                               table_rows, table_cols)
+                filtered_rows2 = filter_by_chain(chain2, chain1, sec_res, \
+                                               table_rows, table_cols)
                 # If both outputs exist, concatenate and append
-                if filtered_array1 is not None and filtered_array2 is not None:
-                    filtered_array = np.concatenate((filtered_array1, \
-                                                     filtered_array2))
-                    array_list.append(filtered_array)
+                if filtered_rows1 is not None and filtered_rows2 is not None:
+                    filtered_rows = np.concatenate((filtered_rows1, \
+                                                     filtered_rows2))
+                    table_dict[(chain1, chain2)] = filtered_rows
                 # Only add (A, B)
-                elif filtered_array1 is not None:
-                    array_list.append(filtered_array1)
+                elif filtered_rows1 is not None:
+                    table_dict[(chain1, chain2)] = filtered_rows1
                 # Only add (B, A)
                 else:
-                    array_list.append(filtered_array2)
-    return array_list
+                    table_dict[(chain2, chain1)] = filtered_rows2
+    return table_dict
 
-def create_matrix_list(fullmatrix, table_list, pdb, hb = False):
+def create_matrix_list(fullmatrix, table_dict, pdb, hb = False):
     """Takes in the full matrix and returns a list of matrices. The
     first matrix is the full matrix while the following matrices contain
     intrachain persistences (if present) and interchain persistences 
     (if present).
     """
 
-    # Initialize output
-    mat_list = [fullmatrix]
+    # Initialize output dictionary of matrices
+    mat_dict = {}
     # Select which column has the resid
     if hb:
         sec_res_id = 5
     else:
         sec_res_id = 4
     # If contacts exist in multiple chains
+    tab table_dict.keys()
     if len(table_list) > 1:
         # Map each residue id to a position in the matrix
         resids = pdb.residues.resids
         res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
         # For all tables excluding the first one
-        for i in range(1, len(table_list)):
-            # Create empty matrix
-            matrix = np.zeros(fullmatrix.shape)
-            # Get list of indexes for the matrix
-            table = table_list[i].T
-            mat_i = [res_dict[i] for i in table[1]]
-            mat_j = [res_dict[j] for j in table[sec_res_id]]
-            # Fill the matrix with appropriate values
-            matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
-            matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
-            mat_list.append(matrix)
+        #for i 
+        # for i in range(1, len(table_list)):
+        #     # Create empty matrix
+        #     matrix = np.zeros(fullmatrix.shape)
+        #     # Get list of indexes for the matrix
+        #     table = table_list[i].T
+        #     mat_i = [res_dict[i] for i in table[1]]
+        #     mat_j = [res_dict[j] for j in table[sec_res_id]]
+        #     # Fill the matrix with appropriate values
+        #     matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
+        #     matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
+        #     mat_list.append(matrix)
     return mat_list
 
 
@@ -1057,7 +1059,7 @@ def do_interact(identfunc, \
     short_idxs = [i[0:3] for i in idxs]
     short_ids = [i[0:3] for i in identifiers]
     # create empty list for output
-    contact_list = []
+    table = []
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
@@ -1069,7 +1071,7 @@ def do_interact(identfunc, \
         res1 = short_ids[short_ids.index(short_idxs[i])]
         res2 = short_ids[short_ids.index(short_idxs[j])]
         persistence = (percmat[i,j],)
-        contact_list.append(res1 + res2 + persistence)
+        table.append(res1 + res2 + persistence)
     # set the full matrix to None
     fullmatrix = None
     # compute the full matrix if requestes
@@ -1080,7 +1082,7 @@ def do_interact(identfunc, \
                                     perco = perco)
     
     # return output list and fullmatrix
-    return (contact_list, fullmatrix)
+    return table, fullmatrix
 
 ############################### HBONDS ################################
 
@@ -1169,7 +1171,7 @@ def do_hbonds(sel1, \
     if do_fullmatrix:
         fullmatrix = np.zeros((len(identifiers),len(identifiers)))
     # create empty list for output
-    contact_list = []
+    table = []
     if perresidue or do_fullmatrix:
         # get the number of frames in the trajectory
         numframes = len(uni.trajectory)
@@ -1252,7 +1254,7 @@ def do_hbonds(sel1, \
                 res1 = identifiers[uni_id2ix[hbidentifier[0]]]
                 res2 = identifiers[uni_id2ix[hbidentifier[1]]]
                 persistence = (hb_pers,)
-                contact_list.append(res1 + res2 + persistence)
+                table.append(res1 + res2 + persistence)
 
     # return contact list  and full matrix
-    return (contact_list, fullmatrix)
+    return table, fullmatrix
