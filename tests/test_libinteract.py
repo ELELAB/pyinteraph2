@@ -416,7 +416,7 @@ class TestSparse:
         sparse_obj.add_bin(sparse_bin)
 
         assert_equal(len(sparse_obj.bins), 1)
-
+"""
 def test_parse_sparse(potential_file):
     li.parse_sparse(potential_file)
 
@@ -524,7 +524,8 @@ def test_create_table_dict_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
    first_table = np.sort(table_dict["all"], axis = 0)
    split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
-
+   
+"""
 def test_create_matrix_dict_sb(do_interact_sb, create_table_dict_sb, simulation_twochains, ref_sb_graph_twochains, ref_sb_graph_chains):
     mat_dict = li.create_matrix_dict(do_interact_sb['matrix'],
                                      create_table_dict_sb,
@@ -532,8 +533,11 @@ def test_create_matrix_dict_sb(do_interact_sb, create_table_dict_sb, simulation_
     assert_almost_equal(mat_dict["all"], ref_sb_graph_twochains, decimal=1)
     assert_almost_equal(mat_dict["A"], ref_sb_graph_chains['intra_A'], decimal=1)
     assert_almost_equal(mat_dict[("B", "A")], ref_sb_graph_chains['inter'], decimal=1)
-    split_matrix = sum(split_dict(mat_dict))
-    assert_almost_equal(mat_dict["all"], split_matrix, decimal=1)
+    split_matrix = split_dict(mat_dict)
+    assert_almost_equal(mat_dict["all"], sum(split_matrix), decimal=1)
+    for i in range(len(split_matrix) - 1):
+        common = np.logical_and(split_matrix[i] > 0, split_matrix[i+1] > 0)
+        assert(common.sum() == 0)
 
 # check hydrophobic tables and matrix
 def test_create_table_dict_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
@@ -557,8 +561,11 @@ def test_create_matrix_dict_hc(do_interact_hc, create_table_dict_hc, simulation_
     assert_almost_equal(mat_dict["all"], ref_hc_graph_twochains, decimal=1)
     assert_almost_equal(mat_dict["A"], ref_hc_graph_chains['intra_A'], decimal=1)
     assert_almost_equal(mat_dict[("A", "B")], ref_hc_graph_chains['inter'], decimal=1)
-    split_matrix = sum(split_dict(mat_dict))
-    assert_almost_equal(mat_dict["all"], split_matrix, decimal=1)
+    split_matrix = split_dict(mat_dict)
+    assert_almost_equal(mat_dict["all"], sum(split_matrix), decimal=1)
+    for i in range(len(split_matrix) - 1):
+        common = np.logical_and(split_matrix[i] > 0, split_matrix[i+1] > 0)
+        assert(common.sum() == 0)
 
 #check hydrogen bonds tables and matrix
 def test_create_table_dict_hb(do_interact_hb, ref_hb_twochains, ref_hb_chains):
@@ -585,7 +592,10 @@ def test_create_matrix_dict_hb(do_interact_hb, create_table_dict_hb, simulation_
     assert_almost_equal(mat_dict["A"], ref_hb_graph_chains['intra_A'], decimal=1)
     assert_almost_equal(mat_dict["B"], ref_hb_graph_chains['intra_B'], decimal=1)
     assert_almost_equal(mat_dict[("A", "B")], ref_hb_graph_chains['inter'], decimal=1)
-    split_matrix = sum(split_dict(mat_dict))
-    assert_almost_equal(mat_dict["all"], split_matrix, decimal=1)
+    split_matrix = split_dict(mat_dict)
+    assert_almost_equal(mat_dict["all"], sum(split_matrix), decimal=1)
+    for i in range(len(split_matrix) - 1):
+        common = np.logical_and(split_matrix[i] > 0, split_matrix[i+1] > 0)
+        assert(common.sum() == 0)
 
 
