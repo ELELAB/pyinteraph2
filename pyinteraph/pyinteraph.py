@@ -624,7 +624,7 @@ def main():
         # Save .dat (if available)
         if hb_mat_out is not None:
             mat_dict = li.create_matrix_dict(hb_mat_out, table_dict, pdb, hb = True)
-            li.save_output_dict(mat_dict, hb_graph, csv = True)
+            li.save_output_dict(mat_dict, hb_graph, csv = False)
 
 
     ######################## STATISTICAL POTENTIAL ########################
