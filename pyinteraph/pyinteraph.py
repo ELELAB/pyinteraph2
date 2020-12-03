@@ -484,13 +484,13 @@ def main():
                                              reslist = hc_reslist)
 
         # Save .csv
-        table_list_out = li.create_table_list(table_out)
-        li.save_output_list(table_list_out, hc_dat)
+        table_dict = li.create_table_dict(table_out)
+        li.save_output_dict(table_dict, hc_dat)
 
         # Save .dat (if available)
         if hc_mat_out is not None:
-            mat_list_out = li.create_matrix_list(hc_mat_out, table_list_out, pdb)
-            li.save_output_list(table_list_out, hc_graph, mat_list = mat_list_out)
+            mat_dict = li.create_matrix_dict(hc_mat_out, table_dict, pdb)
+            li.save_output_dict(mat_dict, hc_graph, csv = False)
 
 
     ############################ SALT BRIDGES #############################
@@ -529,13 +529,13 @@ def main():
                                              cgs = cgs)
 
         # Save .csv
-        table_list_out = li.create_table_list(table_out)
-        li.save_output_list(table_list_out, sb_dat)
+        table_dict = li.create_table_dict(table_out)
+        li.save_output_dict(table_dict, sb_dat)
 
         # Save .dat (if available)
         if sb_mat_out is not None:
-            mat_list_out = li.create_matrix_list(sb_mat_out, table_list_out, pdb)
-            li.save_output_list(table_list_out, sb_graph, mat_list = mat_list_out)
+            mat_dict = li.create_matrix_dict(sb_mat_out, table_dict, pdb)
+            li.save_output_dict(mat_dict, sb_graph, csv = False)
 
 
     ########################### HYDROGEN BONDS ############################
@@ -618,13 +618,13 @@ def main():
                                            perresidue = perresidue)                                    
 
         # Save .csv
-        table_list_out = li.create_table_list(table_out, hb = True)
-        li.save_output_list(table_list_out, hb_dat, hb = True)
+        table_dict = li.create_table_dict(table_out, hb = True)
+        li.save_output_dict(table_dict, hb_dat)
 
         # Save .dat (if available)
         if hb_mat_out is not None:
-            mat_list_out = li.create_matrix_list(hb_mat_out, table_list_out, pdb, hb = True)
-            li.save_output_list(table_list_out, hb_graph, mat_list = mat_list_out, hb = True)
+            mat_dict = li.create_matrix_dict(hb_mat_out, table_dict, pdb, hb = True)
+            li.save_output_dict(mat_dict, hb_graph, csv = True)
 
 
     ######################## STATISTICAL POTENTIAL ########################

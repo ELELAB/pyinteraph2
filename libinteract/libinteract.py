@@ -30,6 +30,7 @@ import json
 import struct
 import numpy as np
 import MDAnalysis as mda
+import re
 
 from libinteract import innerloops as il
 
@@ -866,7 +867,7 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def filter_by_chain(chain1, chain2, sec_res, table):
+def filter_by_chain(chain1, chain2, sec_res, rows, cols):
     """Takes in a table, its transpose, two chain names and the column
     number of the second chain. Filters the table to only keep rows 
     where the first column contains chain1 and the second column contains
@@ -891,11 +892,10 @@ def filter_by_chain(chain1, chain2, sec_res, table):
         return filtered_rows
 
 
-def create_table_list(table, hb=False):
-    """Takes in a table (list of tuples) and returns a dictionary of 
-    tables (arrays). The tab the first array contains all contacts followed by intrachain 
-    contants split by chain (if present) and interchain contacts split 
-    by chain (if present).
+def create_table_dict(table, hb=False):
+    """Takes in a single table (list of tuples) and returns a dictionary
+    of tables (arrays). Each key in this dictionary represent whether the 
+    table contains all/intrachain/interchain contacts.
     """
 
     # Convert to array and keep transpose for selection
@@ -904,10 +904,7 @@ def create_table_list(table, hb=False):
     # Initialize output dictionary of tables
     table_dict = {"all": table_rows}
     # Choose which column has the second residue
-    if hb:
-        sec_res = 4
-    else:
-        sec_res = 3
+    sec_res = 4 if hb else 3
     # Find unique chains in the table
     chains = np.unique(np.concatenate((table_cols[0], table_cols[sec_res])))
     # If multiple chains are present, split the contacts by chain
@@ -944,7 +941,7 @@ def create_table_list(table, hb=False):
                     table_dict[(chain2, chain1)] = filtered_rows2
     return table_dict
 
-def create_matrix_list(fullmatrix, table_dict, pdb, hb = False):
+def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
     """Takes in the full matrix of persistence values, a dictionary of 
     tables where each key represents all/intrachain/interchain contacts 
     and returns a dictionary of matrices for each key.
@@ -953,10 +950,7 @@ def create_matrix_list(fullmatrix, table_dict, pdb, hb = False):
     # Initialize output dictionary of matrices
     mat_dict = {"all": fullmatrix}
     # Select which column has the resid
-    if hb:
-        sec_res_id = 5
-    else:
-        sec_res_id = 4
+    sec_res_id = 5 if hb else 4
     # Map each residue id to a position in the matrix
     resids = pdb.residues.resids
     res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
@@ -977,43 +971,34 @@ def create_matrix_list(fullmatrix, table_dict, pdb, hb = False):
     return mat_dict
 
 
-def save_output_list(table_list, filename, mat_list=None, hb=False):
-    """Save each element in the list as a separate file. The first
-    element contains the whole dataset, followed by intrachain
-    data (if present) and interchain data (if present). Prints csv files
-    by default if no matrix files is specified, else prints matrix.
+def save_output_dict(out_dict, filename, csv = True):
+    """Save each value in a dictionary as a separate file. Must specify
+    if the dictionary is a csv or matrix. Saves csv by default.
     """
 
+    # Remove extension from filename if present
+    filename = re.sub(".csv$", "", filename)
     # Check if the table or the matrix is being saved and change the parameters
-    if mat_list is not None:
-        ext = ".dat"
-        data = mat_list
-        delim = ' '
-        format = "%.1f"
-    else:
+    if csv:
         ext = ".csv"
-        data = table_list
         delim = ','
         format = '%s'
-    for i in range(len(table_list)):
-        # For each element, change the filename and save the file
-        if i == 0:
-            fname = f"{filename}_all_chains{ext}"
-        else:
-            # Check which column has the second residue
-            if hb:
-                sec_res = 4
-            else:
-                sec_res = 3
-            chain1 = table_list[i][0][0]
-            chain2 = table_list[i][0][sec_res]
-            # Determine if intra or interchain
-            if chain1 == chain2:
-                fname = f"{filename}_intra_chain_{chain1}{ext}"
-            else:
-                fname = f"{filename}_inter_chain_{chain1}-{chain2}{ext}"
-        np.savetxt(fname, data[i], delimiter = delim, fmt = format)
-
+    else:
+        ext = ".dat"
+        delim = ' '
+        format = "%.1f"
+    # For each key, change the filename and save the dict value
+    for key in out_dict:
+        if key == "all":
+            fname = f"{filename}_all{ext}"
+        # Check if only one chain is present (intrachain)
+        elif len(key) == 1:
+            fname = f"{filename}_intra_{key}{ext}"
+        # Check if iterchain
+        elif len(key) == 2:
+            fname = f"{filename}_inter_{key[0]}-{key[1]}{ext}"
+        # Save file
+        np.savetxt(fname, out_dict[key], delimiter = delim, fmt = format)
 
 
 ############################ INTERACTIONS #############################
@@ -1167,7 +1152,7 @@ def do_hbonds(sel1, \
     if do_fullmatrix:
         fullmatrix = np.zeros((len(identifiers),len(identifiers)))
     # create empty list for output
-    table = []
+    table_out = []
     if perresidue or do_fullmatrix:
         # get the number of frames in the trajectory
         numframes = len(uni.trajectory)
@@ -1250,7 +1235,7 @@ def do_hbonds(sel1, \
                 res1 = identifiers[uni_id2ix[hbidentifier[0]]]
                 res2 = identifiers[uni_id2ix[hbidentifier[1]]]
                 persistence = (hb_pers,)
-                table.append(res1 + res2 + persistence)
+                table_out.append(res1 + res2 + persistence)
 
     # return contact list  and full matrix
-    return table, fullmatrix
+    return table_out, fullmatrix
