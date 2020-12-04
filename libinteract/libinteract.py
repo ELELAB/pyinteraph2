@@ -868,6 +868,10 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     return fullmatrix
 
 def find_pos(table, name = True):
+    """Takes in a table. If name is true, returns the index of the columns
+    that have the chain name. If name is false, returns the index of the
+    columns that have the res id.
+    """
     if name:
         # Search for SYSTEM or any chain name between A and Z
         positions = [i for i, elem in enumerate(table[0]) \
