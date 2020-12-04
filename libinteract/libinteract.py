@@ -867,21 +867,48 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def filter_by_chain(chain1, chain2, sec_res, table):
-    """Takes in a table, its transpose, two chain names and the column
-    number of the second chain. Filters the table to only keep rows 
-    where the first column contains chain1 and the second column contains
-    chain2. Returns filtered table.
+def find_pos(table, name = True):
+    if name:
+        # Search for SYSTEM or any chain name between A and Z
+        positions = [i for i, elem in enumerate(table[0]) \
+                     if re.search("^[A-Z]$|^SYSTEM$", elem)]
+    else:
+        # Search for all only integers (no decimals)
+        positions = [i for i, elem in enumerate(table[0]) \
+                     if re.search("^\d+$", elem)]
+    # Make sure only two positions exist
+    assert len(positions) == 2
+    return positions
+
+def filter_by_chain(chain1, chain2, positions, table):
+    """Takes in a table, two chain names and the column number of the 
+    second chain. Filters the table to only keep rows where the first 
+    column contains chain1 and the second column contains chain2. 
+    Returns filtered table.
     """
 
+    pos1, pos2 = positions
     # Get the rows and columns from the table
     rows = table
     cols = table.T
-    # Filter and create filtered array
-    logical_vector = np.logical_and(chain1 == cols[0],
-                                    chain2 == cols[sec_res])
+    # If the chains are the same, find all rows where both columns match
+    # the chain
+    if chain1 == chain2:
+        logical_vector = np.logical_and(chain1 == cols[pos1],
+                                        chain2 == cols[pos2])
+    else:
+        #If the chains are different, check bith directions
+        # Check forward direction (e.g. (A, B))
+        logical_vector1 = np.logical_and(chain1 == cols[pos1],
+                                         chain2 == cols[pos2])
+        # Check backward direction (e.g. (B, A))
+        logical_vector2 = np.logical_and(chain2 == cols[pos1],
+                                         chain1 == cols[pos2])
+        # Combine the vectors
+        logical_vector = np.logical_or(logical_vector1, logical_vector2)
+    # Filter rows
     filtered_rows = rows[logical_vector]
-    # Warn if no contacts found
+    # Warn if no contacts found and return None
     if filtered_rows.shape[0] == 0:
         if chain1 == chain2:
             log.warning(f"No intrachain contacts found in chain {chain1}")
@@ -894,7 +921,7 @@ def filter_by_chain(chain1, chain2, sec_res, table):
         return filtered_rows
 
 
-def create_table_dict(table, hb=False):
+def create_table_dict(table):
     """Takes in a single table (list of tuples) and returns a dictionary
     of tables (arrays). Each key in this dictionary represent whether the 
     table contains all/intrachain/interchain contacts.
@@ -905,44 +932,38 @@ def create_table_dict(table, hb=False):
     table_cols = table_rows.T
     # Initialize output dictionary of tables
     table_dict = {"all": table_rows}
-    # Choose which column has the second residue
-    sec_res = 4 if hb else 3
+    # Find which column positions have the chains
+    pos1, pos2 = find_pos(table_rows)
     # Find unique chains in the table
-    chains = np.unique(np.concatenate((table_cols[0], table_cols[sec_res])))
+    chains = np.unique(np.concatenate((table_cols[pos1], table_cols[pos2])))
     # If multiple chains are present, split the contacts by chain
     if len(chains) > 1:
 	# For each chain, add the nodes that are only in contact with the same chain
         for chain in chains:
-            filtered_rows = filter_by_chain(chain, chain, sec_res, table_rows)
-            if filtered_rows is not None:
-                table_dict[chain] = filtered_rows
+            filtered_rows_intra = filter_by_chain(chain, chain, (pos1, pos2), 
+                                                  table_rows)
+            # Check rows exist
+            if filtered_rows_intra is not None:
+                table_dict[chain] = filtered_rows_intra
         # Create vector of all nodes that are in contact with different chains
-        logical_vector = table_cols[0] != table_cols[sec_res]
+        logical_vector = table_cols[pos1] != table_cols[pos2]
+        # Warn if no interchain contacts
         if logical_vector.sum() == 0:
             log.warning("No interchain contacts found")
         else:
             # For all combinations of different chains, find nodes that are in
             # contact with different chains
             for chain1, chain2 in itertools.combinations(chains, 2):
-                # Check both combinations (e.g. A, B and B, A)
-                filtered_rows1 = filter_by_chain(chain1, chain2, sec_res, 
-                                                 table_rows)
-                filtered_rows2 = filter_by_chain(chain2, chain1, sec_res, 
-                                                 table_rows)
-                # If both outputs exist, concatenate and append
-                if filtered_rows1 is not None and filtered_rows2 is not None:
-                    filtered_rows = np.concatenate((filtered_rows1, 
-                                                    filtered_rows2))
-                    table_dict[(chain1, chain2)] = filtered_rows
-                # Only add (A, B)
-                elif filtered_rows1 is not None:
-                    table_dict[(chain1, chain2)] = filtered_rows1
-                # Only add (B, A)
-                else:
-                    table_dict[(chain2, chain1)] = filtered_rows2
+                filtered_rows_inter = filter_by_chain(chain1, chain2,
+                                                      (pos1, pos2),
+                                                       table_rows)
+                # Check rows exist
+                if filtered_rows_inter is not None:
+                    name = tuple(sorted([chain1, chain2]))
+                    table_dict[name] = filtered_rows_inter
     return table_dict
 
-def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
+def create_matrix_dict(fullmatrix, table_dict, pdb):
     """Takes in the full matrix of persistence values and a dictionary of 
     tables where each key represents all/intrachain/interchain contacts 
     and returns a dictionary of matrices for each key.
@@ -950,8 +971,8 @@ def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
 
     # Initialize output dictionary of matrices
     mat_dict = {"all": fullmatrix}
-    # Select which column has the resid
-    sec_res_id = 5 if hb else 4
+    # Find which column positions have the resid
+    pos1, pos2 = find_pos(table_dict["all"], name = False)
     # Map each residue id to a position in the matrix
     resids = pdb.residues.resids
     res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
@@ -963,8 +984,8 @@ def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
             matrix = np.zeros(fullmatrix.shape)
             # Get list of indexes for the matrix
             table_cols = table_dict[key].T
-            mat_i = [res_dict[i] for i in table_cols[1]]
-            mat_j = [res_dict[j] for j in table_cols[sec_res_id]]
+            mat_i = [res_dict[i] for i in table_cols[pos1]]
+            mat_j = [res_dict[j] for j in table_cols[pos2]]
             # Fill the matrix with appropriate values
             matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
             matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
@@ -973,7 +994,7 @@ def create_matrix_dict(fullmatrix, table_dict, pdb, hb = False):
     return mat_dict
 
 
-def save_output_dict(out_dict, filename, csv = True):
+def save_output_dict(out_dict, filename):
     """Save each value in a dictionary as a separate file. Must specify
     if the dictionary is a csv or matrix. Saves csv by default.
     """
@@ -981,14 +1002,14 @@ def save_output_dict(out_dict, filename, csv = True):
     # Remove extension from filename if present
     filename = re.sub("\.csv$|\.dat$|\.txt$|\.tsv$", "", filename)
     # Check if the table or the matrix is being saved and change the parameters
-    if csv:
-        ext = ".csv"
-        delim = ','
-        format = '%s'
-    else:
+    if out_dict["all"].dtype == float:
         ext = ".dat"
         delim = ' '
         format = "%.1f"
+    else:
+        ext = ".csv"
+        delim = ','
+        format = '%s'
     # For each key, change the filename and save the dict value
     for key in out_dict:
         if key == "all":

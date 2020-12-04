@@ -490,7 +490,7 @@ def main():
         # Save .dat (if available)
         if hc_mat_out is not None:
             mat_dict = li.create_matrix_dict(hc_mat_out, table_dict, pdb)
-            li.save_output_dict(mat_dict, hc_graph, csv = False)
+            li.save_output_dict(mat_dict, hc_graph)
 
 
     ############################ SALT BRIDGES #############################
@@ -535,7 +535,7 @@ def main():
         # Save .dat (if available)
         if sb_mat_out is not None:
             mat_dict = li.create_matrix_dict(sb_mat_out, table_dict, pdb)
-            li.save_output_dict(mat_dict, sb_graph, csv = False)
+            li.save_output_dict(mat_dict, sb_graph)
 
 
     ########################### HYDROGEN BONDS ############################
@@ -618,13 +618,13 @@ def main():
                                            perresidue = perresidue)                                    
 
         # Save .csv
-        table_dict = li.create_table_dict(table_out, hb = True)
+        table_dict = li.create_table_dict(table_out)
         li.save_output_dict(table_dict, hb_dat)
 
         # Save .dat (if available)
         if hb_mat_out is not None:
-            mat_dict = li.create_matrix_dict(hb_mat_out, table_dict, pdb, hb = True)
-            li.save_output_dict(mat_dict, hb_graph, csv = False)
+            mat_dict = li.create_matrix_dict(hb_mat_out, table_dict, pdb)
+            li.save_output_dict(mat_dict, hb_graph)
 
 
     ######################## STATISTICAL POTENTIAL ########################
