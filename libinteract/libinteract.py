@@ -867,15 +867,18 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def filter_by_chain(chain1, chain2, sec_res, rows, cols):
+def filter_by_chain(chain1, chain2, sec_res, table):
     """Takes in a table, its transpose, two chain names and the column
     number of the second chain. Filters the table to only keep rows 
     where the first column contains chain1 and the second column contains
     chain2. Returns filtered table.
     """
 
+    # Get the rows and columns from the table
+    rows = table
+    cols = table.T
     # Filter and create filtered array
-    logical_vector = np.logical_and(chain1 == cols[0], \
+    logical_vector = np.logical_and(chain1 == cols[0],
                                     chain2 == cols[sec_res])
     filtered_rows = rows[logical_vector]
     # Warn if no contacts found
@@ -910,27 +913,26 @@ def create_table_dict(table, hb=False):
     if len(chains) > 1:
 	# For each chain, add the nodes that are only in contact with the same chain
         for chain in chains:
-            filtered_rows = filter_by_chain(chain, chain, sec_res, \
-                                            table_rows, table_cols)
+            filtered_rows = filter_by_chain(chain, chain, sec_res, table_rows)
             if filtered_rows is not None:
                 table_dict[chain] = filtered_rows
         # Create vector of all nodes that are in contact with different chains
         logical_vector = table_cols[0] != table_cols[sec_res]
-        if logical_vector.sum == 0:
+        if logical_vector.sum() == 0:
             log.warning("No interchain contacts found")
         else:
             # For all combinations of different chains, find nodes that are in
             # contact with different chains
             for chain1, chain2 in itertools.combinations(chains, 2):
                 # Check both combinations (e.g. A, B and B, A)
-                filtered_rows1 = filter_by_chain(chain1, chain2, sec_res, \
-                                               table_rows, table_cols)
-                filtered_rows2 = filter_by_chain(chain2, chain1, sec_res, \
-                                               table_rows, table_cols)
+                filtered_rows1 = filter_by_chain(chain1, chain2, sec_res, 
+                                                 table_rows)
+                filtered_rows2 = filter_by_chain(chain2, chain1, sec_res, 
+                                                 table_rows)
                 # If both outputs exist, concatenate and append
                 if filtered_rows1 is not None and filtered_rows2 is not None:
                     filtered_rows = np.concatenate((filtered_rows1, 
-                                                     filtered_rows2))
+                                                    filtered_rows2))
                     table_dict[(chain1, chain2)] = filtered_rows
                 # Only add (A, B)
                 elif filtered_rows1 is not None:
@@ -977,7 +979,7 @@ def save_output_dict(out_dict, filename, csv = True):
     """
 
     # Remove extension from filename if present
-    filename = re.sub(".csv$", "", filename)
+    filename = re.sub("\.csv$|\.dat$|\.txt$|\.tsv$", "", filename)
     # Check if the table or the matrix is being saved and change the parameters
     if csv:
         ext = ".csv"
