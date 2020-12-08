@@ -487,7 +487,7 @@ def main():
         table_list_out = li.create_table_list(list_out)
         li.save_output_list(table_list_out, hc_dat)
 
-        # Save .dat (if available)
+        # Save .mat (if available)
         if hc_mat_out is not None:
             mat_list_out = li.create_matrix_list(hc_mat_out, table_list_out, pdb)
             li.save_output_list(table_list_out, hc_graph, mat_list = mat_list_out)
@@ -532,7 +532,7 @@ def main():
         table_list_out = li.create_table_list(list_out)
         li.save_output_list(table_list_out, sb_dat)
 
-        # Save .dat (if available)
+        # Save .mat (if available)
         if sb_mat_out is not None:
             mat_list_out = li.create_matrix_list(sb_mat_out, table_list_out, pdb)
             li.save_output_list(table_list_out, sb_graph, mat_list = mat_list_out)
@@ -621,7 +621,7 @@ def main():
         table_list_out = li.create_table_list(list_out, hb = True)
         li.save_output_list(table_list_out, hb_dat, hb = True)
 
-        # Save .dat (if available)
+        # Save .mat (if available)
         if hb_mat_out is not None:
             mat_list_out = li.create_matrix_list(hb_mat_out, table_list_out, pdb, hb = True)
             li.save_output_list(table_list_out, hb_graph, mat_list = mat_list_out, hb = True)
