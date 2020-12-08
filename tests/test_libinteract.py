@@ -47,7 +47,6 @@ def data_twochains_files(ref_dir):
              'pdb' : os.path.join(ref_dir, 'sim.prot.twochains.pdb')
            }
 
-# table file names
 @pytest.fixture
 def ref_sb_file(ref_dir):
     return '{0}/salt-bridges.csv'.format(ref_dir)
@@ -60,7 +59,6 @@ def ref_hb_file(ref_dir):
 def ref_hc_file(ref_dir):
     return '{0}/hydrophobic-clusters.csv'.format(ref_dir)
 
-# matrix file names
 @pytest.fixture
 def ref_sb_graph_file(ref_dir):
     return '{0}/sb-graph.dat'.format(ref_dir)
@@ -73,10 +71,16 @@ def ref_hb_graph_file(ref_dir):
 def ref_hc_graph_file(ref_dir):
     return '{0}/hc-graph.dat'.format(ref_dir)
 
-# two chain table file names
 @pytest.fixture
 def ref_sb_twochains_file(ref_dir):
     return '{0}/salt-bridges_twochains_all_chains.csv'.format(ref_dir)
+
+@pytest.fixture
+def ref_sb_chains_file(ref_dir):
+    return {
+            'intra_A' : '{0}/salt-bridges_twochains_intra_chain_A.csv'.format(ref_dir),
+            'inter' : '{0}/salt-bridges_twochains_inter_chain.csv'.format(ref_dir)
+           }
 
 @pytest.fixture
 def ref_hb_twochains_file(ref_dir):
@@ -86,33 +90,17 @@ def ref_hb_twochains_file(ref_dir):
 def ref_hc_twochains_file(ref_dir):
     return '{0}/hydrophobic-clusters_twochains_all_chains.csv'.format(ref_dir)
 
-# intra chain table file names
-@pytest.fixture
-def ref_sb_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/salt-bridges_twochains_intra_chain_A.csv'.format(ref_dir),
-            'inter' : '{0}/salt-bridges_twochains_inter_chain.csv'.format(ref_dir)
-           }
-
-@pytest.fixture
-def ref_hc_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/hydrophobic-clusters_twochains_intra_chain_A.csv'.format(ref_dir),
-            'inter' : '{0}/hydrophobic-clusters_twochains_inter_chain.csv'.format(ref_dir)
-           }
-
-@pytest.fixture
-def ref_hb_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/hydrogen-bonds_twochains_intra_chain_A.csv'.format(ref_dir),
-            'intra_B' : '{0}/hydrogen-bonds_twochains_intra_chain_B.csv'.format(ref_dir),
-            'inter' : '{0}/hydrogen-bonds_twochains_inter_chain.csv'.format(ref_dir)
-           }
-
-# two chain matrix file names
 @pytest.fixture
 def ref_sb_graph_twochains_file(ref_dir):
     return '{0}/sb-graph_twochains_all_chains.dat'.format(ref_dir)
+
+
+@pytest.fixture
+def ref_sb_graph_chains_file(ref_dir):
+    return {
+            'intra_A' : '{0}/sb-graph_twochains_intra_chain_A.dat'.format(ref_dir),
+            'inter' : '{0}/sb-graph_twochains_inter_chain.dat'.format(ref_dir)
+           }
 
 @pytest.fixture
 def ref_hb_graph_twochains_file(ref_dir):
@@ -122,34 +110,19 @@ def ref_hb_graph_twochains_file(ref_dir):
 def ref_hc_graph_twochains_file(ref_dir):
     return '{0}/hc-graph_twochains_all_chains.dat'.format(ref_dir)
 
-#inter chain matrix file names
-@pytest.fixture
-def ref_sb_graph_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/sb-graph_twochains_intra_chain_A.dat'.format(ref_dir),
-            'inter' : '{0}/sb-graph_twochains_inter_chain.dat'.format(ref_dir)
-           }
-
-@pytest.fixture
-def ref_hc_graph_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/hc-graph_twochains_intra_chain_A.dat'.format(ref_dir),
-            'inter' : '{0}/hc-graph_twochains_inter_chain.dat'.format(ref_dir)
-           }
-
-@pytest.fixture
-def ref_hb_graph_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/hb-graph_twochains_intra_chain_A.dat'.format(ref_dir),
-            'intra_B' : '{0}/hb-graph_twochains_intra_chain_B.dat'.format(ref_dir),
-            'inter' : '{0}/hb-graph_twochains_inter_chain.dat'.format(ref_dir)
-           }
-
-# tables files
 @pytest.fixture
 def ref_sb(ref_sb_file):
     with open(ref_sb_file) as fh:
         return fh.readlines()
+
+@pytest.fixture
+def ref_sb_chains(ref_sb_chains_file):
+    with open(ref_sb_chains_file['intra_A']) as A, \
+         open(ref_sb_chains_file['inter']) as I:
+        return {
+                'intra_A' : A.readlines(),
+                'inter' : I.readlines()
+               }
 
 @pytest.fixture
 def ref_hb(ref_hb_file):
@@ -161,63 +134,16 @@ def ref_hc(ref_hc_file):
     with open(ref_hc_file) as fh:
         return fh.readlines()
 
-# inter chain table files
 @pytest.fixture
-def ref_sb_chains(ref_sb_chains_file):
-    with open(ref_sb_chains_file['intra_A']) as A, \
-         open(ref_sb_chains_file['inter']) as I:
-        return {
-                'intra_A' : A.readlines(),
-                'inter' : I.readlines()
-               }
+def ref_sb_graph(ref_sb_graph_file):
+    return np.loadtxt(ref_sb_graph_file)
 
-@pytest.fixture
-def ref_hc_chains(ref_hc_chains_file):
-    with open(ref_hc_chains_file['intra_A']) as A, \
-         open(ref_hc_chains_file['inter']) as I:
-        return {
-                'intra_A' : A.readlines(),
-                'inter' : I.readlines()
-               }
-
-@pytest.fixture
-def ref_hb_chains(ref_hb_chains_file):
-    with open(ref_hb_chains_file['intra_A']) as A, \
-         open(ref_hb_chains_file['intra_B']) as B, \
-         open(ref_hb_chains_file['inter']) as I:
-        return {
-                'intra_A' : A.readlines(),
-                'intra_B' : B.readlines(),
-                'inter' : I.readlines()
-               }
-
-# inter chain matrix files
 @pytest.fixture
 def ref_sb_graph_chains(ref_sb_graph_chains_file):
     return {
             'intra_A' : np.loadtxt(ref_sb_graph_chains_file['intra_A']),
             'inter' : np.loadtxt(ref_sb_graph_chains_file['inter'])
             }
-
-@pytest.fixture
-def ref_hc_graph_chains(ref_hc_graph_chains_file):
-    return {
-            'intra_A' : np.loadtxt(ref_hc_graph_chains_file['intra_A']),
-            'inter' : np.loadtxt(ref_hc_graph_chains_file['inter'])
-            }
-
-@pytest.fixture
-def ref_hb_graph_chains(ref_hb_graph_chains_file):
-    return {
-            'intra_A' : np.loadtxt(ref_hb_graph_chains_file['intra_A']),
-            'intra_B' : np.loadtxt(ref_hb_graph_chains_file['intra_B']),
-            'inter' : np.loadtxt(ref_hb_graph_chains_file['inter'])
-            }
-
-# matrix files
-@pytest.fixture
-def ref_sb_graph(ref_sb_graph_file):
-    return np.loadtxt(ref_sb_graph_file)
 
 @pytest.fixture
 def ref_hb_graph(ref_hb_graph_file):
@@ -227,7 +153,6 @@ def ref_hb_graph(ref_hb_graph_file):
 def ref_hc_graph(ref_hc_graph_file):
     return np.loadtxt(ref_hc_graph_file)
 
-# two chains files
 @pytest.fixture
 def ref_sb_twochains(ref_sb_twochains_file):
     with open(ref_sb_twochains_file) as fh:
@@ -243,7 +168,6 @@ def ref_hc_twochains(ref_hc_twochains_file):
     with open(ref_hc_twochains_file) as fh:
         return fh.readlines()
 
-# two chain matrix files
 @pytest.fixture
 def ref_sb_graph_twochains(ref_sb_graph_twochains_file):
     return np.loadtxt(ref_sb_graph_twochains_file)
@@ -256,7 +180,6 @@ def ref_hb_graph_twochains(ref_hb_graph_twochains_file):
 def ref_hc_graph_twochains(ref_hc_graph_twochains_file):
     return np.loadtxt(ref_hc_graph_twochains_file)
 
-# potential files
 @pytest.fixture
 def ref_potential_file(ref_dir):
     return "{0}/kb-potential.dat".format(ref_dir)
@@ -325,7 +248,6 @@ def charged_groups(cg_file):
 def hb_don_acc(hb_file):
     return li.parse_hbs_file(hb_file)
 
-# do_interact functions
 @pytest.fixture
 def do_interact_sb(simulation_twochains, charged_groups):
     out_tuple = li.do_interact(li.generate_cg_identifiers,
@@ -371,7 +293,6 @@ def do_interact_hb(simulation_twochains, hb_don_acc):
                                    other_hbs = hb_don_acc)
     return {'table': out_tuple[0], 'matrix': out_tuple[1]}
 
-# table lists
 @pytest.fixture
 def create_table_list_sb(do_interact_sb):
     return li.create_table_list(do_interact_sb['table'])
@@ -383,7 +304,7 @@ def create_table_list_hc(do_interact_hc):
 @pytest.fixture
 def create_table_list_hb(do_interact_hb):
     return li.create_table_list(do_interact_hb['table'], hb = True)
-
+"""
 class TestSparse:
     def test_Sparse_constructor(self, sparse_list, sparse_obj):
         data = np.array([   sparse_obj.r1,
@@ -452,7 +373,6 @@ def test_generate_sc_identifiers(simulation, hc_residues_list):
 def test_parse_cg_files(cg_file):
     data = li.parse_cgs_file(cg_file)
 
-# check do interact functions
 def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
     table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
                                         pdb = simulation['pdb'],
@@ -503,8 +423,7 @@ def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
     assert_almost_equal(hb_mat_out, ref_hb_graph, decimal=1)
     for i, t in enumerate(table_out):
         assert(','.join(str(x) for x in t) == ref_hb[i].strip())
-
-# check sb tables and matrix
+"""
 def test_create_table_list_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
    table_list = li.create_table_list(do_interact_sb['table'])
    for i, t in enumerate(table_list[0]):
@@ -527,58 +446,38 @@ def test_create_matrix_list_sb(do_interact_sb, create_table_list_sb, simulation_
     assert_almost_equal(mat_list[2], ref_sb_graph_chains['inter'], decimal=1)
     split_matrix = sum(mat_list[1:])
     assert_almost_equal(mat_list[0], split_matrix, decimal=1)
-
-# check hydrophobic tables and matrix
-def test_create_table_list_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
+"""
+def test_create_table_list_hc(do_interact_hc, ref_hc_twochains):
    table_list = li.create_table_list(do_interact_hc['table'])
    for i, t in enumerate(table_list[0]):
        assert(','.join(str(x) for x in t) == ref_hc_twochains[i].strip())
-   for i, t in enumerate(table_list[1]):
-       assert(','.join(str(x) for x in t) == ref_hc_chains['intra_A'][i].strip())
-   for i, t in enumerate(table_list[2]):
-       assert(','.join(str(x) for x in t) == ref_hc_chains['inter'][i].strip())
-
    first_table = np.sort(table_list[0], axis = 0)
    split_tables = np.sort(np.vstack(table_list[1:]), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-
-def test_create_matrix_list_hc(do_interact_hc, create_table_list_hc, simulation_twochains, ref_hc_graph_twochains, ref_hc_graph_chains):
+def test_create_matrix_list_hc(do_interact_hc, create_table_list_hc, simulation_twochains, ref_hc_graph_twochains):
     mat_list = li.create_matrix_list(do_interact_hc['matrix'],
                                         create_table_list_hc,
                                         simulation_twochains['pdb'])
     assert_almost_equal(mat_list[0], ref_hc_graph_twochains, decimal=1)
-    assert_almost_equal(mat_list[1], ref_hc_graph_chains['intra_A'], decimal=1)
-    assert_almost_equal(mat_list[2], ref_hc_graph_chains['inter'], decimal=1)
     split_matrix = sum(mat_list[1:])
     assert_almost_equal(mat_list[0], split_matrix, decimal=1)
 
-#check hydrogen bonds tables and matrix
-def test_create_table_list_hb(do_interact_hb, ref_hb_twochains, ref_hb_chains):
+def test_create_table_list_hb(do_interact_hb, ref_hb_twochains):
    table_list = li.create_table_list(do_interact_hb['table'], hb = True)
    for i, t in enumerate(table_list[0]):
        assert(','.join(str(x) for x in t) == ref_hb_twochains[i].strip())
-   for i, t in enumerate(table_list[1]):
-       assert(','.join(str(x) for x in t) == ref_hb_chains['intra_A'][i].strip())
-   for i, t in enumerate(table_list[2]):
-       assert(','.join(str(x) for x in t) == ref_hb_chains['intra_B'][i].strip())
-   for i, t in enumerate(table_list[3]):
-       assert(','.join(str(x) for x in t) == ref_hb_chains['inter'][i].strip())
-
    first_table = np.sort(table_list[0], axis = 0)
    split_tables = np.sort(np.vstack(table_list[1:]), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-def test_create_matrix_list_hb(do_interact_hb, create_table_list_hb, simulation_twochains, ref_hb_graph_twochains, ref_hb_graph_chains):
+def test_create_matrix_list_hb(do_interact_hb, create_table_list_hb, simulation_twochains, ref_hb_graph_twochains):
     mat_list = li.create_matrix_list(do_interact_hb['matrix'],
                                         create_table_list_hb,
                                         simulation_twochains['pdb'],
                                         hb = True)
     assert_almost_equal(mat_list[0], ref_hb_graph_twochains, decimal=1)
-    assert_almost_equal(mat_list[1], ref_hb_graph_chains['intra_A'], decimal=1)
-    assert_almost_equal(mat_list[2], ref_hb_graph_chains['intra_B'], decimal=1)
-    assert_almost_equal(mat_list[3], ref_hb_graph_chains['inter'], decimal=1)
     split_matrix = sum(mat_list[1:])
     assert_almost_equal(mat_list[0], split_matrix, decimal=1)
 
-
+"""
