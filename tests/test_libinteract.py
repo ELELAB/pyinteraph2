@@ -40,24 +40,16 @@ def data_files(ref_dir):
            }
 
 @pytest.fixture
-def data_twochains_files(ref_dir):
-    return {
-             'gro' : os.path.join(ref_dir, 'sim.prot.twochains.gro'),
-             'xtc' : os.path.join(ref_dir, 'traj.twochains.xtc'),
-             'pdb' : os.path.join(ref_dir, 'sim.prot.twochains.pdb')
-           }
-
-@pytest.fixture
 def ref_sb_file(ref_dir):
-    return '{0}/salt-bridges.csv'.format(ref_dir)
+    return '{0}/salt-bridges.dat'.format(ref_dir)
 
 @pytest.fixture
 def ref_hb_file(ref_dir):
-    return '{0}/hydrogen-bonds.csv'.format(ref_dir)
+    return '{0}/hydrogen-bonds.dat'.format(ref_dir)
 
 @pytest.fixture
 def ref_hc_file(ref_dir):
-    return '{0}/hydrophobic-clusters.csv'.format(ref_dir)
+    return '{0}/hydrophobic-clusters.dat'.format(ref_dir)
 
 @pytest.fixture
 def ref_sb_graph_file(ref_dir):
@@ -70,30 +62,6 @@ def ref_hb_graph_file(ref_dir):
 @pytest.fixture
 def ref_hc_graph_file(ref_dir):
     return '{0}/hc-graph.dat'.format(ref_dir)
-
-@pytest.fixture
-def ref_sb_twochains_file(ref_dir):
-    return '{0}/salt-bridges_twochains_all_chains.csv'.format(ref_dir)
-
-@pytest.fixture
-def ref_hb_twochains_file(ref_dir):
-    return '{0}/hydrogen-bonds_twochains_all_chains.csv'.format(ref_dir)
-
-@pytest.fixture
-def ref_hc_twochains_file(ref_dir):
-    return '{0}/hydrophobic-clusters_twochains_all_chains.csv'.format(ref_dir)
-
-@pytest.fixture
-def ref_sb_graph_twochains_file(ref_dir):
-    return '{0}/sb-graph_twochains_all_chains.dat'.format(ref_dir)
-
-@pytest.fixture
-def ref_hb_graph_twochains_file(ref_dir):
-    return '{0}/hb-graph_twochains_all_chains.dat'.format(ref_dir)
-
-@pytest.fixture
-def ref_hc_graph_twochains_file(ref_dir):
-    return '{0}/hc-graph_twochains_all_chains.dat'.format(ref_dir)
 
 @pytest.fixture
 def ref_sb(ref_sb_file):
@@ -121,33 +89,6 @@ def ref_hb_graph(ref_hb_graph_file):
 @pytest.fixture
 def ref_hc_graph(ref_hc_graph_file):
     return np.loadtxt(ref_hc_graph_file)
-
-@pytest.fixture
-def ref_sb_twochains(ref_sb_twochains_file):
-    with open(ref_sb_twochains_file) as fh:
-        return fh.readlines()
-
-@pytest.fixture
-def ref_hb_twochains(ref_hb_twochains_file):
-    with open(ref_hb_twochains_file) as fh:
-        return fh.readlines()
-
-@pytest.fixture
-def ref_hc_twochains(ref_hc_twochains_file):
-    with open(ref_hc_twochains_file) as fh:
-        return fh.readlines()
-
-@pytest.fixture
-def ref_sb_graph_twochains(ref_sb_graph_twochains_file):
-    return np.loadtxt(ref_sb_graph_twochains_file)
-
-@pytest.fixture
-def ref_hb_graph_twochains(ref_hb_graph_twochains_file):
-    return np.loadtxt(ref_hb_graph_twochains_file)
-
-@pytest.fixture
-def ref_hc_graph_twochains(ref_hc_graph_twochains_file):
-    return np.loadtxt(ref_hc_graph_twochains_file)
 
 @pytest.fixture
 def ref_potential_file(ref_dir):
@@ -203,13 +144,6 @@ def simulation(data_files):
             'uni' : uni}
 
 @pytest.fixture
-def simulation_twochains(data_twochains_files):
-    uni = mda.Universe(data_twochains_files['gro'], data_twochains_files['xtc'])
-    pdb = mda.Universe(data_twochains_files['pdb'])
-    return {'pdb' : pdb,
-            'uni' : uni}
-
-@pytest.fixture
 def charged_groups(cg_file):
     return li.parse_cgs_file(cg_file)
 
@@ -217,26 +151,6 @@ def charged_groups(cg_file):
 def hb_don_acc(hb_file):
     return li.parse_hbs_file(hb_file)
 
-@pytest.fixture
-def do_interact_sb(simulation_twochains, charged_groups):
-    out_tuple = li.do_interact(li.generate_cg_identifiers,
-                                        pdb = simulation_twochains['pdb'],
-                                        uni = simulation_twochains['uni'],
-                                        co = 4.5,
-                                        perco = 0,
-                                        ffmasses = 'charmm27',
-                                        fullmatrixfunc = li.calc_cg_fullmatrix,
-                                        mindist = True,
-                                        mindist_mode = 'diff',
-                                        cgs = charged_groups)
-
-    return {'table': out_tuple[0], 'matrix': out_tuple[1]}
-
-@pytest.fixture
-def create_table_list_sb(do_interact_sb):
-    return li.create_table_list(do_interact_sb['table'])
-
-"""
 class TestSparse:
     def test_Sparse_constructor(self, sparse_list, sparse_obj):
         data = np.array([   sparse_obj.r1,
@@ -305,9 +219,8 @@ def test_generate_sc_identifiers(simulation, hc_residues_list):
 def test_parse_cg_files(cg_file):
     data = li.parse_cgs_file(cg_file)
 
-"""
 def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
-    table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
+    str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
                                         pdb = simulation['pdb'],
                                         uni = simulation['uni'],
                                         co = 4.5,
@@ -319,29 +232,12 @@ def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
                                         cgs = charged_groups)
 
     assert_almost_equal(sb_mat_out, ref_sb_graph, decimal=1)
-    for i, t in enumerate(table_out):
-        assert(','.join(str(x) for x in t) == ref_sb[i].strip())
+    split_str = str_out.split("\n")[:-1]
+    for i, s in enumerate(split_str):
+        assert(s == ref_sb[i].strip())
 
-def test_create_table_list_sb(do_interact_sb, ref_sb_twochains):
-   table_list = li.create_table_list(do_interact_sb['table'])
-   for i, t in enumerate(table_list[0]):
-       assert(','.join(str(x) for x in t) == ref_sb_twochains[i].strip())
-   split_tables = np.vstack(table_list[1:])
-   assert(np.array_equal(table_list[0], split_tables) == True)
-
-
-
-def test_create_matrix_list_sb(do_interact_sb, create_table_list_sb, simulation_twochains, ref_sb_graph_twochains):
-    mat_list = li.create_matrix_list(do_interact_sb['matrix'],
-                                        create_table_list_sb,
-                                        simulation_twochains['pdb'])
-    assert_almost_equal(mat_list[0], ref_sb_graph_twochains, decimal=1)
-    split_matrix = sum(mat_list[1:])
-    assert_almost_equal(mat_list[0], split_matrix, decimal=1)
-
-"""
 def test_do_interact_hc(simulation, hc_residues_list, ref_hc_graph, ref_hc):
-    table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
+    str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                      pdb = simulation['pdb'],
                                      uni = simulation['uni'],
                                      co = 5.0, 
@@ -351,20 +247,16 @@ def test_do_interact_hc(simulation, hc_residues_list, ref_hc_graph, ref_hc):
                                      reslist = hc_residues_list,
                                      mindist = False)
     assert_almost_equal(hc_mat_out, ref_hc_graph, decimal=1)
-
-    for i, t in enumerate(table_out):
-        assert(','.join(str(x) for x in t) == ref_hc[i].strip())
-
-    #split_str = str_out[0].split("\n")[:-1]
-    #for i, s in enumerate(split_str):
-    #    assert(s != ref_hc[i].strip())
+    split_str = str_out.split("\n")[:-1]
+    for i, s in enumerate(split_str):
+        assert(s == ref_hc[i].strip())
 
 def test_parse_hb_file(hb_file):
     li.parse_hbs_file(hb_file)
 
 def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
     sel = 'protein'
-    tup_list_out, hb_mat_out = li.do_hbonds(sel1 = sel,
+    str_out, hb_mat_out = li.do_hbonds(sel1 = sel,
                                    sel2 = sel,
                                    pdb = simulation['pdb'],
                                    uni = simulation['uni'],
@@ -376,13 +268,8 @@ def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
                                    other_hbs = hb_don_acc)
 
     assert_almost_equal(hb_mat_out, ref_hb_graph, decimal=1)
-    for i, t in enumerate(table_out):
-        assert(','.join(str(x) for x in t) == ref_hb[i].strip())
+    sorted_ref_hb = sorted(ref_hb)
+    split_str = sorted(str_out.split("\n")[:-1])
+    for i, s in enumerate(split_str):
+        assert(s == sorted_ref_hb[i].strip())
 
-    #sorted_ref_hb = sorted(ref_hb)
-    #split_str = sorted(str_out.split("\n")[:-1])
-    #for i, s in enumerate(split_str):
-    #    assert(s != sorted_ref_hb[i].strip())
-
-
-"""
