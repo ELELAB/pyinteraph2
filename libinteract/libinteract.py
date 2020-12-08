@@ -866,28 +866,6 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def filter_by_chain(chain1, chain2, sec_res, array, array_T):
-    """Takes in a table with 2 residue columns and filters it to 
-    return only rows where the first column contains chain1 and the
-    second column contains chain 2. Returns filtered table.
-    """
-
-    logical_vector = np.logical_and(chain1 == array_T[0], \
-                                    chain2 == array_T[sec_res])
-    filtered_array = array[logical_vector]
-    output = None
-    if filtered_array.shape[0] == 0:
-        if chain1 == chain2:
-            warnstr = f"No intrachain contacts found in chain {chain1}"
-            log.warning(warnstr)
-        else:
-            warnstr = f"No interchain contacts found between chains " \
-                      f"{chain1} and {chain2}"
-            log.warning(warnstr)
-    else:
-        output = filtered_array
-    return output
-
 
 def create_table_list(contact_list, hb=False):
     """Takes in a list of tuples and returns a list of arrays where
@@ -898,10 +876,8 @@ def create_table_list(contact_list, hb=False):
 
     # Convert to array and keep transpose for selection
     array = np.array(contact_list)
+    output = [array]
     array_T = array.T
-    # Initialize output
-    array_list = [array]
-    # Find unique chains in the array
     chains = np.unique(array_T[0])
     # Choose which column has the second residue
     if hb:
@@ -911,34 +887,32 @@ def create_table_list(contact_list, hb=False):
     # If multiple chains are present, split the contacts by chain
     if len(chains) > 1:
 	# For each chain, add the nodes that are only in contact with the same chain
-        for chain in chains:
-            filtered_array = filter_by_chain(chain, chain, sec_res, \
-                                            array, array_T)
-            if filtered_array is not None:
-                array_list.append(filtered_array)
-        # Create vector of all nodes that are in contact with different chains
+        for i in range(len(chains)):
+            logical_vector = np.logical_and(chains[i] == array_T[0], \
+                                            chains[i] == array_T[sec_res])
+            output_chain = array[logical_vector]
+            if output_chain.shape[0] == 0:
+                warnstr = "No intrachain contacts found in chain " + str(chains[i])
+                log.warning(warnstr)
+            else:
+                output.append(output_chain)
+        # Add all nodes that are in contact with different chains
         logical_vector = array_T[0] != array_T[sec_res]
-        if logical_vector.sum == 0:
+        output_diff_chain = array[logical_vector]
+        if output_diff_chain.shape[0] == 0:
             warnstr = "No interchain contacts found" 
             log.warning(warnstr)
         else:
-            # For all combinations of different chains, find nodes that are in
-            # contact with different chains
-            for chain1, chain2 in itertools.permutations(chains, 2):
-                filtered_array = filter_by_chain(chain1, chain2, sec_res, \
-                                               array, array_T)
-                if filtered_array is not None:
-                    array_list.append(filtered_array)
-    return array_list
+            output.append(output_diff_chain)
+    return output
 
 def create_matrix_list(fullmatrix, table_list, pdb, hb = False):
     """Takes in the full matrix and returns a list of matrices. The
     first matrix is the full matrix while the following matrices contain
-    intrachain persistences (if present) and interchain persistences 
-    (if present).
+    intrachain persistences (if present). The final matrix contains 
+    interchain persistences (if present).
     """
 
-    # Initialize output
     mat_list = [fullmatrix]
     # Select which column has the resid
     if hb:
@@ -968,8 +942,7 @@ def create_matrix_list(fullmatrix, table_list, pdb, hb = False):
 def save_output_list(table_list, filename, mat_list=None, hb=False):
     """Save each element in the list as a separate file. The first
     element contains the whole dataset, followed by intrachain
-    data (if present) and interchain data (if present). Prints csv files
-    by default if no matrix files is specified, else prints matrix.
+    data (if present). The final element contains interchain data.
     """
 
     # Check if the table or the matrix is being saved and change the parameters
@@ -986,7 +959,7 @@ def save_output_list(table_list, filename, mat_list=None, hb=False):
     for i in range(len(table_list)):
         # For each element, change the filename and save the file
         if i == 0:
-            fname = f"{filename}_all_chains{ext}"
+            fname = filename + "_all_chains" + ext
         else:
             # Check which column has the second residue
             if hb:
@@ -997,9 +970,9 @@ def save_output_list(table_list, filename, mat_list=None, hb=False):
             chain2 = table_list[i][0][sec_res]
             # Determine if intra or interchain
             if chain1 == chain2:
-                fname = f"{filename}_intra_chain_{chain1}{ext}"
+                fname = filename + "_intra_chain_" + str(chain1) + ext
             else:
-                fname = f"{filename}_inter_chain_{chain1}-{chain2}{ext}"
+                fname = filename + "_inter_chain" + ext
         np.savetxt(fname, data[i], delimiter = delim, fmt = format)
 
 
