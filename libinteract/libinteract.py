@@ -872,16 +872,23 @@ def find_pos(table, name = True):
     that have the chain name. If name is false, returns the index of the
     columns that have the res id.
     """
+
     if name:
+        arg_name = "chain name"
         # Search for SYSTEM or any chain name between A and Z
         positions = [i for i, elem in enumerate(table[0]) \
                      if re.search("^[A-Z]$|^SYSTEM$", elem)]
     else:
-        # Search for all only integers (no decimals)
+        arg_name = "residue id"
+        # Search for integers only (no decimals)
         positions = [i for i, elem in enumerate(table[0]) \
                      if re.search("^\d+$", elem)]
     # Make sure only two positions exist
-    assert len(positions) == 2
+    num_cols = len(positions)
+    if num_cols != 2:
+        err_str = f"Incorrect number of {arg_name} columns found. " \
+            f"Expected 2 columns but found {num_cols}."
+        raise ValueError(err_str)
     return positions
 
 def filter_by_chain(chain1, chain2, positions, table):
