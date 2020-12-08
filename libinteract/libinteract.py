@@ -867,31 +867,6 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     return fullmatrix
 
 
-def create_output_list(contact_list):
-    """Takes in a list of tuples and returns a list of arrays where the first
-    array contains all contacts and subsequent arrays are split by chain"""
-    array = np.array(contact_list)
-    output = []
-    output.append(array)
-    array_T = array.T
-    chains = np.unique(array_T[0])
-    #if multiple chains are present, split the contacts by chain
-    if len(chains) > 1:
-	#for each chain, add the nodes that are only in contact with the same chain
-        for i in range(len(chains)):
-            logical_vector = np.logical_and(chains[i] == array_T[0], chains[i] == array_T[3])
-            output_chain = array[logical_vector]
-            output.append(output_chain)
-        #add all nodes that are in contact with different chains
-        logical_vector = array_T[0] != array_T[3]
-        output_diff_chain = array[logical_vector]
-        output.append(output_diff_chain)
-    #remove any empty arrays
-    output = [array for array in output if array.shape[0] != 0]
-    return(output)
-
-
-
 ############################ INTERACTIONS #############################
 
 def do_interact(identfunc, \
@@ -936,21 +911,16 @@ def do_interact(identfunc, \
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
-    contact_list = []
-    #print(short_ids)
     for i, j in where_gt_perco:
         #print(i, j)
         #print("IDXSi", short_idxs[i])
         #print("IDXSj", short_idxs[j])
 
-        res1 = short_ids[short_ids.index(short_idxs[i])]
-        res2 = short_ids[short_ids.index(short_idxs[j])]
-        persistence = (percmat[i,j],)
-        contact_list.append(res1 + res2 + persistence)
-
-        #outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
-        #                            segid2, resid2, resname2, idxs[j][3], \
-        #                            percmat[i,j])
+        segid1, resid1, resname1 = short_ids[short_ids.index(short_idxs[i])]
+        segid2, resid2, resname2 = short_ids[short_ids.index(short_idxs[j])]
+        outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
+                                    segid2, resid2, resname2, idxs[j][3], \
+                                    percmat[i,j])
     # set the full matrix to None
     fullmatrix = None
     # compute the full matrix if requestes
@@ -960,8 +930,8 @@ def do_interact(identfunc, \
                                     percmat = percmat, \
                                     perco = perco)
     
-    # return output list and fullmatrix
-    return (contact_list, fullmatrix)
+    # return output string and fullmatrix
+    return (outstr, fullmatrix)
 
 ############################### HBONDS ################################
 
