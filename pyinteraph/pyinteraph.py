@@ -128,7 +128,7 @@ def main():
     hcdat_default = "hydrophobic-clusters"
     hcdat_helpstr = \
         "Name of the file where to store the list of " \
-        "hydrophobic contacts found (default: {:s}.csv)"
+        "hydrophobic contacts found (default: {:s})"
     parser.add_argument("--hc-dat", \
                         action = "store", \
                         type = str, \
@@ -171,7 +171,7 @@ def main():
     sbdat_default = "salt-bridges"
     sbdat_helpstr = \
         "Name of the file where to store the list of " \
-        "salt bridges found (default: {:s}.csv)"
+        "salt bridges found (default: {:s})"
     parser.add_argument("--sb-dat", \
                         action = "store", \
                         type = str, \
@@ -236,7 +236,7 @@ def main():
     hbdat_default = "hydrogen-bonds"
     hbdat_helpstr = \
         "Name of the file where to store the list of " \
-        "hydrogen bonds found (default: {:s}.csv)"
+        "hydrogen bonds found (default: {:s})"
     parser.add_argument("--hb-dat", \
                         action = "store", \
                         type = str, \
