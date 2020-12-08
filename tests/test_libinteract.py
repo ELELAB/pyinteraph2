@@ -76,13 +76,6 @@ def ref_sb_twochains_file(ref_dir):
     return '{0}/salt-bridges_twochains_all_chains.csv'.format(ref_dir)
 
 @pytest.fixture
-def ref_sb_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/salt-bridges_twochains_intra_chain_A.csv'.format(ref_dir),
-            'inter' : '{0}/salt-bridges_twochains_inter_chain.csv'.format(ref_dir)
-           }
-
-@pytest.fixture
 def ref_hb_twochains_file(ref_dir):
     return '{0}/hydrogen-bonds_twochains_all_chains.csv'.format(ref_dir)
 
@@ -93,14 +86,6 @@ def ref_hc_twochains_file(ref_dir):
 @pytest.fixture
 def ref_sb_graph_twochains_file(ref_dir):
     return '{0}/sb-graph_twochains_all_chains.dat'.format(ref_dir)
-
-
-@pytest.fixture
-def ref_sb_graph_chains_file(ref_dir):
-    return {
-            'intra_A' : '{0}/sb-graph_twochains_intra_chain_A.dat'.format(ref_dir),
-            'inter' : '{0}/sb-graph_twochains_inter_chain.dat'.format(ref_dir)
-           }
 
 @pytest.fixture
 def ref_hb_graph_twochains_file(ref_dir):
@@ -116,15 +101,6 @@ def ref_sb(ref_sb_file):
         return fh.readlines()
 
 @pytest.fixture
-def ref_sb_chains(ref_sb_chains_file):
-    with open(ref_sb_chains_file['intra_A']) as A, \
-         open(ref_sb_chains_file['inter']) as I:
-        return {
-                'intra_A' : A.readlines(),
-                'inter' : I.readlines()
-               }
-
-@pytest.fixture
 def ref_hb(ref_hb_file):
     with open(ref_hb_file) as fh:
         return fh.readlines()
@@ -137,13 +113,6 @@ def ref_hc(ref_hc_file):
 @pytest.fixture
 def ref_sb_graph(ref_sb_graph_file):
     return np.loadtxt(ref_sb_graph_file)
-
-@pytest.fixture
-def ref_sb_graph_chains(ref_sb_graph_chains_file):
-    return {
-            'intra_A' : np.loadtxt(ref_sb_graph_chains_file['intra_A']),
-            'inter' : np.loadtxt(ref_sb_graph_chains_file['inter'])
-            }
 
 @pytest.fixture
 def ref_hb_graph(ref_hb_graph_file):
@@ -304,7 +273,7 @@ def create_table_list_hc(do_interact_hc):
 @pytest.fixture
 def create_table_list_hb(do_interact_hb):
     return li.create_table_list(do_interact_hb['table'], hb = True)
-"""
+
 class TestSparse:
     def test_Sparse_constructor(self, sparse_list, sparse_obj):
         data = np.array([   sparse_obj.r1,
@@ -423,30 +392,23 @@ def test_do_interact_hb(simulation, hb_don_acc, ref_hb, ref_hb_graph):
     assert_almost_equal(hb_mat_out, ref_hb_graph, decimal=1)
     for i, t in enumerate(table_out):
         assert(','.join(str(x) for x in t) == ref_hb[i].strip())
-"""
-def test_create_table_list_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
+
+def test_create_table_list_sb(do_interact_sb, ref_sb_twochains):
    table_list = li.create_table_list(do_interact_sb['table'])
    for i, t in enumerate(table_list[0]):
        assert(','.join(str(x) for x in t) == ref_sb_twochains[i].strip())
-   for i, t in enumerate(table_list[1]):
-       assert(','.join(str(x) for x in t) == ref_sb_chains['intra_A'][i].strip())
-   for i, t in enumerate(table_list[2]):
-       assert(','.join(str(x) for x in t) == ref_sb_chains['inter'][i].strip())
-
    first_table = np.sort(table_list[0], axis = 0)
    split_tables = np.sort(np.vstack(table_list[1:]), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-def test_create_matrix_list_sb(do_interact_sb, create_table_list_sb, simulation_twochains, ref_sb_graph_twochains, ref_sb_graph_chains):
+def test_create_matrix_list_sb(do_interact_sb, create_table_list_sb, simulation_twochains, ref_sb_graph_twochains):
     mat_list = li.create_matrix_list(do_interact_sb['matrix'],
                                         create_table_list_sb,
                                         simulation_twochains['pdb'])
     assert_almost_equal(mat_list[0], ref_sb_graph_twochains, decimal=1)
-    assert_almost_equal(mat_list[1], ref_sb_graph_chains['intra_A'], decimal=1)
-    assert_almost_equal(mat_list[2], ref_sb_graph_chains['inter'], decimal=1)
     split_matrix = sum(mat_list[1:])
     assert_almost_equal(mat_list[0], split_matrix, decimal=1)
-"""
+
 def test_create_table_list_hc(do_interact_hc, ref_hc_twochains):
    table_list = li.create_table_list(do_interact_hc['table'])
    for i, t in enumerate(table_list[0]):
@@ -480,4 +442,4 @@ def test_create_matrix_list_hb(do_interact_hb, create_table_list_hb, simulation_
     split_matrix = sum(mat_list[1:])
     assert_almost_equal(mat_list[0], split_matrix, decimal=1)
 
-"""
+
