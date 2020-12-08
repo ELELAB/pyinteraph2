@@ -277,19 +277,18 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     common_nodes = get_common_nodes(paths, node_threshold)
     # Get common edges
     common_edges = get_common_edges(paths_graph, edge_threshold)
-
-    # Warn if no common nodes found
+   
+    common_paths = []
     if len(common_nodes) == 0:
+        # Warn if no common nodes found
         warn_str = f"No Nodes found with a frequency higher than: {node_threshold}"
         log.warning(warn_str)
-    # Warn if no common edges found
-    if len(common_edges) == 0:
+    elif len(common_edges) == 0:
+        # Warn if no common edges are found
         warn_str = f"No Edges found with a frequency higher than: {edge_threshold}"
         log.warning(warn_str)
-
-    common_paths = []
     # Common edges and nodes exist
-    if len(common_nodes) != 0 and len(common_edges) != 0:
+    else:
         # Find which paths have the common nodes and edges
         for p in paths:
             edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
@@ -314,7 +313,9 @@ def write_table(fname, table):
 
 
 def main():
+
     ######################### ARGUMENT PARSER #########################
+    
     description = "Path analysis"
     parser = argparse.ArgumentParser(description= description)
 
