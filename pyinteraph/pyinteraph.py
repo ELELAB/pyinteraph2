@@ -125,7 +125,7 @@ def main():
                         default = 0.0, \
                         help = hcperco_helpstr.format(hcperco_default))
 
-    hcdat_default = "hydrophobic-clusters"
+    hcdat_default = "hydrophobic-clusters.dat"
     hcdat_helpstr = \
         "Name of the file where to store the list of " \
         "hydrophobic contacts found (default: {:s})"
@@ -168,7 +168,7 @@ def main():
                         default = sbperco_default, \
                         help = sbperco_helpstr.format(sbperco_default))
 
-    sbdat_default = "salt-bridges"
+    sbdat_default = "salt-bridges.dat"
     sbdat_helpstr = \
         "Name of the file where to store the list of " \
         "salt bridges found (default: {:s})"
@@ -473,7 +473,7 @@ def main():
 
     if do_hc:
         fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
-        list_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
+        str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                              pdb = pdb,
                                              uni = uni,
                                              co = hc_co, 
@@ -483,10 +483,9 @@ def main():
                                              mindist = False,
                                              reslist = hc_reslist)
 
-        # Save .csv
-        list_out = li.create_output_list(list_out)
-        li.save_output_file(list_out, hc_dat)
-
+        # Save .dat
+        with open(hc_dat, "w") as out:
+            out.write(str_out)
         # Save .mat (if available)
         if hc_mat_out is not None:
             np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
@@ -529,7 +528,16 @@ def main():
 
         # Save .csv
         list_out = li.create_output_list(list_out)
-        li.save_output_file(list_out, sb_dat)
+        for i in range(len(list_out)):
+            if i == 0:
+                np.savetxt(sb_dat + "_all_bonds.csv", list_out[i], delimiter=",", fmt='%s')
+            else:
+                chain1 = list_out[i][0][0]
+                chain2 = list_out[i][0][3]
+                if chain1 == chain2:
+                    np.savetxt(sb_dat+"_intra_chain_"+str(chain1)+".csv", list_out[i], delimiter=",", fmt='%s')
+                else:
+                    np.savetxt(sb_dat+"_inter_chain"+".csv", list_out[i], delimiter=",", fmt='%s')
 
         # Save .mat (if available)
         if sb_mat_out is not None:

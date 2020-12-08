@@ -890,19 +890,6 @@ def create_output_list(contact_list):
     output = [array for array in output if array.shape[0] != 0]
     return(output)
 
-def save_output_file(list, filename):
-    for i in range(len(list)):
-        if i == 0:
-            np.savetxt(filename + "_all_bonds.csv", list[i], delimiter=",", fmt='%s')
-        else:
-            chain1 = list[i][0][0]
-            chain2 = list[i][0][3]
-            if chain1 == chain2:
-                np.savetxt(filename+"_intra_chain_"+str(chain1)+".csv", list[i], delimiter=",", fmt='%s')
-            else:
-                np.savetxt(filename+"_inter_chain"+".csv", list[i], delimiter=",", fmt='%s')
-
-
 
 
 ############################ INTERACTIONS #############################
