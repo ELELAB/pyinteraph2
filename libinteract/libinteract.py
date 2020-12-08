@@ -867,7 +867,7 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     return fullmatrix
 
 
-def create_output_list(contact_list, hb=False):
+def create_output_list(contact_list):
     """Takes in a list of tuples and returns a list of arrays where the first
     array contains all contacts and subsequent arrays are split by chain"""
     array = np.array(contact_list)
@@ -875,38 +875,28 @@ def create_output_list(contact_list, hb=False):
     output.append(array)
     array_T = array.T
     chains = np.unique(array_T[0])
-    #choose which column has the second residue
-    if hb:
-        sec_res = 4
-    else:
-        sec_res = 3
     #if multiple chains are present, split the contacts by chain
     if len(chains) > 1:
 	#for each chain, add the nodes that are only in contact with the same chain
         for i in range(len(chains)):
-            logical_vector = np.logical_and(chains[i] == array_T[0], chains[i] == array_T[sec_res])
+            logical_vector = np.logical_and(chains[i] == array_T[0], chains[i] == array_T[3])
             output_chain = array[logical_vector]
             output.append(output_chain)
         #add all nodes that are in contact with different chains
-        logical_vector = array_T[0] != array_T[sec_res]
+        logical_vector = array_T[0] != array_T[3]
         output_diff_chain = array[logical_vector]
         output.append(output_diff_chain)
     #remove any empty arrays
     output = [array for array in output if array.shape[0] != 0]
     return(output)
 
-def save_output_file(list, filename, hb=False):
-    """Save the output list of arrays"""
+def save_output_file(list, filename):
     for i in range(len(list)):
         if i == 0:
             np.savetxt(filename + "_all_bonds.csv", list[i], delimiter=",", fmt='%s')
         else:
             chain1 = list[i][0][0]
-            if hb:
-                sec_res = 4
-            else:
-                sec_res = 3
-            chain2 = list[i][0][sec_res]
+            chain2 = list[i][0][3]
             if chain1 == chain2:
                 np.savetxt(filename+"_intra_chain_"+str(chain1)+".csv", list[i], delimiter=",", fmt='%s')
             else:
@@ -953,11 +943,14 @@ def do_interact(identfunc, \
     # get shortened indexes and identifiers
     short_idxs = [i[0:3] for i in idxs]
     short_ids = [i[0:3] for i in identifiers]
-    # create empty list for output
-    contact_list = []
+    # set output string and output string format
+    outstr = ""
+    outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{:3.1f}\n"
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
+    contact_list = []
+    #print(short_ids)
     for i, j in where_gt_perco:
         #print(i, j)
         #print("IDXSi", short_idxs[i])
@@ -967,6 +960,10 @@ def do_interact(identfunc, \
         res2 = short_ids[short_ids.index(short_idxs[j])]
         persistence = (percmat[i,j],)
         contact_list.append(res1 + res2 + persistence)
+
+        #outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
+        #                            segid2, resid2, resname2, idxs[j][3], \
+        #                            percmat[i,j])
     # set the full matrix to None
     fullmatrix = None
     # compute the full matrix if requestes
@@ -1065,11 +1062,13 @@ def do_hbonds(sel1, \
     # create the full matrix if requested
     if do_fullmatrix:
         fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-    # create empty list for output
-    contact_list = []
+    # set the empty output string
+    outstr = ""
     if perresidue or do_fullmatrix:
         # get the number of frames in the trajectory
         numframes = len(uni.trajectory)
+        # set the output string format
+        outstr_fmt = "{:s}{:d}:{:s}{:d}\t\t{3.2f}\n"
         # compatible with Python 3
         setlist = \
             list(set(zip(*list(zip(*list(itertools.chain(*data))))[0:2])))
@@ -1146,10 +1145,18 @@ def do_hbonds(sel1, \
             # is greater than the cut-off
 
             if hb_pers > perco:
-                res1 = identifiers[uni_id2ix[hbidentifier[0]]]
-                res2 = identifiers[uni_id2ix[hbidentifier[1]]]
-                persistence = (hb_pers,)
-                contact_list.append(res1 + res2 + persistence)
 
-    # return contact list  and full matrix
-    return (contact_list, fullmatrix)
+                res1_segid, res1_resid, res1_resname, res1_tag = \
+                    identifiers[uni_id2ix[hbidentifier[0]]]
+
+                res2_segid, res2_resid, res2_resname, res2_tag = \
+                    identifiers[uni_id2ix[hbidentifier[1]]]
+                
+                outstr += outstr_fmt.format(\
+                            res1_segid, res1_resid, res1_resname,
+                            donor_heavy_atom,
+                            res2_segid, res2_resid, res2_resname,
+                            acceptor_atom, hb_pers)
+
+    # return output string and full matrix
+    return (outstr, fullmatrix)
