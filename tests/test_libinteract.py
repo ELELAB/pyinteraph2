@@ -525,7 +525,11 @@ def test_create_table_dict_sb(do_interact_sb, ref_sb_twochains, ref_sb_chains):
    split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
    
-def test_create_matrix_dict_sb(do_interact_sb, create_table_dict_sb, simulation_twochains, ref_sb_graph_twochains, ref_sb_graph_chains):
+def test_create_matrix_dict_sb(do_interact_sb, 
+                               create_table_dict_sb, 
+                               simulation_twochains, 
+                               ref_sb_graph_twochains, 
+                               ref_sb_graph_chains):
     mat_dict = li.create_matrix_dict(do_interact_sb['matrix'],
                                      create_table_dict_sb,
                                      simulation_twochains['pdb'])
@@ -555,7 +559,11 @@ def test_create_table_dict_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
    assert(np.array_equal(first_table, split_tables) == True)
 
 
-def test_create_matrix_dict_hc(do_interact_hc, create_table_dict_hc, simulation_twochains, ref_hc_graph_twochains, ref_hc_graph_chains):
+def test_create_matrix_dict_hc(do_interact_hc, 
+                               create_table_dict_hc, 
+                               simulation_twochains, 
+                               ref_hc_graph_twochains, 
+                               ref_hc_graph_chains):
     mat_dict = li.create_matrix_dict(do_interact_hc['matrix'],
                                      create_table_dict_hc,
                                      simulation_twochains['pdb'])
@@ -586,7 +594,11 @@ def test_create_table_dict_hb(do_interact_hb, ref_hb_twochains, ref_hb_chains):
    split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-def test_create_matrix_dict_hb(do_interact_hb, create_table_dict_hb, simulation_twochains, ref_hb_graph_twochains, ref_hb_graph_chains):
+def test_create_matrix_dict_hb(do_interact_hb, 
+                               create_table_dict_hb, 
+                               simulation_twochains, 
+                               ref_hb_graph_twochains, 
+                               ref_hb_graph_chains):
     mat_dict = li.create_matrix_dict(do_interact_hb['matrix'],
                                      create_table_dict_hb,
                                      simulation_twochains['pdb'],
