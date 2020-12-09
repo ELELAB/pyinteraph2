@@ -919,9 +919,6 @@ def create_table_dict(table):
     table_cols = table_rows.T
     # Initialize output dictionary of tables
     table_dict = {"all": table_rows}
-    # Find which column positions have the chains
-    #pos1, pos2 = find_pos(table_rows)
-    print(table_rows[0])
     # Find unique chains in the table
     chains = np.unique(np.concatenate((table_cols[0], table_cols[4])))
     # If multiple chains are present, split the contacts by chain
@@ -958,8 +955,6 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
 
     # Initialize output dictionary of matrices
     mat_dict = {"all": fullmatrix}
-    # Find which column positions have the resid
-    pos1, pos2 = find_pos(table_dict["all"], name = False)
     # Map each residue id to a position in the matrix
     resids = pdb.residues.resids
     res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
@@ -971,8 +966,8 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
             matrix = np.zeros(fullmatrix.shape)
             # Get list of indexes for the matrix
             table_cols = table_dict[key].T
-            mat_i = [res_dict[i] for i in table_cols[pos1]]
-            mat_j = [res_dict[j] for j in table_cols[pos2]]
+            mat_i = [res_dict[i] for i in table_cols[1]]
+            mat_j = [res_dict[j] for j in table_cols[5]]
             # Fill the matrix with appropriate values
             matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
             matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
@@ -1249,5 +1244,4 @@ def do_hbonds(sel1, \
                 table_out.append(row)
 
     # return contact list  and full matrix
-    print(table_out)
     return table_out, fullmatrix
