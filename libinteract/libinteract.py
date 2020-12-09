@@ -867,54 +867,30 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     # return the full matrix (square matrix)
     return fullmatrix
 
-def find_pos(table, name = True):
-    """Takes in a table. If name is true, returns the index of the columns
-    that have the chain name. If name is false, returns the index of the
-    columns that have the res id.
-    """
 
-    if name:
-        arg_name = "chain name"
-        # Search for SYSTEM or any chain name between A and Z
-        positions = [i for i, elem in enumerate(table[0]) \
-                     if re.search("^[A-Z]$|^SYSTEM$", elem)]
-    else:
-        arg_name = "residue id"
-        # Search for integers only (no decimals)
-        positions = [i for i, elem in enumerate(table[0]) \
-                     if re.search("^\d+$", elem)]
-    # Make sure only two positions exist
-    num_cols = len(positions)
-    if num_cols != 2:
-        err_str = f"Incorrect number of {arg_name} columns found. " \
-            f"Expected 2 columns but found {num_cols}."
-        raise ValueError(err_str)
-    return positions
-
-def filter_by_chain(chain1, chain2, positions, table):
+def filter_by_chain(chain1, chain2, table):
     """Takes in a table, two chain names and the column number of the 
     second chain. Filters the table to only keep rows where the first 
     column contains chain1 and the second column contains chain2. 
     Returns filtered table.
     """
 
-    pos1, pos2 = positions
     # Get the rows and columns from the table
     rows = table
     cols = table.T
     # If the chains are the same, find all rows where both columns match
     # the chain
     if chain1 == chain2:
-        logical_vector = np.logical_and(chain1 == cols[pos1],
-                                        chain2 == cols[pos2])
+        logical_vector = np.logical_and(chain1 == cols[0],
+                                        chain2 == cols[4])
     else:
         #If the chains are different, check bith directions
         # Check forward direction (e.g. (A, B))
-        logical_vector1 = np.logical_and(chain1 == cols[pos1],
-                                         chain2 == cols[pos2])
+        logical_vector1 = np.logical_and(chain1 == cols[0],
+                                         chain2 == cols[4])
         # Check backward direction (e.g. (B, A))
-        logical_vector2 = np.logical_and(chain2 == cols[pos1],
-                                         chain1 == cols[pos2])
+        logical_vector2 = np.logical_and(chain2 == cols[0],
+                                         chain1 == cols[4])
         # Combine the vectors
         logical_vector = np.logical_or(logical_vector1, logical_vector2)
     # Filter rows
@@ -944,20 +920,21 @@ def create_table_dict(table):
     # Initialize output dictionary of tables
     table_dict = {"all": table_rows}
     # Find which column positions have the chains
-    pos1, pos2 = find_pos(table_rows)
+    #pos1, pos2 = find_pos(table_rows)
+    print(table_rows[0])
     # Find unique chains in the table
-    chains = np.unique(np.concatenate((table_cols[pos1], table_cols[pos2])))
+    chains = np.unique(np.concatenate((table_cols[0], table_cols[4])))
     # If multiple chains are present, split the contacts by chain
     if len(chains) > 1:
 	# For each chain, add the nodes that are only in contact with the same chain
         for chain in chains:
-            filtered_rows_intra = filter_by_chain(chain, chain, (pos1, pos2), 
+            filtered_rows_intra = filter_by_chain(chain, chain,
                                                   table_rows)
             # Check rows exist
             if filtered_rows_intra is not None:
                 table_dict[chain] = filtered_rows_intra
         # Create vector of all nodes that are in contact with different chains
-        logical_vector = table_cols[pos1] != table_cols[pos2]
+        logical_vector = table_cols[0] != table_cols[4]
         # Warn if no interchain contacts
         if logical_vector.sum() == 0:
             log.warning("No interchain contacts found")
@@ -966,7 +943,6 @@ def create_table_dict(table):
             # contact with different chains
             for chain1, chain2 in itertools.combinations(chains, 2):
                 filtered_rows_inter = filter_by_chain(chain1, chain2,
-                                                      (pos1, pos2),
                                                        table_rows)
                 # Check rows exist
                 if filtered_rows_inter is not None:
