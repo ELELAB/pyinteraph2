@@ -1042,8 +1042,8 @@ def do_interact(identfunc, \
                                mindist = mindist, \
                                mindist_mode = mindist_mode)
     # get shortened indexes and identifiers
-    short_idxs = [i[0:3] for i in idxs]
-    short_ids = [i[0:3] for i in identifiers]
+    #short_idxs = [i[0:3] for i in idxs]
+    #short_ids = [i[0:3] for i in identifiers]
     # create empty list for output
     table = []
     # get where in the lower triangle of the matrix (it is symmeric)
@@ -1054,8 +1054,8 @@ def do_interact(identfunc, \
         #print("IDXSi", short_idxs[i])
         #print("IDXSj", short_idxs[j])
 
-        res1 = short_ids[short_ids.index(short_idxs[i])]
-        res2 = short_ids[short_ids.index(short_idxs[j])]
+        res1 = idxs[i]
+        res2 = idxs[j]
         persistence = (percmat[i,j],)
         table.append(res1 + res2 + persistence)
     # set the full matrix to None
@@ -1237,6 +1237,7 @@ def do_hbonds(sel1, \
             # is greater than the cut-off
 
             if hb_pers > perco:
+                # Remove the res_tag columns
                 res1 = identifiers[uni_id2ix[hbidentifier[0]]][0:3]
                 res2 = identifiers[uni_id2ix[hbidentifier[1]]][0:3]
                 persistence = (hb_pers,)
