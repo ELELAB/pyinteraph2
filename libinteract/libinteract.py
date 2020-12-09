@@ -1260,16 +1260,18 @@ def do_hbonds(sel1, \
             # get the hydrogen bond persistence
             hb_pers = table[i][-1]*100
             # get donor heavy atom and acceptor atom
-            donor_heavy_atom = table[i][4]
-            acceptor_atom = table[i][8]
+            donor_heavy_atom = (table[i][4],)
+            acceptor_atom = (table[i][8],)
             # consider only those hydrogen bonds whose persistence
             # is greater than the cut-off
 
             if hb_pers > perco:
-                res1 = identifiers[uni_id2ix[hbidentifier[0]]]
-                res2 = identifiers[uni_id2ix[hbidentifier[1]]]
+                res1 = identifiers[uni_id2ix[hbidentifier[0]]][0:3]
+                res2 = identifiers[uni_id2ix[hbidentifier[1]]][0:3]
                 persistence = (hb_pers,)
-                table_out.append(res1 + res2 + persistence)
+                row = res1 + donor_heavy_atom + res2 + acceptor_atom + persistence
+                table_out.append(row)
 
     # return contact list  and full matrix
+    print(table_out)
     return table_out, fullmatrix
