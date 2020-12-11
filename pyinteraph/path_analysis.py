@@ -447,10 +447,10 @@ def main():
                                  sort_by = args.sort_by)
     all_paths_graph = get_graph_from_paths(all_paths)
 
-    # Save table
+    # Save all/shortest path table
     write_table(args.output, all_paths_table)
 
-    # Write matrix
+    # Save all/shortest path matrix
     path_matrix = nx.to_numpy_matrix(all_paths_graph)
     np.savetxt(f"{args.output}.dat", path_matrix)
     
@@ -462,13 +462,17 @@ def main():
                                     node_threshold = args.node_thresh, \
                                     edge_threshold = args.edge_thresh)
 
-    # Create sorted table from Metapaths
+    # Create sorted table from metapaths
     metapath_table = sort_paths(graph = metapath_graph, \
                                 paths = metapath,\
                                 sort_by = args.sort_by)
 
-    # Save table
+    # Save metapath table
     write_table("metapath", metapath_table)
+
+    # Save metapath martix
+    metapath_matrix = nx.to_numpy_matrix(metapath_graph)
+    np.savetxt(f"metapath.dat", metapath_matrix)
 
 if __name__ == "__main__":
     main()
