@@ -5,6 +5,8 @@ import networkx as nx
 import MDAnalysis as mda
 import itertools
 import re
+import matplotlib.pyplot as plt
+#import nxviz as nv
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -421,38 +423,45 @@ def main():
     identifiers, graph = build_graph(fname = args.input_matrix, \
                                      pdb = args.pdb)
 
-    # Convert user input to a list of nodes
-    source_list = convert_input_to_list(user_input = args.source, \
-                                        identifiers = identifiers, \
-                                        pdb = pdb_boolean)
-    target_list = convert_input_to_list(user_input = args.target, \
-                                        identifiers = identifiers, \
-                                        pdb = pdb_boolean)
-    
-    # Choose whether to get shortest paths or all paths
-    if args.do_paths:
-        all_paths = get_all_simple_paths(graph = graph, \
-                              source = source_list, \
-                              target = target_list, \
-                              maxl = args.maxl)
+    # Check if source and target provided
+    if args.source and args.target:
+        # Convert user input to a list of nodes
+        source_list = convert_input_to_list(user_input = args.source, \
+                                            identifiers = identifiers, \
+                                            pdb = pdb_boolean)
+        target_list = convert_input_to_list(user_input = args.target, \
+                                            identifiers = identifiers, \
+                                            pdb = pdb_boolean)
+        
+        # Choose whether to get shortest paths or all paths
+        if args.do_paths:
+            all_paths = get_all_simple_paths(graph = graph, \
+                                source = source_list, \
+                                target = target_list, \
+                                maxl = args.maxl)
+        else:
+            all_paths = get_shortest_paths(graph = graph, \
+                                        source = source_list, \
+                                        target = target_list, \
+                                        maxl = args.maxl)
+        
+        # Create sorted table from paths
+        all_paths_table = sort_paths(graph = graph, \
+                                    paths = all_paths, \
+                                    sort_by = args.sort_by)
+        all_paths_graph = get_graph_from_paths(all_paths)
+
+
+        # Save all/shortest path table
+        write_table(args.output, all_paths_table)
+
+        # Save all/shortest path matrix
+        path_matrix = nx.to_numpy_matrix(all_paths_graph)
+        np.savetxt(f"{args.output}.dat", path_matrix)
     else:
-        all_paths = get_shortest_paths(graph = graph, \
-                                    source = source_list, \
-                                    target = target_list, \
-                                    maxl = args.maxl)
-    
-    # Create sorted table from paths
-    all_paths_table = sort_paths(graph = graph, \
-                                 paths = all_paths, \
-                                 sort_by = args.sort_by)
-    all_paths_graph = get_graph_from_paths(all_paths)
-
-    # Save all/shortest path table
-    write_table(args.output, all_paths_table)
-
-    # Save all/shortest path matrix
-    path_matrix = nx.to_numpy_matrix(all_paths_graph)
-    np.savetxt(f"{args.output}.dat", path_matrix)
+        warn_str = "No target or source specified. Only metapath will" \
+            " be calculated."
+        log.warning(warn_str)
     
     # Get list of metapaths and graph of metapaths
     metapath, metapath_graph = get_metapath(\
@@ -473,6 +482,11 @@ def main():
     # Save metapath martix
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
     np.savetxt(f"metapath.dat", metapath_matrix)
+
+    # Plot graph
+    #basic plot
+    nx.draw(metapath_graph, with_labels=True, node_color = 'red')
+    plt.savefig("test.png")
 
 if __name__ == "__main__":
     main()
