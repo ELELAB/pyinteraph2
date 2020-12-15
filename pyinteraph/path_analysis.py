@@ -6,6 +6,7 @@ import MDAnalysis as mda
 import itertools
 import re
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 #import nxviz as nv
 
 def build_graph(fname, pdb = None):
@@ -313,6 +314,68 @@ def write_table(fname, table):
         for p, s, t, l, sum_w, avg_w in table:
             f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
 
+def plot_2d(graph, pdb):
+    #get color
+    nodes = np.array(graph.nodes)
+    chains = np.array([tuple(node)[0] for node in nodes])
+    a_nodes = list(nodes[chains == 'A'])
+    b_nodes = list(nodes[chains == 'B'])
+    print(a_nodes)
+    print(b_nodes)
+    weights = [graph.get_edge_data(u, v)['weight'] for u,v in graph.edges()]
+    max_w = max(weights)
+    edgewidth = [w/max_w * 3 for w in weights]
+    print(edgewidth)
+    # Get positions
+    pos = nx.spring_layout(graph, k=0.4, iterations=20)
+    #pos = nx.kamada_kawai_layout(graph)
+    nx.draw_networkx_nodes(graph, pos, nodelist = a_nodes, node_color= 'blue',
+    edgecolors='black', nodes_size = 10)
+    nx.draw_networkx_nodes(graph, pos, nodelist = b_nodes, node_color= 'red',
+    edgecolors='black', nodes_size = 10)
+    nx.draw_networkx_edges(graph, pos, width=edgewidth, 
+    #edge_color="m")
+    edge_color='black')
+    #label_options = {"ec": "k", "fc": "white", "alpha": 0.7}
+    #nx.draw_networkx_labels(graph, pos, font_size=10, bbox=label_options)
+    nx.draw_networkx_labels(graph, pos, font_size=5)
+    #nx.draw_networkx(graph, pos, with_labels = True, edgecolors='black',
+    #font_size = 3, node_size=5, width=20)
+    plt.savefig("2d.png", dpi = 200)
+
+# def _format_axes(ax):
+#     """Visualization options for the 3D axes."""
+#     # Turn gridlines off
+#     ax.grid(False)
+#     # Suppress tick labels
+#     for dim in (ax.xaxis, ax.yaxis, ax.zaxis):
+#         dim.set_ticks([])
+#     # Set axes labels
+#     ax.set_xlabel("x")
+#     ax.set_ylabel("y")
+#     ax.set_zlabel("z")
+
+# def plot_3d(G):
+#     # 3d spring layout
+#     pos = nx.spring_layout(G, dim=3, seed=779)
+#     # Extract node and edge positions from the layout
+#     node_xyz = np.array([pos[v] for v in sorted(G)])
+#     edge_xyz = np.array([(pos[u], pos[v]) for u, v in G.edges()])
+
+#     # Create the 3D figure
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection="3d")
+
+#     # Plot the nodes - alpha is scaled by "depth" automatically
+#     ax.scatter(*node_xyz.T, s=100, ec="w")
+
+#     # Plot the edges
+#     for vizedge in edge_xyz:
+#         ax.plot(*vizedge.T, color="tab:gray")
+
+#     _format_axes(ax)
+#     fig.tight_layout()
+#     plt.savefig('3d.png')
 
 def main():
 
@@ -483,10 +546,22 @@ def main():
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
     np.savetxt(f"metapath.dat", metapath_matrix)
 
-    # Plot graph
-    #basic plot
-    nx.draw(metapath_graph, with_labels=True, node_color = 'red')
-    plt.savefig("test.png")
+
+    #print(metapath_graph.nodes)
+    plot_2d(metapath_graph, args.pdb)
+    #plot_3d(metapath_graph)
+    # Plot graph (basic)
+
+
+
+    #nx.draw(metapath_graph, with_labels=False, node_color = 'red', node_size = 1,
+    #edge_color = 'blue')
+    #plt.savefig("test.png", dpi=150)
+
+    #u = mda.Universe(args.pdb)
+    #x = [res for res in u.residues]
+    #res1 = x[0]
+    #print(res1.values)
 
 if __name__ == "__main__":
     main()
