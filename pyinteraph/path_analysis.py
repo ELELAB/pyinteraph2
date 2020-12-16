@@ -324,8 +324,9 @@ def get_common_edges(graph, threshold):
     return common_edges
 
 def plot_graph(graph, pdb):
-    #get weights
+    #get attributes
     weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
+    degree = [d for n, d in graph.degree(graph.nodes())]
     # Get positions. Larger k values make the nodes spread out more
     pos = nx.spring_layout(graph, k=0.5, iterations=20)
     # Get cmap
@@ -333,9 +334,11 @@ def plot_graph(graph, pdb):
     cmap = plt.cm.plasma
     # Draw nodes, edges and labels
     nx.draw_networkx_nodes(graph, pos, node_size = 600,
-                                       node_color = 'white',
+                                       node_color = degree,
+                                       cmap = 'gray',
                                        edgecolors='black',  
-                                       linewidths = 1.5)
+                                       linewidths = 1.5,
+                                       label = degree)
     nx.draw_networkx_edges(graph, pos, edge_color= weights, edge_cmap=cmap)
     nx.draw_networkx_labels(graph, pos, font_size=8)
     # Add color bar
