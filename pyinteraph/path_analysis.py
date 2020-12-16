@@ -181,7 +181,6 @@ def get_combinations(res_id, res_space):
                     or res_id[idx1][0] != res_id[idx2][0]]
     return combinations
 
-
 def get_all_shortest_paths(graph, res_id, res_space):
     """Find all shortest paths between all combinations of nodes in the
     graph that are at least res_space distance apart.
@@ -206,6 +205,73 @@ def get_all_shortest_paths(graph, res_id, res_space):
             log.debug(f"No path found between {node1} and {node2}")
     return paths
 
+def get_graph_from_paths(paths):
+    """Takes in a list of paths and returns a corresponding graph where
+    the weight of each edge is its frequency and the weight of each node
+    is its frequency.
+    """
+
+    # Increment amount
+    inc = 1/len(paths)
+    # Build graph
+    graph = nx.Graph()
+    for path in paths:
+        for i in range(len(path) - 1):
+            # Get edge
+            node1 = path[i]
+            node2 = path[i+1]
+            # If the node already exists
+            if graph.has_edge(node1, node2):
+                # Increment node weight
+                graph.nodes()[node1]["n_weight"] += inc
+                # Add final node
+                if i == len(path) - 1:
+                    graph.nodes()[node2]["n_weight"] += inc
+                # Increment edge weight
+                graph[node1][node2]["e_weight"] += inc
+            # If edge does not exist
+            else:
+                # One of the nodes may exist so
+                # SOME DOUBLE COUNTING PRESENT, NOT SURE HOW TO FIX
+                for node in [node1, node2]:
+                    if node in graph:
+                        # Increment weight if it exists
+                        graph.nodes()[node]["n_weight"] += inc
+                    else: 
+                        # Add weight otherwise
+                        graph.add_node(node, n_weight = inc)
+                # Add edge
+                graph.add_edge(node1, node2, e_weight = inc)
+    # print([d["e_weight"] for u, v, d in graph.edges(data=True)])
+    # print([d["n_weight"] for n, d in graph.nodes(data=True)])
+    print(graph.nodes()["A4"]["n_weight"])
+    return graph
+
+def filter_metapath(graph, node_threshold, edge_threshold):
+    filterd_graph = nx.Graph()
+    for u, v, d in graph.edges(data = True):
+        if graph.nodes()[u]["n_weight"] > node_threshold and \
+           graph.nodes()[v]["n_weight"] > node_threshold and \
+           d["e_weight"] > edge_threshold:
+            filterd_graph.add_node(u, n_weight = graph.nodes()[u]["n_weight"])
+            filterd_graph.add_node(v, n_weight = graph.nodes()[v]["n_weight"])
+            filterd_graph.add_edge(u, v, e_weight = d["e_weight"])
+    if nx.is_empty(filterd_graph):
+        log.warning("No metapaths found.")
+    return filterd_graph
+
+def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
+    """???
+    """
+    
+    # Calculate all shortest paths
+    paths = get_all_shortest_paths(graph, res_id, res_space)
+    # Create graph from path list
+    paths_graph = get_graph_from_paths(paths)
+    metapath_graph = filter_metapath(paths_graph, node_threshold, edge_threshold)
+    x = 0
+    return x, metapath_graph
+
 def get_common_nodes(paths, threshold):
     """Takes in an list of paths and returns the nodes which are more 
     common than the provided threshold.
@@ -227,24 +293,7 @@ def get_common_nodes(paths, threshold):
     common_nodes = list(common_nodes)
     return common_nodes
 
-def get_graph_from_paths(paths):
-    """Takes in a list of paths and returns a corresponding graph where
-    the weight of each edge is its count.
-    """
 
-    graph = nx.Graph()
-    for path in paths:
-        for i in range(len(path) - 1):
-            # Get edge
-            node1 = path[i]
-            node2 = path[i+1]
-            # Increment weight if edge exists
-            if graph.has_edge(node1, node2):
-                graph[node1][node2]["weight"] += 1
-            # Add edge otherwise
-            else:
-                graph.add_edge(node1, node2, weight = 1)
-    return graph
 
 
 def get_common_edges(graph, threshold):
@@ -264,48 +313,48 @@ def get_common_edges(graph, threshold):
     common_edges = list(map(tuple, common_edges))
     return common_edges
 
-def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
-    """Takes in a list of paths, an edge threshold and a node threshold
-    and returns a list of metapaths where each metapath contains all 
-    nodes and edges above their respective thresholds.
-    """
+# def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
+#     """Takes in a list of paths, an edge threshold and a node threshold
+#     and returns a list of metapaths where each metapath contains all 
+#     nodes and edges above their respective thresholds.
+#     """
     
-    # Calculate all shortest paths
-    paths = get_all_shortest_paths(graph, res_id, res_space)
-    # Create graph from path list
-    paths_graph = get_graph_from_paths(paths)
+#     # Calculate all shortest paths
+#     paths = get_all_shortest_paths(graph, res_id, res_space)
+#     # Create graph from path list
+#     paths_graph = get_graph_from_paths(paths)
 
-    # Get common nodes
-    common_nodes = get_common_nodes(paths, node_threshold)
-    # Get common edges
-    common_edges = get_common_edges(paths_graph, edge_threshold)
+#     # Get common nodes
+#     common_nodes = get_common_nodes(paths, node_threshold)
+#     # Get common edges
+#     common_edges = get_common_edges(paths_graph, edge_threshold)
    
-    common_paths = []
-    if len(common_nodes) == 0:
-        # Warn if no common nodes found
-        warn_str = f"No Nodes found with a frequency higher than: {node_threshold}"
-        log.warning(warn_str)
-    elif len(common_edges) == 0:
-        # Warn if no common edges are found
-        warn_str = f"No Edges found with a frequency higher than: {edge_threshold}"
-        log.warning(warn_str)
-    # Common edges and nodes exist
-    else:
-        # Find which paths have the common nodes and edges
-        for p in paths:
-            edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
-            # Check if required nodes are in path
-            for c_node in common_nodes:
-                if c_node in p:
-                    # Check if required edges are in path
-                    for c_edge in common_edges:
-                        # Add path if not already added
-                        if c_edge in edges and p not in common_paths:
-                            common_paths.append(p)
-        # Warn if no metapaths found
-        if len(common_paths) == 0:
-            log.warning("No metapaths found.")
-    return common_paths, paths_graph
+#     common_paths = []
+#     if len(common_nodes) == 0:
+#         # Warn if no common nodes found
+#         warn_str = f"No Nodes found with a frequency higher than: {node_threshold}"
+#         log.warning(warn_str)
+#     elif len(common_edges) == 0:
+#         # Warn if no common edges are found
+#         warn_str = f"No Edges found with a frequency higher than: {edge_threshold}"
+#         log.warning(warn_str)
+#     # Common edges and nodes exist
+#     else:
+#         # Find which paths have the common nodes and edges
+#         for p in paths:
+#             edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
+#             # Check if required nodes are in path
+#             for c_node in common_nodes:
+#                 if c_node in p:
+#                     # Check if required edges are in path
+#                     for c_edge in common_edges:
+#                         # Add path if not already added
+#                         if c_edge in edges and p not in common_paths:
+#                             common_paths.append(p)
+#         # Warn if no metapaths found
+#         if len(common_paths) == 0:
+#             log.warning("No metapaths found.")
+#     return common_paths, paths_graph
 
 def write_table(fname, table):
     """Save sorted table as txt file. """
@@ -315,16 +364,12 @@ def write_table(fname, table):
 
 def plot_2d(graph, pdb):
     #get weights
-    nodes = np.array(graph.nodes)
-    weights = [graph.get_edge_data(u, v)['weight'] for u,v in graph.edges()]
-    max_w = max(weights)
-    weights_norm = [w/max_w for w in weights]
+    # nodes = np.array(graph.nodes)
+    weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
+    # max_w = max(weights)
+    # weights_norm = [w/max_w for w in weights]
     # Get positions. Larger k values make the nodes spread out more
     pos = nx.spring_layout(graph, k=0.5, iterations=20)
-    # Turn off border
-    # fig = plt.figure()
-    # ax = fig.add_subplot()
-    # ax.axis('off')
     # Get cmap
     #cmap = sns.color_palette("rocket", as_cmap=True)
     cmap = plt.cm.plasma
@@ -337,7 +382,7 @@ def plot_2d(graph, pdb):
     cbar = plt.colorbar(sm)
     cbar.set_label('Relative recurrence')
     # Save figure
-    plt.savefig("2d.png", dpi = 200)
+    plt.savefig("2d2.png", dpi = 200)
 
 
 def main():
@@ -498,16 +543,16 @@ def main():
                                     edge_threshold = args.edge_thresh)
 
     # Create sorted table from metapaths
-    metapath_table = sort_paths(graph = metapath_graph, \
-                                paths = metapath,\
-                                sort_by = args.sort_by)
+    # metapath_table = sort_paths(graph = metapath_graph, \
+    #                             paths = metapath,\
+    #                             sort_by = args.sort_by)
 
     # Save metapath table
-    write_table("metapath", metapath_table)
+    #write_table("metapath2", metapath_table)
 
     # Save metapath martix
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
-    np.savetxt(f"metapath.dat", metapath_matrix)
+    np.savetxt(f"metapath2.dat", metapath_matrix)
 
 
     #print(metapath_graph.nodes)
