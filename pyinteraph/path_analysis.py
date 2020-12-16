@@ -6,8 +6,7 @@ import MDAnalysis as mda
 import itertools
 import re
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-#import nxviz as nv
+import seaborn as sns
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -315,67 +314,31 @@ def write_table(fname, table):
             f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
 
 def plot_2d(graph, pdb):
-    #get color
+    #get weights
     nodes = np.array(graph.nodes)
-    chains = np.array([tuple(node)[0] for node in nodes])
-    a_nodes = list(nodes[chains == 'A'])
-    b_nodes = list(nodes[chains == 'B'])
-    print(a_nodes)
-    print(b_nodes)
     weights = [graph.get_edge_data(u, v)['weight'] for u,v in graph.edges()]
     max_w = max(weights)
-    edgewidth = [w/max_w * 3 for w in weights]
-    print(edgewidth)
-    # Get positions
-    pos = nx.spring_layout(graph, k=0.4, iterations=20)
-    #pos = nx.kamada_kawai_layout(graph)
-    nx.draw_networkx_nodes(graph, pos, nodelist = a_nodes, node_color= 'blue',
-    edgecolors='black', nodes_size = 10)
-    nx.draw_networkx_nodes(graph, pos, nodelist = b_nodes, node_color= 'red',
-    edgecolors='black', nodes_size = 10)
-    nx.draw_networkx_edges(graph, pos, width=edgewidth, 
-    #edge_color="m")
-    edge_color='black')
-    #label_options = {"ec": "k", "fc": "white", "alpha": 0.7}
-    #nx.draw_networkx_labels(graph, pos, font_size=10, bbox=label_options)
-    nx.draw_networkx_labels(graph, pos, font_size=5)
-    #nx.draw_networkx(graph, pos, with_labels = True, edgecolors='black',
-    #font_size = 3, node_size=5, width=20)
+    weights_norm = [w/max_w for w in weights]
+    # Get positions. Larger k values make the nodes spread out more
+    pos = nx.spring_layout(graph, k=0.5, iterations=20)
+    # Turn off border
+    # fig = plt.figure()
+    # ax = fig.add_subplot()
+    # ax.axis('off')
+    # Get cmap
+    #cmap = sns.color_palette("rocket", as_cmap=True)
+    cmap = plt.cm.plasma
+    # Draw nodes, edges and labels
+    nx.draw_networkx_nodes(graph, pos, edgecolors='black', node_size = 600, node_color = 'white', linewidths = 1.5)
+    nx.draw_networkx_edges(graph, pos, edge_color= weights, edge_cmap=cmap)
+    nx.draw_networkx_labels(graph, pos, font_size=8)
+    # Add color bar
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+    cbar = plt.colorbar(sm)
+    cbar.set_label('Relative recurrence')
+    # Save figure
     plt.savefig("2d.png", dpi = 200)
 
-# def _format_axes(ax):
-#     """Visualization options for the 3D axes."""
-#     # Turn gridlines off
-#     ax.grid(False)
-#     # Suppress tick labels
-#     for dim in (ax.xaxis, ax.yaxis, ax.zaxis):
-#         dim.set_ticks([])
-#     # Set axes labels
-#     ax.set_xlabel("x")
-#     ax.set_ylabel("y")
-#     ax.set_zlabel("z")
-
-# def plot_3d(G):
-#     # 3d spring layout
-#     pos = nx.spring_layout(G, dim=3, seed=779)
-#     # Extract node and edge positions from the layout
-#     node_xyz = np.array([pos[v] for v in sorted(G)])
-#     edge_xyz = np.array([(pos[u], pos[v]) for u, v in G.edges()])
-
-#     # Create the 3D figure
-#     fig = plt.figure()
-#     ax = fig.add_subplot(111, projection="3d")
-
-#     # Plot the nodes - alpha is scaled by "depth" automatically
-#     ax.scatter(*node_xyz.T, s=100, ec="w")
-
-#     # Plot the edges
-#     for vizedge in edge_xyz:
-#         ax.plot(*vizedge.T, color="tab:gray")
-
-#     _format_axes(ax)
-#     fig.tight_layout()
-#     plt.savefig('3d.png')
 
 def main():
 
