@@ -166,6 +166,12 @@ def sort_paths(graph, paths, sort_by):
     sorted_paths = sorted(paths, key = key, reverse = reverse)
     return sorted_paths
 
+def write_table(fname, table):
+    """Save sorted table as txt file. """
+    with open(f"{fname}.txt", "w") as f:
+        for p, s, t, l, sum_w, avg_w in table:
+            f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
+
 def get_combinations(res_id, res_space):
     """ Takes in a list of residue identifiers and returns all pairs of
     residues that are at least res_space apart if they are on the same
@@ -242,35 +248,42 @@ def get_graph_from_paths(paths):
                         graph.add_node(node, n_weight = inc)
                 # Add edge
                 graph.add_edge(node1, node2, e_weight = inc)
-    # print([d["e_weight"] for u, v, d in graph.edges(data=True)])
-    # print([d["n_weight"] for n, d in graph.nodes(data=True)])
-    print(graph.nodes()["A4"]["n_weight"])
     return graph
 
-def filter_metapath(graph, node_threshold, edge_threshold):
+def filter_graph(graph, node_threshold, edge_threshold):
+    """Takes in a graph, and returns a graph which only contains nodes
+    and edges from the provided graph that have a weight higher than
+    the provided threshold.
+    """
+
     filterd_graph = nx.Graph()
     for u, v, d in graph.edges(data = True):
+        # Check that both thresholds are met
         if graph.nodes()[u]["n_weight"] > node_threshold and \
            graph.nodes()[v]["n_weight"] > node_threshold and \
            d["e_weight"] > edge_threshold:
+            # Add node weights first
             filterd_graph.add_node(u, n_weight = graph.nodes()[u]["n_weight"])
             filterd_graph.add_node(v, n_weight = graph.nodes()[v]["n_weight"])
+            # Add edge weight
             filterd_graph.add_edge(u, v, e_weight = d["e_weight"])
+    # Warn if no edges in metapath graph
     if nx.is_empty(filterd_graph):
         log.warning("No metapaths found.")
     return filterd_graph
 
 def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
-    """???
+    """Takes in a PSN graph where weights are persistence values. Returns
+    a graph of the metapath
     """
     
     # Calculate all shortest paths
     paths = get_all_shortest_paths(graph, res_id, res_space)
     # Create graph from path list
     paths_graph = get_graph_from_paths(paths)
-    metapath_graph = filter_metapath(paths_graph, node_threshold, edge_threshold)
-    x = 0
-    return x, metapath_graph
+    # Filter graph
+    metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
+    return metapath_graph
 
 def get_common_nodes(paths, threshold):
     """Takes in an list of paths and returns the nodes which are more 
@@ -293,9 +306,6 @@ def get_common_nodes(paths, threshold):
     common_nodes = list(common_nodes)
     return common_nodes
 
-
-
-
 def get_common_edges(graph, threshold):
     """Takes in a graph where the edge weights are the count of the edge
     and returns a list of edges which are larger than the provided 
@@ -313,68 +323,19 @@ def get_common_edges(graph, threshold):
     common_edges = list(map(tuple, common_edges))
     return common_edges
 
-# def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
-#     """Takes in a list of paths, an edge threshold and a node threshold
-#     and returns a list of metapaths where each metapath contains all 
-#     nodes and edges above their respective thresholds.
-#     """
-    
-#     # Calculate all shortest paths
-#     paths = get_all_shortest_paths(graph, res_id, res_space)
-#     # Create graph from path list
-#     paths_graph = get_graph_from_paths(paths)
-
-#     # Get common nodes
-#     common_nodes = get_common_nodes(paths, node_threshold)
-#     # Get common edges
-#     common_edges = get_common_edges(paths_graph, edge_threshold)
-   
-#     common_paths = []
-#     if len(common_nodes) == 0:
-#         # Warn if no common nodes found
-#         warn_str = f"No Nodes found with a frequency higher than: {node_threshold}"
-#         log.warning(warn_str)
-#     elif len(common_edges) == 0:
-#         # Warn if no common edges are found
-#         warn_str = f"No Edges found with a frequency higher than: {edge_threshold}"
-#         log.warning(warn_str)
-#     # Common edges and nodes exist
-#     else:
-#         # Find which paths have the common nodes and edges
-#         for p in paths:
-#             edges = [(p[i], p[i+1]) for i in range(len(p) - 1)]
-#             # Check if required nodes are in path
-#             for c_node in common_nodes:
-#                 if c_node in p:
-#                     # Check if required edges are in path
-#                     for c_edge in common_edges:
-#                         # Add path if not already added
-#                         if c_edge in edges and p not in common_paths:
-#                             common_paths.append(p)
-#         # Warn if no metapaths found
-#         if len(common_paths) == 0:
-#             log.warning("No metapaths found.")
-#     return common_paths, paths_graph
-
-def write_table(fname, table):
-    """Save sorted table as txt file. """
-    with open(f"{fname}.txt", "w") as f:
-        for p, s, t, l, sum_w, avg_w in table:
-            f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
-
-def plot_2d(graph, pdb):
+def plot_graph(graph, pdb):
     #get weights
-    # nodes = np.array(graph.nodes)
     weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
-    # max_w = max(weights)
-    # weights_norm = [w/max_w for w in weights]
     # Get positions. Larger k values make the nodes spread out more
     pos = nx.spring_layout(graph, k=0.5, iterations=20)
     # Get cmap
     #cmap = sns.color_palette("rocket", as_cmap=True)
     cmap = plt.cm.plasma
     # Draw nodes, edges and labels
-    nx.draw_networkx_nodes(graph, pos, edgecolors='black', node_size = 600, node_color = 'white', linewidths = 1.5)
+    nx.draw_networkx_nodes(graph, pos, node_size = 600,
+                                       node_color = 'white',
+                                       edgecolors='black',  
+                                       linewidths = 1.5)
     nx.draw_networkx_edges(graph, pos, edge_color= weights, edge_cmap=cmap)
     nx.draw_networkx_labels(graph, pos, font_size=8)
     # Add color bar
@@ -534,42 +495,20 @@ def main():
             " be calculated."
         log.warning(warn_str)
     
-    # Get list of metapaths and graph of metapaths
-    metapath, metapath_graph = get_metapath(\
-                                    graph = graph, \
-                                    res_id = identifiers, \
-                                    res_space = args.res_space, \
-                                    node_threshold = args.node_thresh, \
-                                    edge_threshold = args.edge_thresh)
-
-    # Create sorted table from metapaths
-    # metapath_table = sort_paths(graph = metapath_graph, \
-    #                             paths = metapath,\
-    #                             sort_by = args.sort_by)
-
-    # Save metapath table
-    #write_table("metapath2", metapath_table)
+    # Get metapath graph
+    metapath_graph = get_metapath(\
+                                graph = graph, \
+                                res_id = identifiers, \
+                                res_space = args.res_space, \
+                                node_threshold = args.node_thresh, \
+                                edge_threshold = args.edge_thresh)
 
     # Save metapath martix
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
     np.savetxt(f"metapath2.dat", metapath_matrix)
 
-
-    #print(metapath_graph.nodes)
-    plot_2d(metapath_graph, args.pdb)
-    #plot_3d(metapath_graph)
     # Plot graph (basic)
-
-
-
-    #nx.draw(metapath_graph, with_labels=False, node_color = 'red', node_size = 1,
-    #edge_color = 'blue')
-    #plt.savefig("test.png", dpi=150)
-
-    #u = mda.Universe(args.pdb)
-    #x = [res for res in u.residues]
-    #res1 = x[0]
-    #print(res1.values)
+    plot_graph(metapath_graph, args.pdb)
 
 if __name__ == "__main__":
     main()
