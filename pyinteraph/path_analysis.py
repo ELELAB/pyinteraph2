@@ -7,6 +7,9 @@ import itertools
 import re
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.colors import ListedColormap
+from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -168,7 +171,7 @@ def sort_paths(graph, paths, sort_by):
 
 def write_table(fname, table):
     """Save sorted table as txt file. """
-    with open(f"{fname}.txt", "w") as f:
+    with open(fname, "w") as f:
         for p, s, t, l, sum_w, avg_w in table:
             f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
 
@@ -231,7 +234,7 @@ def get_graph_from_paths(paths):
                 # Always add first node
                 if i == 1:
                     graph.nodes()[node1]["n_weight"] += inc
-                # Increment node weight
+                # Increment second node weight
                 graph.nodes()[node2]["n_weight"] += inc
                 # Increment edge weight
                 graph[node1][node2]["e_weight"] += inc
@@ -319,31 +322,55 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
 #     common_edges = list(map(tuple, common_edges))
 #     return common_edges
 
-def plot_graph(graph, pdb):
-    #get attributes
+def plot_graph(graph, fname):
+    # Get attributes
     weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
-    degree = [d for n, d in graph.degree(graph.nodes())]
+    degree = [int(d) for n, d in graph.degree(graph.nodes())]
     # Get positions. Larger k values make the nodes spread out more
-    pos = nx.spring_layout(graph, k=0.5, iterations=20)
-    # Get cmap
-    #cmap = sns.color_palette("rocket", as_cmap=True)
-    cmap = plt.cm.plasma
+    pos = nx.spring_layout(graph, k=0.2, iterations=30)
+    # Get cmaps
+    # Gray scale
+    gray_c = sns.color_palette("gray", max(degree))
+    cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, len(gray_c))
+    #gray_c = [(0.3, 0.3, 0.3), (0.7, 0.7, 0.7)]
+    #cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, N=100)
+    # Rocket_r
+    cb = sns.color_palette("rocket_r")
+    cmap_e = LinearSegmentedColormap.from_list('cb', cb , N=100)
+    # Remove border
+    fig, ax = plt.subplots()
+    ax.axis('off')
     # Draw nodes, edges and labels
-    nx.draw_networkx_nodes(graph, pos, node_size = 600,
+    nx.draw_networkx_nodes(graph, pos, node_size = 900,
                                        node_color = degree,
-                                       cmap = 'gray',
-                                       edgecolors='black',  
-                                       linewidths = 1.5,
+                                       cmap = cmap_n,
+                                       edgecolors = 'black',
                                        label = degree)
-    nx.draw_networkx_edges(graph, pos, edge_color= weights, edge_cmap=cmap)
-    nx.draw_networkx_labels(graph, pos, font_size=8)
+    nx.draw_networkx_edges(graph, pos, edge_color = weights, 
+                                       edge_cmap=cmap_e,
+                                       edge_vmin = 0, 
+                                       edge_vmax= 1,
+                                       width = 3)
+    nx.draw_networkx_labels(graph, pos, font_size=9, font_color ='black')
+    # Resize colorbar
+    divider = make_axes_locatable(ax)
+    cax_e = divider.append_axes("right", size="5%", pad=0.2)
+    cax_n = divider.append_axes("bottom", size="5%", pad=0.2)
     # Add color bar
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
-    cbar = plt.colorbar(sm)
-    cbar.set_label('Relative recurrence')
+    # Edge color bar
+    sm_e = plt.cm.ScalarMappable(cmap=cmap_e, norm=plt.Normalize(vmin=0, 
+                                                              vmax=1))
+    cbar_e = plt.colorbar(sm_e, cax_e)
+    cbar_e.set_label('Relative recurrence')
+    # Node color bar (gray scale)
+    sm_n = plt.cm.ScalarMappable(cmap=cmap_n, norm=plt.Normalize(vmin=max(degree), 
+                                                                vmax=min(degree)))
+    cbar_n = plt.colorbar(sm_n, cax_n, 
+                          orientation = 'horizontal', 
+                          ticks = range(max(degree) + 1))
+    cbar_n.set_label('Node Degree')
     # Save figure
-    plt.savefig("2d2.png", dpi = 200)
-
+    plt.savefig(fname, dpi = 300)
 
 def main():
 
@@ -436,6 +463,13 @@ def main():
                         default = o_default,
                         help = o_helpstr)
 
+    m_default = "metapath"
+    m_helpstr = "Metapath file name"
+    parser.add_argument("-m", "--metapath-name",
+                        dest = "metapath",
+                        default = m_default,
+                        help = m_helpstr)
+
     args = parser.parse_args()
     
     # Check user input
@@ -470,11 +504,13 @@ def main():
                                 source = source_list,
                                 target = target_list,
                                 maxl = args.maxl)
+            path_type = "all"
         else:
             all_paths = get_shortest_paths(graph = graph,
                                         source = source_list,
                                         target = target_list,
                                         maxl = args.maxl)
+            path_type = "shortest"
         
         # Create sorted table from paths
         all_paths_table = sort_paths(graph = graph,
@@ -484,11 +520,11 @@ def main():
 
 
         # Save all/shortest path table
-        write_table(args.output, all_paths_table)
+        write_table(f"{path_type}_{args.output}.txt", all_paths_table)
 
         # Save all/shortest path matrix
         path_matrix = nx.to_numpy_matrix(all_paths_graph)
-        np.savetxt(f"{args.output}.dat", path_matrix)
+        np.savetxt(f"{path_type}_{args.output}.dat", path_matrix)
     else:
         warn_str = "No target or source specified. Only metapath will" \
             " be calculated."
@@ -504,10 +540,10 @@ def main():
 
     # Save metapath martix
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
-    np.savetxt(f"metapath2.dat", metapath_matrix)
+    np.savetxt(f"{args.metapath}.dat", metapath_matrix)
 
     # Plot graph (basic)
-    plot_graph(metapath_graph, args.pdb)
+    plot_graph(metapath_graph, f"{args.metapath}.png")
 
 if __name__ == "__main__":
     main()
