@@ -322,55 +322,94 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
 #     common_edges = list(map(tuple, common_edges))
 #     return common_edges
 
-def plot_graph(graph, fname):
+def plot_graph(fname, graph, hub_num):
+    """Takes in a graph and saves a png of the plot. Also takes in a hub
+    cutoff value. Nodes with a larger number of edges than the cutoff
+    are highlighted.
+    """
     # Get attributes
     weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
-    degree = [int(d) for n, d in graph.degree(graph.nodes())]
+    nodes = np.array([n for n, d in graph.degree(graph.nodes())])
+    degrees = np.array([d for n, d in graph.degree(graph.nodes())])
+    selection = degrees >= hub_num
+    hubs = nodes[selection]
+    hubs_deg = degrees[selection]
+    non_hubs = nodes[np.logical_not(selection)]
+    non_hubs_deg = degrees[np.logical_not(selection)]
+    unique_hubs = len(np.unique(hubs_deg))
     # Get positions. Larger k values make the nodes spread out more
     pos = nx.spring_layout(graph, k=0.2, iterations=30)
     # Get cmaps
-    # Gray scale
-    gray_c = sns.color_palette("gray", max(degree))
-    cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, len(gray_c))
-    #gray_c = [(0.3, 0.3, 0.3), (0.7, 0.7, 0.7)]
-    #cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, N=100)
+    #gray_c = sns.color_palette("gray", max(degrees) - hub_num + 1)
+    #cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, len(gray_c))
+        # Gray scale
+    gray_c = [(0.7, 0.7, 0.7), (0.3, 0.3, 0.3)]
+    cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, N=unique_hubs)
     # Rocket_r
     cb = sns.color_palette("rocket_r")
     cmap_e = LinearSegmentedColormap.from_list('cb', cb , N=100)
     # Remove border
     fig, ax = plt.subplots()
     ax.axis('off')
-    # Draw nodes, edges and labels
-    nx.draw_networkx_nodes(graph, pos, node_size = 900,
-                                       node_color = degree,
-                                       cmap = cmap_n,
+    # Draw non hubs
+    nx.draw_networkx_nodes(graph, pos, node_list = list(non_hubs),
+                                       node_size = 900,
+                                       node_color = 'white',
                                        edgecolors = 'black',
-                                       label = degree)
+                                       label = list(non_hubs_deg))
+    # Draw hubs
+    if unique_hubs == 1:
+        # COlor the unique hub gray
+        nx.draw_networkx_nodes(graph, pos, nodelist = list(hubs),
+                                        node_size = 900,
+                                        node_color = 'gray',
+                                        edgecolors = 'black')
+    elif unique_hubs > 1:
+        # Use colormap if more than 1 unique hubs
+        nx.draw_networkx_nodes(graph, pos, nodelist = list(hubs),
+                                        node_size = 900,
+                                        node_color = list(hubs_deg),
+                                        cmap = cmap_n,
+                                        edgecolors = 'black',
+                                        label = list(hubs_deg))
+    # Draw edges
     nx.draw_networkx_edges(graph, pos, edge_color = weights, 
-                                       edge_cmap=cmap_e,
+                                       edge_cmap = cmap_e,
                                        edge_vmin = 0, 
                                        edge_vmax= 1,
                                        width = 3)
+    # Draw labels
     nx.draw_networkx_labels(graph, pos, font_size=9, font_color ='black')
+    # Add color bar
     # Resize colorbar
     divider = make_axes_locatable(ax)
     cax_e = divider.append_axes("right", size="5%", pad=0.2)
-    cax_n = divider.append_axes("bottom", size="5%", pad=0.2)
-    # Add color bar
     # Edge color bar
     sm_e = plt.cm.ScalarMappable(cmap=cmap_e, norm=plt.Normalize(vmin=0, 
                                                               vmax=1))
     cbar_e = plt.colorbar(sm_e, cax_e)
     cbar_e.set_label('Relative recurrence')
     # Node color bar (gray scale)
-    sm_n = plt.cm.ScalarMappable(cmap=cmap_n, norm=plt.Normalize(vmin=max(degree), 
-                                                                vmax=min(degree)))
-    cbar_n = plt.colorbar(sm_n, cax_n, 
-                          orientation = 'horizontal', 
-                          ticks = range(max(degree) + 1))
-    cbar_n.set_label('Node Degree')
+    if unique_hubs > 1:
+        cax_n = divider.append_axes("bottom", size="5%", pad=0.2)
+        lo = min(hubs_deg)
+        hi = max(hubs_deg)
+        sm_n = plt.cm.ScalarMappable(cmap=cmap_n, 
+                                     norm=plt.Normalize(vmin=lo, 
+                                                        vmax=hi))
+        # Find tick spacing
+        diff = (hi-lo)/hi
+        start = lo + diff/2
+        end = hi - diff/2 + 1
+        # Add ticks
+        cbar_n = plt.colorbar(sm_n, cax_n, 
+                            orientation = 'horizontal',
+                            ticks = np.arange(start, end, diff))
+        # Add tick labels
+        cbar_n.ax.set_xticklabels(range(lo, hi + 1))
+        cbar_n.set_label('Node Degree')
     # Save figure
-    plt.savefig(fname, dpi = 300)
+    plt.savefig(fname, dpi = 100)
 
 def main():
 
@@ -470,6 +509,13 @@ def main():
                         default = m_default,
                         help = m_helpstr)
 
+    c_default = 3
+    c_helpstr = "Hub cutoff"
+    parser.add_argument("-c", "--hub-cutoff",
+                        dest = "hub",
+                        default = c_default,
+                        help = c_helpstr)
+
     args = parser.parse_args()
     
     # Check user input
@@ -543,7 +589,7 @@ def main():
     np.savetxt(f"{args.metapath}.dat", metapath_matrix)
 
     # Plot graph (basic)
-    plot_graph(metapath_graph, f"{args.metapath}.png")
+    plot_graph(f"{args.metapath}.png", metapath_graph, args.hub)
 
 if __name__ == "__main__":
     main()
