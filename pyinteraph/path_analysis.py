@@ -104,8 +104,8 @@ def get_shortest_paths(graph, source, target, maxl):
             try:
                 # Get a list of shortest paths and append to output
                 path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(\
-                                G = graph, \
-                                source = node1, \
+                                G = graph,
+                                source = node1,
                                 target = node2))
                 for p in path:
                     # Check that path is not longer than the maximum allowed length
@@ -128,9 +128,9 @@ def get_all_simple_paths(graph, source, target, maxl):
     for node1, node2 in combinations:
         # Get all simple paths for each combination of source and target
         path = list(nx.algorithms.simple_paths.all_simple_paths(\
-                        G = graph, \
-                        source = node1, \
-                        target = node2, \
+                        G = graph, 
+                        source = node1,
+                        target = node2, 
                         cutoff= maxl))
         # Only add paths to output if they exist
         for p in path:
@@ -228,23 +228,19 @@ def get_graph_from_paths(paths):
             node2 = path[i+1]
             # If the node already exists
             if graph.has_edge(node1, node2):
+                # Always add first node
+                if i == 1:
+                    graph.nodes()[node1]["n_weight"] += inc
                 # Increment node weight
-                graph.nodes()[node1]["n_weight"] += inc
-                # Add final node
-                if i == len(path) - 1:
-                    graph.nodes()[node2]["n_weight"] += inc
+                graph.nodes()[node2]["n_weight"] += inc
                 # Increment edge weight
                 graph[node1][node2]["e_weight"] += inc
             # If edge does not exist
             else:
-                # One of the nodes may exist so
-                # SOME DOUBLE COUNTING PRESENT, NOT SURE HOW TO FIX
+                # One of the nodes may already exist so
                 for node in [node1, node2]:
-                    if node in graph:
-                        # Increment weight if it exists
-                        graph.nodes()[node]["n_weight"] += inc
-                    else: 
-                        # Add weight otherwise
+                    if node not in graph:
+                        # Add weight if it exists (skip otherwise)
                         graph.add_node(node, n_weight = inc)
                 # Add edge
                 graph.add_edge(node1, node2, e_weight = inc)
@@ -285,43 +281,43 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
 
-def get_common_nodes(paths, threshold):
-    """Takes in an list of paths and returns the nodes which are more 
-    common than the provided threshold.
-    """
+# def get_common_nodes(paths, threshold):
+#     """Takes in an list of paths and returns the nodes which are more 
+#     common than the provided threshold.
+#     """
     
-    # Get length of longest path
-    maxl = max([len(p) for p in paths])
-    # Convert path list to array where all paths are equal sized
-    # Use the maximum path length as an upper bound
-    paths_array = np.array([p + [0]*(maxl-len(p)) for p in paths])
-    # Get unique nodes
-    unique_nodes = np.unique(paths_array)
-    unique_nodes = unique_nodes[unique_nodes != "0"]
-    # Get node percentage
-    node_count = np.array([(node == paths_array).sum() for node in unique_nodes])
-    node_perc = node_count/node_count.sum()
-    # Select common nodes
-    common_nodes = unique_nodes[node_perc > threshold]
-    common_nodes = list(common_nodes)
-    return common_nodes
+#     # Get length of longest path
+#     maxl = max([len(p) for p in paths])
+#     # Convert path list to array where all paths are equal sized
+#     # Use the maximum path length as an upper bound
+#     paths_array = np.array([p + [0]*(maxl-len(p)) for p in paths])
+#     # Get unique nodes
+#     unique_nodes = np.unique(paths_array)
+#     unique_nodes = unique_nodes[unique_nodes != "0"]
+#     # Get node percentage
+#     node_count = np.array([(node == paths_array).sum() for node in unique_nodes])
+#     node_perc = node_count/node_count.sum()
+#     # Select common nodes
+#     common_nodes = unique_nodes[node_perc > threshold]
+#     common_nodes = list(common_nodes)
+#     return common_nodes
 
-def get_common_edges(graph, threshold):
-    """Takes in a graph where the edge weights are the count of the edge
-    and returns a list of edges which are larger than the provided 
-    threshold.
-    """
+# def get_common_edges(graph, threshold):
+#     """Takes in a graph where the edge weights are the count of the edge
+#     and returns a list of edges which are larger than the provided 
+#     threshold.
+#     """
 
-    # Initialize arrays of edges and their count
-    edges = np.array(graph.edges)
-    counts = np.array([graph[e[0]][e[1]]["weight"] for e in edges])
-    # Calculate percentage occurance for each path
-    perc = counts/counts.sum()
-    # Choose paths larger than the threshold
-    common_edges = edges[perc > threshold]
-    # Convert array to list of tuples
-    common_edges = list(map(tuple, common_edges))
-    return common_edges
+#     # Initialize arrays of edges and their count
+#     edges = np.array(graph.edges)
+#     counts = np.array([graph[e[0]][e[1]]["weight"] for e in edges])
+#     # Calculate percentage occurance for each path
+#     perc = counts/counts.sum()
+#     # Choose paths larger than the threshold
+#     common_edges = edges[perc > threshold]
+#     # Convert array to list of tuples
+#     common_edges = list(map(tuple, common_edges))
+#     return common_edges
 
 def plot_graph(graph, pdb):
     #get attributes
@@ -455,34 +451,34 @@ def main():
         pdb_boolean = True
     
     # Load file, build graphs and get identifiers for graph nodes
-    identifiers, graph = build_graph(fname = args.input_matrix, \
+    identifiers, graph = build_graph(fname = args.input_matrix,
                                      pdb = args.pdb)
 
     # Check if source and target provided
     if args.source and args.target:
         # Convert user input to a list of nodes
-        source_list = convert_input_to_list(user_input = args.source, \
-                                            identifiers = identifiers, \
+        source_list = convert_input_to_list(user_input = args.source,
+                                            identifiers = identifiers,
                                             pdb = pdb_boolean)
-        target_list = convert_input_to_list(user_input = args.target, \
-                                            identifiers = identifiers, \
+        target_list = convert_input_to_list(user_input = args.target,
+                                            identifiers = identifiers,
                                             pdb = pdb_boolean)
         
         # Choose whether to get shortest paths or all paths
         if args.do_paths:
-            all_paths = get_all_simple_paths(graph = graph, \
-                                source = source_list, \
-                                target = target_list, \
+            all_paths = get_all_simple_paths(graph = graph,
+                                source = source_list,
+                                target = target_list,
                                 maxl = args.maxl)
         else:
-            all_paths = get_shortest_paths(graph = graph, \
-                                        source = source_list, \
-                                        target = target_list, \
+            all_paths = get_shortest_paths(graph = graph,
+                                        source = source_list,
+                                        target = target_list,
                                         maxl = args.maxl)
         
         # Create sorted table from paths
-        all_paths_table = sort_paths(graph = graph, \
-                                    paths = all_paths, \
+        all_paths_table = sort_paths(graph = graph,
+                                    paths = all_paths,
                                     sort_by = args.sort_by)
         all_paths_graph = get_graph_from_paths(all_paths)
 
@@ -500,10 +496,10 @@ def main():
     
     # Get metapath graph
     metapath_graph = get_metapath(\
-                                graph = graph, \
-                                res_id = identifiers, \
-                                res_space = args.res_space, \
-                                node_threshold = args.node_thresh, \
+                                graph = graph,
+                                res_id = identifiers,
+                                res_space = args.res_space,
+                                node_threshold = args.node_thresh,
                                 edge_threshold = args.edge_thresh)
 
     # Save metapath martix
