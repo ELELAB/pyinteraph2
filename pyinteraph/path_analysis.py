@@ -7,8 +7,7 @@ import itertools
 import re
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.colors import ListedColormap
-from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.colors as col
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def build_graph(fname, pdb = None):
@@ -171,9 +170,12 @@ def sort_paths(graph, paths, sort_by):
 
 def write_table(fname, table):
     """Save sorted table as txt file. """
+
     with open(fname, "w") as f:
-        for p, s, t, l, sum_w, avg_w in table:
-            f.write(f"{p}\t{s}\t{t}\t{l}\t{sum_w}\t{avg_w}\n")
+        for path, source, target, lengths, sum_weight, avg_weight in table:
+            line = f"{path}\t{source}\t{target}\t{lengths}" \
+                   f"\t{sum_weight}\t{avg_weight}\n"
+            f.write(line)
 
 def get_combinations(res_id, res_space):
     """ Takes in a list of residue identifiers and returns all pairs of
@@ -284,48 +286,7 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
 
-def fill_metapath_graph(graph, node_names):
-    pass
-
-# def get_common_nodes(paths, threshold):
-#     """Takes in an list of paths and returns the nodes which are more 
-#     common than the provided threshold.
-#     """
-    
-#     # Get length of longest path
-#     maxl = max([len(p) for p in paths])
-#     # Convert path list to array where all paths are equal sized
-#     # Use the maximum path length as an upper bound
-#     paths_array = np.array([p + [0]*(maxl-len(p)) for p in paths])
-#     # Get unique nodes
-#     unique_nodes = np.unique(paths_array)
-#     unique_nodes = unique_nodes[unique_nodes != "0"]
-#     # Get node percentage
-#     node_count = np.array([(node == paths_array).sum() for node in unique_nodes])
-#     node_perc = node_count/node_count.sum()
-#     # Select common nodes
-#     common_nodes = unique_nodes[node_perc > threshold]
-#     common_nodes = list(common_nodes)
-#     return common_nodes
-
-# def get_common_edges(graph, threshold):
-#     """Takes in a graph where the edge weights are the count of the edge
-#     and returns a list of edges which are larger than the provided 
-#     threshold.
-#     """
-
-#     # Initialize arrays of edges and their count
-#     edges = np.array(graph.edges)
-#     counts = np.array([graph[e[0]][e[1]]["weight"] for e in edges])
-#     # Calculate percentage occurance for each path
-#     perc = counts/counts.sum()
-#     # Choose paths larger than the threshold
-#     common_edges = edges[perc > threshold]
-#     # Convert array to list of tuples
-#     common_edges = list(map(tuple, common_edges))
-#     return common_edges
-
-def plot_graph(fname, graph, hub_num):
+def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     """Takes in a graph and saves a png of the plot. Also takes in a hub
     cutoff value. Nodes with a larger number of edges than the cutoff
     are highlighted.
@@ -343,44 +304,54 @@ def plot_graph(fname, graph, hub_num):
     # Get positions. Larger k values make the nodes spread out more
     pos = nx.spring_layout(graph, k=0.2, iterations=30)
     # Get cmaps
-    #gray_c = sns.color_palette("gray", max(degrees) - hub_num + 1)
-    #cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, len(gray_c))
-        # Gray scale
-    gray_c = [(0.7, 0.7, 0.7), (0.3, 0.3, 0.3)]
-    cmap_n = LinearSegmentedColormap.from_list('gray_c', gray_c, N=unique_hubs)
-    # Rocket_r
-    cb = sns.color_palette("rocket_r")
-    cmap_e = LinearSegmentedColormap.from_list('cb', cb , N=100)
+    # Gray scale for nodes (select how many greys to pick)
+    node_colors = sns.color_palette(col_map_n, max(degrees) - hub_num + 1)
+    cmap_n = col.LinearSegmentedColormap.from_list('node_colors', 
+                                                   node_colors, 
+                                                   N = len(node_colors))
+    # Color palette for edges
+    edge_colors = sns.color_palette(col_map_e)
+    cmap_e = col.LinearSegmentedColormap.from_list('edge_colors', 
+                                                   edge_colors, 
+                                                   N = 100)
     # Remove border
     fig, ax = plt.subplots()
     ax.axis('off')
     # Draw non hubs
-    nx.draw_networkx_nodes(graph, pos, node_list = list(non_hubs),
-                                       node_size = 900,
-                                       node_color = 'white',
-                                       edgecolors = 'black',
-                                       label = list(non_hubs_deg))
+    nx.draw_networkx_nodes(graph, 
+                           pos, 
+                           node_list = list(non_hubs),
+                           node_size = 900,
+                           node_color = 'white',
+                           edgecolors = 'black',
+                           label = list(non_hubs_deg))
     # Draw hubs
     if unique_hubs == 1:
-        # COlor the unique hub gray
-        nx.draw_networkx_nodes(graph, pos, nodelist = list(hubs),
-                                        node_size = 900,
-                                        node_color = 'gray',
-                                        edgecolors = 'black')
+        # Color the unique hub gray
+        nx.draw_networkx_nodes(graph, 
+                               pos, 
+                               nodelist = list(hubs),
+                               node_size = 900,
+                               node_color = 'gray',
+                               edgecolors = 'black')
     elif unique_hubs > 1:
         # Use colormap if more than 1 unique hubs
-        nx.draw_networkx_nodes(graph, pos, nodelist = list(hubs),
-                                        node_size = 900,
-                                        node_color = list(hubs_deg),
-                                        cmap = cmap_n,
-                                        edgecolors = 'black',
-                                        label = list(hubs_deg))
+        nx.draw_networkx_nodes(graph, 
+                               pos, 
+                               nodelist = list(hubs),
+                               node_size = 900,
+                               node_color = list(hubs_deg),
+                               cmap = cmap_n,
+                               edgecolors = 'black',
+                               label = list(hubs_deg))
     # Draw edges
-    nx.draw_networkx_edges(graph, pos, edge_color = weights, 
-                                       edge_cmap = cmap_e,
-                                       edge_vmin = 0, 
-                                       edge_vmax= 1,
-                                       width = 3)
+    nx.draw_networkx_edges(graph, 
+                           pos, 
+                           edge_color = weights, 
+                           edge_cmap = cmap_e,
+                           edge_vmin = 0, 
+                           edge_vmax= 1,
+                           width = 3)
     # Draw labels
     nx.draw_networkx_labels(graph, pos, font_size=9, font_color ='black')
     # Add color bar
@@ -389,7 +360,7 @@ def plot_graph(fname, graph, hub_num):
     cax_e = divider.append_axes("right", size="5%", pad=0.2)
     # Edge color bar
     sm_e = plt.cm.ScalarMappable(cmap=cmap_e, norm=plt.Normalize(vmin=0, 
-                                                              vmax=1))
+                                                                 vmax=1))
     cbar_e = plt.colorbar(sm_e, cax_e)
     cbar_e.set_label('Relative recurrence')
     # Node color bar (gray scale)
@@ -405,14 +376,15 @@ def plot_graph(fname, graph, hub_num):
         start = lo + diff/2
         end = hi - diff/2 + 1
         # Add ticks
-        cbar_n = plt.colorbar(sm_n, cax_n, 
-                            orientation = 'horizontal',
-                            ticks = np.arange(start, end, diff))
+        cbar_n = plt.colorbar(sm_n, 
+                              cax_n, 
+                              orientation = 'horizontal',
+                              ticks = np.arange(start, end, diff))
         # Add tick labels
         cbar_n.ax.set_xticklabels(range(lo, hi + 1))
         cbar_n.set_label('Node Degree')
     # Save figure
-    plt.savefig(fname, dpi = 100)
+    plt.savefig(fname, dpi = dpi, bbox_inches = 'tight')
 
 def main():
 
@@ -550,21 +522,21 @@ def main():
         # Choose whether to get shortest paths or all paths
         if args.do_paths:
             all_paths = get_all_simple_paths(graph = graph,
-                                source = source_list,
-                                target = target_list,
-                                maxl = args.maxl)
+                                             source = source_list,
+                                             target = target_list,
+                                             maxl = args.maxl)
             path_type = "all"
         else:
             all_paths = get_shortest_paths(graph = graph,
-                                        source = source_list,
-                                        target = target_list,
-                                        maxl = args.maxl)
+                                           source = source_list,
+                                           target = target_list,
+                                           maxl = args.maxl)
             path_type = "shortest"
         
         # Create sorted table from paths
         all_paths_table = sort_paths(graph = graph,
-                                    paths = all_paths,
-                                    sort_by = args.sort_by)
+                                     paths = all_paths,
+                                     sort_by = args.sort_by)
         all_paths_graph = get_graph_from_paths(all_paths)
 
 
@@ -580,21 +552,26 @@ def main():
         log.warning(warn_str)
     
     # Get metapath graph
-    metapath_graph = get_metapath(\
-                                graph = graph,
-                                res_id = identifiers,
-                                res_space = args.res_space,
-                                node_threshold = args.node_thresh,
-                                edge_threshold = args.edge_thresh)
+    metapath_graph = get_metapath(graph = graph,
+                                  res_id = identifiers,
+                                  res_space = args.res_space,
+                                  node_threshold = args.node_thresh,
+                                  edge_threshold = args.edge_thresh)
 
+    # Plot graph (basic)
+    plot_graph(fname = f"{args.metapath}.png", 
+               graph = metapath_graph, 
+               hub_num = args.hub,
+               col_map_e = "rocket_r",
+               col_map_n = "gray_r",
+               dpi = 100)
+    
     # Fill metapath graph with nodes for all residues
     metapath_graph.add_nodes_from(identifiers)
     # Create matrix
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
     np.savetxt(f"{args.metapath}.dat", metapath_matrix)
 
-    # Plot graph (basic)
-    plot_graph(f"{args.metapath}.png", metapath_graph, args.hub)
 
 if __name__ == "__main__":
     main()
