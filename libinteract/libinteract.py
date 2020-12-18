@@ -31,7 +31,7 @@ import struct
 import numpy as np
 import MDAnalysis as mda
 import re
-
+import os
 from libinteract import innerloops as il
 
 
@@ -955,17 +955,22 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
 
     # Initialize output dictionary of matrices
     mat_dict = {"all": fullmatrix}
-    # Map each residue id to a position in the matrix
+    # Map each residue index to a position in the matrix
+    residxs = pdb.residues.resindices
     resids = pdb.residues.resids
-    res_dict = {str(resids[i]):i for i in range(fullmatrix.shape[0])}
+    print(residxs)
+    print(resids)
+    res_dict = {str(residxs[i]):i for i in range(fullmatrix.shape[0])}
     # Create a matrix for each table and store it with the same key
-    for key in table_dict.keys():
+    for key, element in table_dict.items():
         # Exclude the all chains table
         if key != "all":
             # Create empty matrix
             matrix = np.zeros(fullmatrix.shape)
             # Get list of indexes for the matrix
-            table_cols = table_dict[key].T
+            table_cols = element.T
+            print(table_cols[1])
+            print(table_cols[5])
             mat_i = [res_dict[i] for i in table_cols[1]]
             mat_j = [res_dict[j] for j in table_cols[5]]
             # Fill the matrix with appropriate values
@@ -982,7 +987,7 @@ def save_output_dict(out_dict, filename):
     """
 
     # Remove extension from filename if present
-    filename = re.sub("\.csv$|\.dat$|\.txt$|\.tsv$", "", filename)
+    filename = os.path.splitext(filename)[0]
     # Check if the table or the matrix is being saved and change the parameters
     if out_dict["all"].dtype == float:
         ext = ".dat"
@@ -999,7 +1004,7 @@ def save_output_dict(out_dict, filename):
         # Check if only one chain is present (intrachain)
         elif len(key) == 1:
             fname = f"{filename}_intra_{key}{ext}"
-        # Check if iterchain
+        # Check if interchain
         elif len(key) == 2:
             fname = f"{filename}_inter_{key[0]}-{key[1]}{ext}"
         # Save file
