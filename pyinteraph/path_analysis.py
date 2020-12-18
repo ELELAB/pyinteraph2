@@ -7,7 +7,7 @@ import itertools
 import re
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib.colors as col
+import matplotlib.colors as mplcolors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def build_graph(fname, pdb = None):
@@ -306,12 +306,12 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     # Get cmaps
     # Gray scale for nodes (select how many greys to pick)
     node_colors = sns.color_palette(col_map_n, max(degrees) - hub_num + 1)
-    cmap_n = col.LinearSegmentedColormap.from_list('node_colors', 
+    cmap_n = mplcolors.LinearSegmentedColormap.from_list('node_colors', 
                                                    node_colors, 
                                                    N = len(node_colors))
     # Color palette for edges
     edge_colors = sns.color_palette(col_map_e)
-    cmap_e = col.LinearSegmentedColormap.from_list('edge_colors', 
+    cmap_e = mplcolors.LinearSegmentedColormap.from_list('edge_colors', 
                                                    edge_colors, 
                                                    N = 100)
     # Remove border
