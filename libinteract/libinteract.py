@@ -939,8 +939,7 @@ def create_table_dict(table):
             # For all combinations of different chains, find nodes that are in
             # contact with different chains
             for chain1, chain2 in itertools.combinations(chains, 2):
-                filtered_rows_inter = filter_by_chain(chain1, chain2,
-                                                       table_rows)
+                filtered_rows_inter = filter_by_chain(chain1, chain2, table_rows)
                 # Check rows exist
                 if filtered_rows_inter is not None:
                     name = tuple(sorted([chain1, chain2]))
@@ -955,12 +954,12 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
 
     # Initialize output dictionary of matrices
     mat_dict = {"all": fullmatrix}
-    # Map each residue index to a position in the matrix
-    residxs = pdb.residues.resindices
-    resids = pdb.residues.resids
-    print(residxs)
-    print(resids)
-    res_dict = {str(residxs[i]):i for i in range(fullmatrix.shape[0])}
+    # Get chain id
+    res_chain = pdb.residues.segids
+    # Get res number
+    res_num = pdb.residues.resids
+    # Map res id (e.g. A4) to matrix index
+    res_dict = {res_chain[i]+str(res_num[i]):i for i in range(fullmatrix.shape[0])}
     # Create a matrix for each table and store it with the same key
     for key, element in table_dict.items():
         # Exclude the all chains table
@@ -969,10 +968,11 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
             matrix = np.zeros(fullmatrix.shape)
             # Get list of indexes for the matrix
             table_cols = element.T
-            print(table_cols[1])
-            print(table_cols[5])
-            mat_i = [res_dict[i] for i in table_cols[1]]
-            mat_j = [res_dict[j] for j in table_cols[5]]
+            # Combine table cols to get dict key and check dict for index
+            mat_i = [res_dict[res] for res in np.char.add(table_cols[0], 
+                                                          table_cols[1])]
+            mat_j = [res_dict[res] for res in np.char.add(table_cols[4], 
+                                                          table_cols[5])]
             # Fill the matrix with appropriate values
             matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
             matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
