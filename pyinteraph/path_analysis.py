@@ -284,6 +284,9 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
 
+def fill_metapath_graph(graph, node_names):
+    pass
+
 # def get_common_nodes(paths, threshold):
 #     """Takes in an list of paths and returns the nodes which are more 
 #     common than the provided threshold.
@@ -584,7 +587,9 @@ def main():
                                 node_threshold = args.node_thresh,
                                 edge_threshold = args.edge_thresh)
 
-    # Save metapath martix
+    # Fill metapath graph with nodes for all residues
+    metapath_graph.add_nodes_from(identifiers)
+    # Create matrix
     metapath_matrix = nx.to_numpy_matrix(metapath_graph)
     np.savetxt(f"{args.metapath}.dat", metapath_matrix)
 
