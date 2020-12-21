@@ -300,13 +300,13 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     # Gray scale for nodes (select how many greys to pick)
     node_colors = sns.color_palette(col_map_n, max(degrees) - hub_num + 1)
     cmap_n = mplcolors.LinearSegmentedColormap.from_list('node_colors', 
-                                                   node_colors, 
-                                                   N = len(node_colors))
+                                                         node_colors, 
+                                                         N = len(node_colors))
     # Color palette for edges
     edge_colors = sns.color_palette(col_map_e)
     cmap_e = mplcolors.LinearSegmentedColormap.from_list('edge_colors', 
-                                                   edge_colors, 
-                                                   N = 100)
+                                                         edge_colors, 
+                                                         N = 100)
     # Remove border
     fig, ax = plt.subplots()
     ax.axis('off')
@@ -500,7 +500,7 @@ def main():
                         help = c_helpstr)
 
     mo_default = "metapath"
-    mo_helpstr = f"Metapath file name (default: {mo_default}.pdf)"
+    mo_helpstr = f"Metapath plot name (default: {mo_default}.pdf)"
     parser.add_argument("-mo", "--metapath-output",
                         dest = "m_out",
                         default = mo_default,
@@ -572,7 +572,7 @@ def main():
 
         # Save all/shortest path table
         print(f"Saving output: {args.p_out}")
-        write_table(f"{args.p_out}, all_paths_table)
+        write_table(f"{args.p_out}", all_paths_table)
 
         # Save all/shortest path matrix
         all_paths_graph.add_nodes_from(identifiers)
