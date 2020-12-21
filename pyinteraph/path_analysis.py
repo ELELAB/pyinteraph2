@@ -14,7 +14,7 @@ def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
 
     try:
-        data = np.loadtxt(fname)
+        adj_matrix = np.loadtxt(fname)
     except:
         errstr = f"Could not load file {fname} or wrong file format."
         raise ValueError(errstr)
@@ -33,12 +33,12 @@ def build_graph(fname, pdb = None):
     else:
         # generate automatic identifiers going from 1 to the
         # total number of residues considered
-        identifiers = [str(i) for i in range(1, data.shape[0]+1)]
+        identifiers = [str(i) for i in range(1, adj_matrix.shape[0]+1)]
     
     # generate a graph from the data loaded
-    G = nx.Graph(data)
+    G = nx.Graph(adj_matrix)
     # set the names of the graph nodes (in place)
-    node_names = dict(zip(range(data.shape[0]), identifiers))
+    node_names = dict(zip(range(adj_matrix.shape[0]), identifiers))
     nx.relabel_nodes(G, mapping = node_names, copy = False)
     # return the idenfiers and the graph
     return identifiers, G
@@ -147,9 +147,8 @@ def sort_paths(graph, paths, sort_by):
     # Calculate length of path
     lengths = [len(p) for p in paths]
     # Calculate weights of path
-    weights = \
-              [[graph[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)] \
-                  for p in paths]
+    weights = [[graph[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)] \
+                for p in paths]
     sum_weights = [np.sum(w) for w in weights]
     avg_weights = [np.mean(w) for w in weights]
     # Sort paths
@@ -186,7 +185,7 @@ def get_combinations(res_id, res_space):
     # Get all residue combinations if they are res_space distance apart
     # Or they are on different chains
     combinations = [(res_id[idx1], res_id[idx2]) for idx1, idx2 in combinations \
-                    if abs(idx1 - idx2) > res_space \
+                    if abs(idx1 - idx2) >= res_space \
                     or res_id[idx1][0] != res_id[idx2][0]]
     return combinations
 
@@ -232,7 +231,7 @@ def get_graph_from_paths(paths):
             # If the node already exists
             if graph.has_edge(node1, node2):
                 # Always add first node
-                if i == 1:
+                if i == 0:
                     graph.nodes()[node1]["n_weight"] += inc
                 # Increment second node weight
                 graph.nodes()[node2]["n_weight"] += inc
@@ -285,7 +284,7 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     return metapath_graph
 
 def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
-    """Takes in a graph and saves a png of the plot. Also takes in a hub
+    """Takes in a graph and saves a pdf of the plot. Also takes in a hub
     cutoff value. Nodes with a larger number of edges than the cutoff
     are highlighted.
     """
@@ -382,7 +381,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
         cbar_n.ax.set_xticklabels(range(lo, hi + 1))
         cbar_n.set_label('Node Degree')
     # Save figure
-    plt.savefig(fname, dpi = dpi, bbox_inches = 'tight')
+    plt.savefig(fname, dpi = dpi, bbox_inches = 'tight', format = 'pdf')
 
 def get_resnum(resstring):
     """Get the residue number from the string representing the
@@ -613,7 +612,7 @@ def main():
                                         edge_threshold = args.edge_thresh)
 
         # Plot graph (basic)
-        plot_graph(fname = f"{args.m_out}.png", 
+        plot_graph(fname = f"{args.m_out}.pdf", 
                     graph = metapath_graph, 
                     hub_num = args.hub,
                     col_map_e = "rocket_r",
