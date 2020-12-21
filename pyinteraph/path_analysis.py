@@ -23,10 +23,10 @@ def build_graph(fname, pdb = None):
         try:
             # generate a Universe object from the PDB file
             u = mda.Universe(pdb)
-        except Exception as e:
-            errstr = \
-                f"Exception caught during creation of the Universe: {e}"
-            raise ValueError(errstr)      
+        except FileNotFoundError:
+            raise FileNotFoundError(f"PDB not found: {pdb}")
+        except:
+            raise Exception(f"Could not parse pdb file: {pdb}")
         # generate identifiers for the nodes of the graph
         identifiers = [f"{r.segment.segid}{r.resnum}" for r in u.residues]
     # if the user did not provide a reference structure
@@ -43,54 +43,93 @@ def build_graph(fname, pdb = None):
     # return the idenfiers and the graph
     return identifiers, G
 
-def convert_input_to_list(user_input, identifiers, pdb = False):
+def convert_input_to_list(user_input, identifiers):
     """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
     and a list of names of all the residues (graph nodes). Replaces the 
-    range indicated by the colon with all resiues in that range and 
-    keeps all residues separated by commas. Removes duplicates. Takes in
-    a string e.g. 1,3,4:56 if no PDB file is supplied.
+    range indicated by the colon with all residues in that range and 
+    keeps all residues separated by commas. Removes duplicates.
     """
-
-    # Check if PDB file is supplied
-    if pdb:
-        # Find all residues separated by commas by
-        # replacing all colon residues with ''
-        input_comma = re.sub('\w+:\w+', '', user_input)
-        # Find all residues separated by colons
-        input_colon = re.findall('\w+:\w+', user_input)
-    else:
-        # No PDB file present
-        input_comma = re.sub('\d+:\d+', '', user_input)
-        input_colon = re.findall('\d+:\d+', user_input)
-    comma_list = input_comma.split(',')
-    # Remove empty residues
-    comma_list = [res for res in comma_list if res != '']
-    # Report if any residues are not in the PDB
-    try:
-        for res in comma_list:
-            identifiers.index(res)
-    except Exception:
-        raise ValueError(f"Residue not in PDB or incorrect format: {res}")
-    colon_replace = []
-    # Substitute range of residues with the actual residues
-    for inp in input_colon:
-        try:
-            # Create list of size two with start and end of range
-            colon_split = inp.split(':')
-            # Find the index of those res in the indentifiers list
-            index = [identifiers.index(res) for res in colon_split]
-            # Replace with the residues in that range
-            inp_replace = identifiers[index[0]:index[1]+1]
-            # Concatenate to list
-            colon_replace += inp_replace
-        except Exception:
-            # Report if the specified range does not exist in the PDB
-            raise ValueError(f"Residue range not in PDB or incorrect format: {inp}")
-    # Add both lists
-    input_list = comma_list + colon_replace
+    res_list = []
+    # Split by comma and then colon to make list of list
+    split_list = [elem.split(':') for elem in user_input.split(',')]
+    for sub_list in split_list:
+        # If list size is one, word is separated by comma
+        if len(sub_list) == 1:
+            try:
+                res = sub_list[0]
+                # Find index
+                identifiers.index(res)
+                # Append to list
+                res_list.append(res)
+            except:
+                raise ValueError(f"Residue not in PDB: {res}")
+        # If list size is 2, word is separated by a single colon
+        elif len(sub_list) == 2:
+            try:
+                # Get indexes for residue in identifiers
+                index = [identifiers.index(res) for res in sub_list]
+                # Create list with all residues in that range
+                res_range = identifiers[index[0]:index[1]+1]
+                # Concatenate with output list
+                res_list += res_range
+            except:
+                raise ValueError(f"Residue range not in PDB: {':'.join(sub_list)}")
+        # Other list sizes means multiple colons
+        else:
+            err_str = f"Incorrect format, only one ':' allowed: {':'.join(sub_list)}"
+            raise ValueError(err_str)
     # Remove duplicates
-    input_list = list(set(input_list))
-    return input_list
+    res_list = list(set(res_list))
+    return res_list
+
+# def convert_input_to_list(user_input, identifiers, pdb = False):
+#     """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
+#     and a list of names of all the residues (graph nodes). Replaces the 
+#     range indicated by the colon with all resiues in that range and 
+#     keeps all residues separated by commas. Removes duplicates. Takes in
+#     a string e.g. 1,3,4:56 if no PDB file is supplied.
+#     """
+
+#     # Check if PDB file is supplied
+#     if pdb:
+#         # Find all residues separated by commas by
+#         # replacing all colon residues with ''
+#         input_comma = re.sub('\w+:\w+', '', user_input)
+#         # Find all residues separated by colons
+#         input_colon = re.findall('\w+:\w+', user_input)
+#     else:
+#         # No PDB file present
+#         input_comma = re.sub('\d+:\d+', '', user_input)
+#         input_colon = re.findall('\d+:\d+', user_input)
+#     comma_list = input_comma.split(',')
+#     # Remove empty residues
+#     comma_list = [res for res in comma_list if res != '']
+#     # Report if any residues are not in the PDB
+#     try:
+#         for res in comma_list:
+#             identifiers.index(res)
+#     except Exception:
+#         raise ValueError(f"Residue not in PDB or incorrect format: {res}")
+#     colon_replace = []
+#     # Substitute range of residues with the actual residues
+#     for inp in input_colon:
+#         try:
+#             # Create list of size two with start and end of range
+#             colon_split = inp.split(':')
+#             # Find the index of those res in the indentifiers list
+#             index = [identifiers.index(res) for res in colon_split]
+#             # Replace with the residues in that range
+#             inp_replace = identifiers[index[0]:index[1]+1]
+#             # Concatenate to list
+#             colon_replace += inp_replace
+#         except Exception:
+#             # Report if the specified range does not exist in the PDB
+#             raise ValueError(f"Residue range not in PDB or incorrect format: {inp}")
+#     # Add both lists
+#     input_list = comma_list + colon_replace
+#     # Remove duplicates
+#     input_list = list(set(input_list))
+#     return input_list
 
 def get_shortest_paths(graph, source, target):
     """Find all shortest paths between all combinations of source and
@@ -383,16 +422,6 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     # Save figure
     plt.savefig(fname, dpi = dpi, bbox_inches = 'tight', format = 'pdf')
 
-def get_resnum(resstring):
-    """Get the residue number from the string representing the
-    residue."""
-
-    # using re to get rid of a bug where residues having a number
-    # in their name (i.e. SP2) caused the residue number to include 
-    # such number.
-    # Here, only the first instance of consecutive digits is returned
-    # (the actual residue number).
-    return re.findall(r"\d+", resstring)[0]
 
 def main():
 
@@ -529,12 +558,6 @@ def main():
         log.error("Graph adjacency matrix must be specified. Exiting ...")
         exit(1)
     
-    # Check if pdb file is present
-    if not args.pdb:
-        pdb_boolean = False
-    else:
-        pdb_boolean = True
-    
     # Load file, build graphs and get identifiers for graph nodes
     identifiers, graph = build_graph(fname = args.input_matrix,
                                      pdb = args.pdb)
@@ -554,11 +577,9 @@ def main():
         if args.source and args.target:
             # Convert user input to a list of nodes
             source_list = convert_input_to_list(user_input = args.source,
-                                                identifiers = identifiers,
-                                                pdb = pdb_boolean)
+                                                identifiers = identifiers)
             target_list = convert_input_to_list(user_input = args.target,
-                                                identifiers = identifiers,
-                                                pdb = pdb_boolean)
+                                                identifiers = identifiers)
         else:
             log.error("Source and target must be provided when calculating paths.")
             exit(1)
