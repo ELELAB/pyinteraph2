@@ -92,7 +92,7 @@ def convert_input_to_list(user_input, identifiers, pdb = False):
     input_list = list(set(input_list))
     return input_list
 
-def get_shortest_paths(graph, source, target, maxl):
+def get_shortest_paths(graph, source, target):
     """Find all shortest paths between all combinations of source and
     target.
     """
@@ -110,9 +110,7 @@ def get_shortest_paths(graph, source, target, maxl):
                                 source = node1,
                                 target = node2))
                 for p in path:
-                    # Check that path is not longer than the maximum allowed length
-                    if len(p) <= maxl:
-                        paths.append(p)
+                    paths.append(p)
             except nx.NetworkXNoPath:
                 # If no path is found log info
                 log.warning(f"No path found between {node1} and {node2}")
@@ -410,29 +408,42 @@ def main():
                         help = i_helpstr,
                         type = str)
     
-    p_helpstr = "Reference PDB file"
-    parser.add_argument("-p", "--pdb",
+    r_helpstr = "Reference PDB file"
+    parser.add_argument("-r", "--pdb",
                         dest = "pdb",
-                        help = p_helpstr,
+                        help = r_helpstr,
                         default = None,
                         type = str)
 
-    l_default = 10
-    l_helpstr = f"Maximum path length (default: {l_default})"
-    parser.add_argument("-l", "--maximum-path-length", 
-                        dest = "maxl",
+
+    p_helpstr = "Calculate shortest/all paths between source and target "\
+                "(see option -l)"
+    parser.add_argument("-p", "--path",
+                        dest = "do_path",
+                        action = "store_true",
+                        default = False,
+                        help = p_helpstr)
+    
+    l_default = "shortest"
+    l_helpstr = f"Type of path to be calculated between source and target. " \
+                f"If 'shortest' is used, calculates the shortest paths between " \
+                f"the source and target. If an integer is used, calculates " \
+                f"all paths with a length smaller than or equal to the integer " \
+                f"between the source and target (default: {l_default}"
+    parser.add_argument("-l", "--path_length", 
+                        dest = "path_l",
                         default = l_default,
-                        type = int,
+                        type = str,
                         help = l_helpstr)
 
-    s_helpstr = "Source residues for paths calculation (see option -p)"
+    s_helpstr = "Source residues for paths calculation (see option -l)"
     parser.add_argument("-s", "--source",
                         dest = "source",
                         default = None,
                         type = str,
                         help = s_helpstr)
 
-    t_helpstr = "Target residues for paths calculation (see option -p)"
+    t_helpstr = "Target residues for paths calculation (see option -l)"
     parser.add_argument("-t", "--target",
                         dest = "target",
                         default = None,
@@ -449,33 +460,33 @@ def main():
                         default = b_default,
                         help =  b_helpstr)
 
-    a_helpstr = "Calculate all simple paths between " \
-                "two residues in the graph"
-    parser.add_argument("-a", "--all-paths",
-                        dest = "do_paths",
+    po_default = "shortest_paths"
+    po_helpstr = f"Output file name for paths calculation (see option -l) " \
+                f"(default: {po_default}.txt"
+    parser.add_argument("-po", "--path-output",
+                        dest = "p_out",
+                        default = po_default,
+                        help = po_helpstr)
+
+
+    m_helpstr = "Calculate metapath"
+    parser.add_argument("-m", "--metapath",
+                        dest = "do_metapath",
                         action = "store_true",
                         default = False,
-                        help = a_helpstr)
+                        help = m_helpstr)
 
-    o_default = "paths"
-    o_helpstr = "Output file name"
-    parser.add_argument("-o", "--output",
-                        dest = "output",
-                        default = o_default,
-                        help = o_helpstr)
-
-
-    r_default  = 1
-    r_helpstr = f"During metapath calculation, only calculate paths between " \
+    g_default  = 1
+    g_helpstr = f"During metapath calculation, only calculate paths between " \
                 f"residues that are separated by this number of residues or " \
                 f"more in the protein backbone. The last residue of a chain " \
                 f"and the first residue of the subsequent chain are counted " \
-                f"as adjacent residues (default: {r_default})"
-    parser.add_argument("-r", "--residue-spacing", 
-                        dest = "res_space",
-                        default = r_default,
+                f"as adjacent residues (default: {g_default})"
+    parser.add_argument("-g", "--residue-gap", 
+                        dest = "res_gap",
+                        default = g_default,
                         type = int,
-                        help = r_helpstr)
+                        help = g_helpstr)
 
     e_default  = 0.1
     e_helpstr = f"During metapath filtering, only keep edges that occur more " \
@@ -495,25 +506,24 @@ def main():
                         type = float,
                         help = n_helpstr)
 
-
-
-    m_default = "metapath"
-    m_helpstr = "Metapath file name"
-    parser.add_argument("-m", "--metapath-name",
-                        dest = "metapath",
-                        default = m_default,
-                        help = m_helpstr)
-
     c_default = 3
-    c_helpstr = f"uUring metapath plotting, nodes with a degree higher than " \
+    c_helpstr = f"During metapath plotting, nodes with a degree higher than " \
                 f"this value are designated as hubs (default: {c_default}"
     parser.add_argument("-c", "--hub-cutoff",
                         dest = "hub",
                         default = c_default,
                         help = c_helpstr)
 
+    mo_default = "metapath"
+    mo_helpstr = f"Metapath file name (default: {mo_default}.txt"
+    parser.add_argument("-mo", "--metapath-output",
+                        dest = "m_out",
+                        default = mo_default,
+                        help = mo_helpstr)
+
     args = parser.parse_args()
     
+
     # Check user input
     if not args.input_matrix:
         # exit if the adjacency matrix was not speficied
@@ -540,29 +550,41 @@ def main():
 
     ############################## PATHS ##############################
 
-    # Check if source and target provided
-    if args.source and args.target:
-        # Convert user input to a list of nodes
-        source_list = convert_input_to_list(user_input = args.source,
-                                            identifiers = identifiers,
-                                            pdb = pdb_boolean)
-        target_list = convert_input_to_list(user_input = args.target,
-                                            identifiers = identifiers,
-                                            pdb = pdb_boolean)
-        
-        # Choose whether to get shortest paths or all paths
-        if args.do_paths:
+    if args.do_path:
+        # Check if source and target are provided
+        if args.source and args.target:
+            # Convert user input to a list of nodes
+            source_list = convert_input_to_list(user_input = args.source,
+                                                identifiers = identifiers,
+                                                pdb = pdb_boolean)
+            target_list = convert_input_to_list(user_input = args.target,
+                                                identifiers = identifiers,
+                                                pdb = pdb_boolean)
+        else:
+            log.error("Source and target must be provided when calculating paths.")
+            exit(1)
+
+        # Choost path type
+        if args.path_l == "shortest":
+            all_paths = get_shortest_paths(graph = graph,
+                                           source = source_list,
+                                           target = target_list)
+        else:
+            # Check integer is provided
+            try:
+                maxl = int(args.path_l)
+            except Exception:
+                errstr = "Integer must be specified for calculation of all " \
+                         "simple paths. Otherwise use 'shortest'"
+                raise ValueError(errstr)
+            # Calculate all simple paths:
             all_paths = get_all_simple_paths(graph = graph,
                                              source = source_list,
                                              target = target_list,
-                                             maxl = args.maxl)
-            path_type = "all"
-        else:
-            all_paths = get_shortest_paths(graph = graph,
-                                           source = source_list,
-                                           target = target_list,
-                                           maxl = args.maxl)
-            path_type = "shortest"
+                                             maxl = maxl)
+            # Change output file name if user forgets to change
+            if args.p_out == "shortest_paths":
+                args.p_out = f"all_paths_{maxl}" 
         
         # Create sorted table from paths
         all_paths_table = sort_paths(graph = graph,
@@ -572,38 +594,38 @@ def main():
 
 
         # Save all/shortest path table
-        write_table(f"{path_type}_{args.output}.txt", all_paths_table)
+        print(f"Saving output: {args.p_out}")
+        write_table(f"{args.p_out}.txt", all_paths_table)
 
         # Save all/shortest path matrix
         path_matrix = nx.to_numpy_matrix(all_paths_graph)
-        np.savetxt(f"{path_type}_{args.output}.dat", path_matrix)
-    else:
-        warn_str = "No target or source specified. Only metapath will" \
-            " be calculated."
-        log.warning(warn_str)
+        np.savetxt(f"{args.p_out}.dat", path_matrix)
+    
     
     ############################# METAPATH ############################
 
-    # Get metapath graph
-    metapath_graph = get_metapath(graph = graph,
-                                  res_id = identifiers,
-                                  res_space = args.res_space,
-                                  node_threshold = args.node_thresh,
-                                  edge_threshold = args.edge_thresh)
+    if args.do_metapath:
+        # Get metapath graph
+        metapath_graph = get_metapath(graph = graph,
+                                        res_id = identifiers,
+                                        res_space = args.res_gap,
+                                        node_threshold = args.node_thresh,
+                                        edge_threshold = args.edge_thresh)
 
-    # Plot graph (basic)
-    plot_graph(fname = f"{args.metapath}.png", 
-               graph = metapath_graph, 
-               hub_num = args.hub,
-               col_map_e = "rocket_r",
-               col_map_n = "gray_r",
-               dpi = 100)
-    
-    # Fill metapath graph with nodes for all residues
-    metapath_graph.add_nodes_from(identifiers)
-    # Create matrix
-    metapath_matrix = nx.to_numpy_matrix(metapath_graph)
-    np.savetxt(f"{args.metapath}.dat", metapath_matrix)
+        # Plot graph (basic)
+        plot_graph(fname = f"{args.m_out}.png", 
+                    graph = metapath_graph, 
+                    hub_num = args.hub,
+                    col_map_e = "rocket_r",
+                    col_map_n = "gray_r",
+                    dpi = 100)
+
+        # Fill metapath graph with nodes for all residues
+        metapath_graph.add_nodes_from(identifiers)
+        # Create matrix
+        print(f"Saving output: {args.m_out}")
+        metapath_matrix = nx.to_numpy_matrix(metapath_graph)
+        np.savetxt(f"{args.m_out}.dat", metapath_matrix)
 
 
 if __name__ == "__main__":
