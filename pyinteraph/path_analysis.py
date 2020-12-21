@@ -1,10 +1,10 @@
+import os
 import argparse
 import logging as log
 import numpy as np
 import networkx as nx
 import MDAnalysis as mda
 import itertools
-import re
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.colors as mplcolors
@@ -82,55 +82,6 @@ def convert_input_to_list(user_input, identifiers):
     res_list = list(set(res_list))
     return res_list
 
-# def convert_input_to_list(user_input, identifiers, pdb = False):
-#     """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
-#     and a list of names of all the residues (graph nodes). Replaces the 
-#     range indicated by the colon with all resiues in that range and 
-#     keeps all residues separated by commas. Removes duplicates. Takes in
-#     a string e.g. 1,3,4:56 if no PDB file is supplied.
-#     """
-
-#     # Check if PDB file is supplied
-#     if pdb:
-#         # Find all residues separated by commas by
-#         # replacing all colon residues with ''
-#         input_comma = re.sub('\w+:\w+', '', user_input)
-#         # Find all residues separated by colons
-#         input_colon = re.findall('\w+:\w+', user_input)
-#     else:
-#         # No PDB file present
-#         input_comma = re.sub('\d+:\d+', '', user_input)
-#         input_colon = re.findall('\d+:\d+', user_input)
-#     comma_list = input_comma.split(',')
-#     # Remove empty residues
-#     comma_list = [res for res in comma_list if res != '']
-#     # Report if any residues are not in the PDB
-#     try:
-#         for res in comma_list:
-#             identifiers.index(res)
-#     except Exception:
-#         raise ValueError(f"Residue not in PDB or incorrect format: {res}")
-#     colon_replace = []
-#     # Substitute range of residues with the actual residues
-#     for inp in input_colon:
-#         try:
-#             # Create list of size two with start and end of range
-#             colon_split = inp.split(':')
-#             # Find the index of those res in the indentifiers list
-#             index = [identifiers.index(res) for res in colon_split]
-#             # Replace with the residues in that range
-#             inp_replace = identifiers[index[0]:index[1]+1]
-#             # Concatenate to list
-#             colon_replace += inp_replace
-#         except Exception:
-#             # Report if the specified range does not exist in the PDB
-#             raise ValueError(f"Residue range not in PDB or incorrect format: {inp}")
-#     # Add both lists
-#     input_list = comma_list + colon_replace
-#     # Remove duplicates
-#     input_list = list(set(input_list))
-#     return input_list
-
 def get_shortest_paths(graph, source, target):
     """Find all shortest paths between all combinations of source and
     target.
@@ -207,7 +158,10 @@ def sort_paths(graph, paths, sort_by):
 def write_table(fname, table):
     """Save sorted table as txt file. """
 
-    with open(fname, "w") as f:
+    # Remove any file extensions
+    fname = os.path.splitext(fname)[0]
+    # For each line in table, add line in file
+    with open(f"{fname}.txt", "w") as f:
         for path, source, target, lengths, sum_weight, avg_weight in table:
             line = f"{path}\t{source}\t{target}\t{lengths}" \
                    f"\t{sum_weight}\t{avg_weight}\n"
@@ -327,6 +281,9 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     cutoff value. Nodes with a larger number of edges than the cutoff
     are highlighted.
     """
+
+    # Remove file extensions
+    fname = os.path.splitext(fname)[0]
     # Get attributes
     weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
     nodes = np.array([n for n, d in graph.degree(graph.nodes())])
@@ -420,7 +377,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
         cbar_n.ax.set_xticklabels(range(lo, hi + 1))
         cbar_n.set_label('Node Degree')
     # Save figure
-    plt.savefig(fname, dpi = dpi, bbox_inches = 'tight', format = 'pdf')
+    plt.savefig(f"{fname}.pdf", dpi = dpi, bbox_inches = 'tight', format = 'pdf')
 
 
 def main():
@@ -444,7 +401,7 @@ def main():
                         type = str)
 
 
-    p_helpstr = "Calculate shortest/all paths between source and target "\
+    p_helpstr = "Calculate shortest or all paths between source and target "\
                 "(see option -l)"
     parser.add_argument("-p", "--path",
                         dest = "do_path",
@@ -543,7 +500,7 @@ def main():
                         help = c_helpstr)
 
     mo_default = "metapath"
-    mo_helpstr = f"Metapath file name (default: {mo_default}.txt"
+    mo_helpstr = f"Metapath file name (default: {mo_default}.pdf)"
     parser.add_argument("-mo", "--metapath-output",
                         dest = "m_out",
                         default = mo_default,
@@ -615,9 +572,10 @@ def main():
 
         # Save all/shortest path table
         print(f"Saving output: {args.p_out}")
-        write_table(f"{args.p_out}.txt", all_paths_table)
+        write_table(f"{args.p_out}, all_paths_table)
 
         # Save all/shortest path matrix
+        all_paths_graph.add_nodes_from(identifiers)
         path_matrix = nx.to_numpy_matrix(all_paths_graph)
         np.savetxt(f"{args.p_out}.dat", path_matrix)
     
@@ -633,7 +591,7 @@ def main():
                                         edge_threshold = args.edge_thresh)
 
         # Plot graph (basic)
-        plot_graph(fname = f"{args.m_out}.pdf", 
+        plot_graph(fname = f"{args.m_out}", 
                     graph = metapath_graph, 
                     hub_num = args.hub,
                     col_map_e = "rocket_r",
