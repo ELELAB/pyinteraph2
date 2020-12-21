@@ -386,6 +386,17 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     # Save figure
     plt.savefig(fname, dpi = dpi, bbox_inches = 'tight')
 
+def get_resnum(resstring):
+    """Get the residue number from the string representing the
+    residue."""
+
+    # using re to get rid of a bug where residues having a number
+    # in their name (i.e. SP2) caused the residue number to include 
+    # such number.
+    # Here, only the first instance of consecutive digits is returned
+    # (the actual residue number).
+    return re.findall(r"\d+", resstring)[0]
+
 def main():
 
     ######################### ARGUMENT PARSER #########################
@@ -414,37 +425,19 @@ def main():
                         type = int,
                         help = l_helpstr)
 
-    r_default  = 1
-    r_helpstr = f"Residue spacing (default: {r_default})"
-    parser.add_argument("-r", "--residue-spacing", 
-                        dest = "res_space",
-                        default = r_default,
-                        type = int,
-                        help = r_helpstr)
+    s_helpstr = "Source residues for paths calculation (see option -p)"
+    parser.add_argument("-s", "--source",
+                        dest = "source",
+                        default = None,
+                        type = str,
+                        help = s_helpstr)
 
-    e_default  = 0.1
-    e_helpstr = f"Edge threshold (default: {e_default})"
-    parser.add_argument("-e", "--edge-threshold", 
-                        dest = "edge_thresh",
-                        default = e_default,
-                        type = float,
-                        help = e_helpstr)
-
-    n_default  = 0.1
-    n_helpstr = f"Node threshold (default: {n_default})"
-    parser.add_argument("-n", "--node-threshold", 
-                        dest = "node_thresh",
-                        default = n_default,
-                        type = float,
-                        help = n_helpstr)
-
-    a_helpstr = "Calculate all simple paths between " \
-                "two residues in the graph"
-    parser.add_argument("-a", "--all-paths",
-                        dest = "do_paths",
-                        action = "store_true",
-                        default = False,
-                        help = a_helpstr)
+    t_helpstr = "Target residues for paths calculation (see option -p)"
+    parser.add_argument("-t", "--target",
+                        dest = "target",
+                        default = None,
+                        type = str,
+                        help = t_helpstr)
 
     b_choices = ["length", "cumulative_weight", "avg_weight"]
     b_default = "length"
@@ -456,19 +449,13 @@ def main():
                         default = b_default,
                         help =  b_helpstr)
 
-    s_helpstr = "Source residue for paths calculation (see option -p)"
-    parser.add_argument("-s", "--source",
-                        dest = "source",
-                        default = None,
-                        type = str,
-                        help = s_helpstr)
-
-    t_helpstr = "Target residue for paths calculation (see option -p)"
-    parser.add_argument("-t", "--target",
-                        dest = "target",
-                        default = None,
-                        type = str,
-                        help = t_helpstr)
+    a_helpstr = "Calculate all simple paths between " \
+                "two residues in the graph"
+    parser.add_argument("-a", "--all-paths",
+                        dest = "do_paths",
+                        action = "store_true",
+                        default = False,
+                        help = a_helpstr)
 
     o_default = "paths"
     o_helpstr = "Output file name"
@@ -476,6 +463,39 @@ def main():
                         dest = "output",
                         default = o_default,
                         help = o_helpstr)
+
+
+    r_default  = 1
+    r_helpstr = f"During metapath calculation, only calculate paths between " \
+                f"residues that are separated by this number of residues or " \
+                f"more in the protein backbone. The last residue of a chain " \
+                f"and the first residue of the subsequent chain are counted " \
+                f"as adjacent residues (default: {r_default})"
+    parser.add_argument("-r", "--residue-spacing", 
+                        dest = "res_space",
+                        default = r_default,
+                        type = int,
+                        help = r_helpstr)
+
+    e_default  = 0.1
+    e_helpstr = f"During metapath filtering, only keep edges that occur more " \
+                f"frequently than this value (default: {e_default})"
+    parser.add_argument("-e", "--edge-threshold", 
+                        dest = "edge_thresh",
+                        default = e_default,
+                        type = float,
+                        help = e_helpstr)
+
+    n_default  = 0.1
+    n_helpstr = f"During metapath filtering, only keep nodes that occur more " \
+                f"frequently than this value (default: {n_default})"
+    parser.add_argument("-n", "--node-threshold", 
+                        dest = "node_thresh",
+                        default = n_default,
+                        type = float,
+                        help = n_helpstr)
+
+
 
     m_default = "metapath"
     m_helpstr = "Metapath file name"
@@ -485,7 +505,8 @@ def main():
                         help = m_helpstr)
 
     c_default = 3
-    c_helpstr = "Hub cutoff"
+    c_helpstr = f"uUring metapath plotting, nodes with a degree higher than " \
+                f"this value are designated as hubs (default: {c_default}"
     parser.add_argument("-c", "--hub-cutoff",
                         dest = "hub",
                         default = c_default,
@@ -508,6 +529,16 @@ def main():
     # Load file, build graphs and get identifiers for graph nodes
     identifiers, graph = build_graph(fname = args.input_matrix,
                                      pdb = args.pdb)
+
+    # get graph nodes and edges
+    nodes = graph.nodes()
+    edges = graph.edges()
+    # print nodes
+    print(f"Graph loaded! {len(nodes)} nodes, {len(edges)} edges")
+    print("Node list:")
+    print(np.array(identifiers))
+
+    ############################## PATHS ##############################
 
     # Check if source and target provided
     if args.source and args.target:
@@ -551,6 +582,8 @@ def main():
             " be calculated."
         log.warning(warn_str)
     
+    ############################# METAPATH ############################
+
     # Get metapath graph
     metapath_graph = get_metapath(graph = graph,
                                   res_id = identifiers,
