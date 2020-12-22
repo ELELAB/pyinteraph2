@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import logging as log
 import numpy as np
@@ -95,8 +96,8 @@ def get_persistence_graph(graph, paths, identifiers):
     for p in paths:
         pers_graph.add_path(p)
     # Add all edge weights
-    for u, v in pers_graph.edges():
-        pers_graph[u][v]['weight'] = graph[u][v]['weight']
+    edge_weights = [(u, v, graph[u][v]['weight']) for u, v in pers_graph.edges()]
+    pers_graph.add_weighted_edges_from(edge_weights)
     # Add all remaining nodes
     pers_graph.add_nodes_from(identifiers)
     return pers_graph
@@ -139,7 +140,7 @@ def get_all_simple_paths(graph, source, target, maxl):
         path = list(nx.algorithms.simple_paths.all_simple_paths(G = graph, 
                                                                 source = node1,
                                                                 target = node2, 
-                                                                cutoff= maxl))
+                                                                cutoff = maxl))
         # Only add paths to output if they exist
         for p in path:
             if len(p) > 0:
@@ -540,9 +541,9 @@ def main():
     nodes = graph.nodes()
     edges = graph.edges()
     # print nodes
-    print(f"Graph loaded! {len(nodes)} nodes, {len(edges)} edges")
-    print("Node list:")
-    print(np.array(identifiers))
+    info = f"Graph loaded! {len(nodes)} nodes, {len(edges)} edges\n" \
+           f"Node list:\n{np.array(identifiers)}\n"
+    sys.stdout.write(info)
 
     ############################## PATHS ##############################
 
@@ -569,7 +570,7 @@ def main():
                 maxl = int(args.path_l)
             except Exception:
                 errstr = "Integer must be specified for calculation of all " \
-                         "simple paths. Otherwise use 'shortest'"
+                         "simple paths. Otherwise use 'shortest'."
                 raise ValueError(errstr)
             # Calculate all simple paths:
             all_paths = get_all_simple_paths(graph = graph,
@@ -590,7 +591,7 @@ def main():
                                      sort_by = args.sort_by)
 
         # Save all/shortest path table
-        print(f"Saving output: {args.p_out}")
+        sys.stdout.write(f"Saving output: {args.p_out}")
         write_table(f"{args.p_out}", all_paths_table)
 
         # Save all/shortest path matrix
@@ -619,7 +620,7 @@ def main():
         # Fill metapath graph with nodes for all residues
         metapath_graph.add_nodes_from(identifiers)
         # Create matrix
-        print(f"Saving output: {args.m_out}")
+        sys.stdout.write(f"Saving output: {args.m_out}")
         metapath_matrix = nx.to_numpy_matrix(metapath_graph)
         np.savetxt(f"{args.m_out}.dat", metapath_matrix)
 
