@@ -82,6 +82,25 @@ def convert_input_to_list(user_input, identifiers):
     res_list = list(set(res_list))
     return res_list
 
+
+def get_persistence_graph(graph, paths, identifiers):
+    """Takes in a PSN graph, a list of paths and a list of nodes in the 
+    PSN and returns a new graph of paths where each edge corresponds to 
+    persistence value of the original PSN. All nodes from the PSN are
+    also included in the output graph.
+    """
+
+    pers_graph = nx.Graph()
+    # Add all paths
+    for p in paths:
+        pers_graph.add_path(p)
+    # Add all edge weights
+    for u, v in pers_graph.edges():
+        pers_graph[u][v]['weight'] = graph[u][v]['weight']
+    # Add all remaining nodes
+    pers_graph.add_nodes_from(identifiers)
+    return pers_graph
+
 def get_shortest_paths(graph, source, target):
     """Find all shortest paths between all combinations of source and
     target.
@@ -95,7 +114,7 @@ def get_shortest_paths(graph, source, target):
         if node1 != node2:
             try:
                 # Get a list of shortest paths and append to output
-                path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(\
+                path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(
                                 G = graph,
                                 source = node1,
                                 target = node2))
@@ -117,19 +136,18 @@ def get_all_simple_paths(graph, source, target, maxl):
     paths = []
     for node1, node2 in combinations:
         # Get all simple paths for each combination of source and target
-        path = list(nx.algorithms.simple_paths.all_simple_paths(\
-                        G = graph, 
-                        source = node1,
-                        target = node2, 
-                        cutoff= maxl))
+        path = list(nx.algorithms.simple_paths.all_simple_paths(G = graph, 
+                                                                source = node1,
+                                                                target = node2, 
+                                                                cutoff= maxl))
         # Only add paths to output if they exist
         for p in path:
             if len(p) > 0:
                 paths.append(p)
-    return paths
+    return paths, pers_graph
 
 def sort_paths(graph, paths, sort_by):
-    """Takes in a list of paths and sorts them."""
+    """Takes in a list of paths and returns a table of sorted paths"""
     
     # Get source and target
     source = [p[0] for p in paths]
@@ -195,11 +213,11 @@ def get_all_shortest_paths(graph, res_id, res_space):
         try:
             # Get a list of shortest paths and append to output
             path = list(nx.algorithms.shortest_paths.generic.all_shortest_paths(\
-                            G = graph, \
-                            source = node1, \
+                            G = graph,
+                            source = node1,
                             target = node2))
             for p in path:
-                # Check that path is not longer than the maximum allowed length
+                # Add path to output
                 paths.append(p)
         except Exception:
             # If no path is found log info
@@ -563,20 +581,21 @@ def main():
             if args.p_out == "shortest_paths":
                 args.p_out = f"all_paths_{maxl}" 
         
+        # Get persistence graph
+        pers_graph = get_persistence_graph(graph = graph, 
+                                           paths = all_paths, 
+                                           identifiers = identifiers)
         # Create sorted table from paths
         all_paths_table = sort_paths(graph = graph,
                                      paths = all_paths,
                                      sort_by = args.sort_by)
-        all_paths_graph = get_graph_from_paths(all_paths)
-
 
         # Save all/shortest path table
         print(f"Saving output: {args.p_out}")
         write_table(f"{args.p_out}", all_paths_table)
 
         # Save all/shortest path matrix
-        all_paths_graph.add_nodes_from(identifiers)
-        path_matrix = nx.to_numpy_matrix(all_paths_graph)
+        path_matrix = nx.to_numpy_matrix(pers_graph)
         np.savetxt(f"{args.p_out}.dat", path_matrix)
     
     
