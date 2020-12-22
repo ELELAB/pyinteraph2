@@ -50,6 +50,7 @@ def convert_input_to_list(user_input, identifiers):
     range indicated by the colon with all residues in that range and 
     keeps all residues separated by commas. Removes duplicates.
     """
+    
     res_list = []
     # Split by comma and then colon to make list of list
     split_list = [elem.split(':') for elem in user_input.split(',')]
@@ -68,13 +69,20 @@ def convert_input_to_list(user_input, identifiers):
         elif len(sub_list) == 2:
             try:
                 # Get indexes for residue in identifiers
-                index = [identifiers.index(res) for res in sub_list]
-                # Create list with all residues in that range
-                res_range = identifiers[index[0]:index[1]+1]
-                # Concatenate with output list
-                res_list += res_range
+                u_idx, v_idx = [identifiers.index(res) for res in sub_list]
             except:
                 raise ValueError(f"Residue range not in PDB: {':'.join(sub_list)}")
+            # Check if order of residues is reversed
+            if u_idx >= v_idx:
+                raise ValueError(f"Range not specified correctly: {':'.join(sub_list)}")
+            try:
+                # This block should not cause an error
+                # Create list with all residues in that range
+                res_range = identifiers[u_idx:v_idx + 1]
+                # Concatenate with output list
+                res_list += res_range
+            except Exception as e:
+                raise e
         # Other list sizes means multiple colons
         else:
             err_str = f"Incorrect format, only one ':' allowed: {':'.join(sub_list)}"
