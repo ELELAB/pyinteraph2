@@ -144,7 +144,7 @@ def get_all_simple_paths(graph, source, target, maxl):
         for p in path:
             if len(p) > 0:
                 paths.append(p)
-    return paths, pers_graph
+    return paths
 
 def sort_paths(graph, paths, sort_by):
     """Takes in a list of paths and returns a table of sorted paths"""
@@ -418,7 +418,7 @@ def main():
                         default = None,
                         type = str)
 
-
+    # Path analysis
     p_helpstr = "Calculate shortest or all paths between source and target "\
                 "(see option -l)"
     parser.add_argument("-p", "--path",
@@ -471,7 +471,7 @@ def main():
                         default = po_default,
                         help = po_helpstr)
 
-
+    # Metapath
     m_helpstr = "Calculate metapath"
     parser.add_argument("-m", "--metapath",
                         dest = "do_metapath",
@@ -604,18 +604,18 @@ def main():
     if args.do_metapath:
         # Get metapath graph
         metapath_graph = get_metapath(graph = graph,
-                                        res_id = identifiers,
-                                        res_space = args.res_gap,
-                                        node_threshold = args.node_thresh,
-                                        edge_threshold = args.edge_thresh)
+                                      res_id = identifiers,
+                                      res_space = args.res_gap,
+                                      node_threshold = args.node_thresh,
+                                      edge_threshold = args.edge_thresh)
 
         # Plot graph (basic)
         plot_graph(fname = f"{args.m_out}", 
-                    graph = metapath_graph, 
-                    hub_num = args.hub,
-                    col_map_e = "rocket_r",
-                    col_map_n = "gray_r",
-                    dpi = 100)
+                   graph = metapath_graph, 
+                   hub_num = args.hub,
+                   col_map_e = "rocket_r",
+                   col_map_n = "gray_r",
+                   dpi = 100)
 
         # Fill metapath graph with nodes for all residues
         metapath_graph.add_nodes_from(identifiers)
