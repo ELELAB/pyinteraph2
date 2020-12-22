@@ -7,7 +7,7 @@ import MDAnalysis as mda
 import itertools
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib.colors as mplcolors
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def build_graph(fname, pdb = None):
@@ -316,15 +316,14 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     pos = nx.spring_layout(graph, k=0.2, iterations=30)
     # Get cmaps
     # Gray scale for nodes (select how many greys to pick)
-    node_colors = sns.color_palette(col_map_n, max(degrees) - hub_num + 1)
-    cmap_n = mplcolors.LinearSegmentedColormap.from_list('node_colors', 
-                                                         node_colors, 
-                                                         N = len(node_colors))
+    node_colors = sns.color_palette(palette = col_map_n, 
+                                    n_colors = max(degrees) - hub_num + 1)
+    cmap_n = LinearSegmentedColormap.from_list(name = 'node_colors', 
+                                               colors = node_colors, 
+                                               N = len(node_colors))
     # Color palette for edges
-    edge_colors = sns.color_palette(col_map_e)
-    cmap_e = mplcolors.LinearSegmentedColormap.from_list('edge_colors', 
-                                                         edge_colors, 
-                                                         N = 100)
+    edge_colors = sns.color_palette(palette = col_map_e, n_colors =  256)
+    cmap_e = ListedColormap(edge_colors, name = 'edge_colors', N = 256)
     # Remove border
     fig, ax = plt.subplots()
     ax.axis('off')
