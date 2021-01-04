@@ -599,7 +599,7 @@ def main():
                                      sort_by = args.sort_by)
 
         # Save all/shortest path table
-        sys.stdout.write(f"Saving output: {args.p_out}")
+        sys.stdout.write(f"Saving output: {args.p_out}\n")
         write_table(f"{args.p_out}", all_paths_table)
 
         # Save all/shortest path matrix
@@ -628,7 +628,7 @@ def main():
         # Fill metapath graph with nodes for all residues
         metapath_graph.add_nodes_from(identifiers)
         # Create matrix
-        sys.stdout.write(f"Saving output: {args.m_out}")
+        sys.stdout.write(f"Saving output: {args.m_out}\n")
         metapath_matrix = nx.to_numpy_matrix(metapath_graph)
         np.savetxt(f"{args.m_out}.dat", metapath_matrix)
 
