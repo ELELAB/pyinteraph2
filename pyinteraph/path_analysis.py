@@ -372,7 +372,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
                                edgecolors = 'black')
         # Add label for single unique hub (temporary, fix later)
         label = matplotlib.patches.Patch(color='gray', label=np.unique(hubs_deg)[0])
-        plt.legend(handles=[label],)
+        plt.legend(handles=[label], title="Node degree")
 
     # If more than one unique hub, add colorbar
     if unique_hubs > 1:
