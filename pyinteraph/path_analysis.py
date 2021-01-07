@@ -415,12 +415,10 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     if unique_hubs > 1:
         # colorbar start pos and end pos
         # extend past actual range by 0.5 to center ticks
-        print(hubs_deg)
         start = min(hubs_deg) - 0.5
         end = max(hubs_deg) + 0.5
         # shift ticks by 0.5 so they align
         tick_pos = np.arange(start, end) + 0.5
-        print(tick_pos)
         # Colormap position
         cax_n = divider.append_axes("bottom", size="5%", pad=0.2)
         # Scalar mapper oject
