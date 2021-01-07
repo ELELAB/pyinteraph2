@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -291,7 +292,28 @@ def filter_graph(graph, node_threshold, edge_threshold):
         log.warning("No metapaths found.")
     return filterd_graph
 
-def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
+def normalize_graph(graph, normalize):
+    """Takes in a graph where all weights ranged between 0 to 1 and 
+    returns a graph where all weights are normalized (divided by max
+    weight)
+    """
+    normalized_graph = nx.Graph()
+    # Get max weights for nodes and edges
+    max_edge = max([d["e_weight"] for u, v, d in graph.edges(data = True)])
+    max_node = max([d["n_weight"] for n, d in graph.nodes(data=True)])
+    
+    for u, v, d in graph.edges(data = True):
+        # Add nodes first
+        normalized_graph.add_node(u, n_weight = \
+                                    graph.nodes()[u]["n_weight"]/max_node)
+        normalized_graph.add_node(v, n_weight = \
+                                    graph.nodes()[v]["n_weight"]/max_node)
+        # Add edge
+        normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge)
+    return normalized_graph
+
+
+def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, normalize):
     """Takes in a PSN graph where weights are persistence values. Returns
     a graph of the metapath
     """
@@ -300,6 +322,9 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold):
     paths = get_all_shortest_paths(graph, res_id, res_space)
     # Create graph from path list
     paths_graph = get_graph_from_paths(paths)
+    # Normalize graph
+    if normalize:
+        paths_graph = normalize_graph(paths_graph, normalize)
     # Filter graph
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
@@ -345,11 +370,16 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
                                node_size = 900,
                                node_color = 'gray',
                                edgecolors = 'black')
-    elif unique_hubs > 1:
+        # Add label for single unique hub (temporary, fix later)
+        label = matplotlib.patches.Patch(color='gray', label=np.unique(hubs_deg)[0])
+        plt.legend(handles=[label],)
+
+    # If more than one unique hub, add colorbar
+    if unique_hubs > 1:
         # Use colormap if more than 1 unique hubs
         # Gray scale for nodes (select how many greys to pick)
         node_colors = sns.color_palette(palette = col_map_n, 
-                                        n_colors = max(degrees) - hub_num + 1)
+                                        n_colors = unique_hubs)
 
         cmap_n = LinearSegmentedColormap.from_list(name = 'node_colors', 
                                                    colors = node_colors, 
@@ -383,23 +413,26 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     cbar_e.set_label('Relative recurrence')
     # Node color bar (gray scale)
     if unique_hubs > 1:
+        # colorbar start pos and end pos
+        # extend past actual range by 0.5 to center ticks
+        print(hubs_deg)
+        start = min(hubs_deg) - 0.5
+        end = max(hubs_deg) + 0.5
+        # shift ticks by 0.5 so they align
+        tick_pos = np.arange(start, end) + 0.5
+        print(tick_pos)
+        # Colormap position
         cax_n = divider.append_axes("bottom", size="5%", pad=0.2)
-        lo = min(hubs_deg)
-        hi = max(hubs_deg)
+        # Scalar mapper oject
         sm_n = plt.cm.ScalarMappable(cmap=cmap_n, 
-                                     norm=plt.Normalize(vmin=lo, 
-                                                        vmax=hi))
-        # Find tick spacing
-        diff = (hi-lo)/hi
-        start = lo + diff/2
-        end = hi - diff/2 + 1
-        # Add ticks
+                                     norm=plt.Normalize(vmin=start, 
+                                                        vmax=end))
         cbar_n = plt.colorbar(sm_n, 
                               cax_n, 
                               orientation = 'horizontal',
-                              ticks = np.arange(start, end, diff))
+                              ticks = tick_pos)
         # Add tick labels
-        cbar_n.ax.set_xticklabels(range(lo, hi + 1))
+        #cbar_n.ax.set_xticklabels(range(lo, hi + 1))
         cbar_n.set_label('Node Degree')
     # Save figure
     plt.savefig(f"{fname}.pdf", dpi = dpi, bbox_inches = 'tight', format = 'pdf')
@@ -486,7 +519,15 @@ def main():
                         default = False,
                         help = m_helpstr)
 
-    g_default  = 1
+    w_helpstr = f"During metapath calculation, normalize the edge and node" \
+                f"weights"
+    parser.add_argument("-w", "--normalize-weights",
+                        dest = "do_normalize",
+                        action = "store_true",
+                        default = False,
+                        help = w_helpstr)
+
+    g_default  = 2
     g_helpstr = f"During metapath calculation, only calculate paths between " \
                 f"residues that are separated by this number of residues or " \
                 f"more in the protein backbone. The last residue of a chain " \
@@ -531,6 +572,7 @@ def main():
                         dest = "m_out",
                         default = mo_default,
                         help = mo_helpstr)
+    
 
     args = parser.parse_args()
     
@@ -615,7 +657,8 @@ def main():
                                       res_id = identifiers,
                                       res_space = args.res_gap,
                                       node_threshold = args.node_thresh,
-                                      edge_threshold = args.edge_thresh)
+                                      edge_threshold = args.edge_thresh,
+                                      normalize = args.do_normalize)
 
         # If metapath found
         if not nx.is_empty(metapath_graph):
