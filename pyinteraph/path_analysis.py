@@ -309,8 +309,6 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     are highlighted.
     """
 
-    # Remove file extensions
-    fname = os.path.splitext(fname)[0]
     # Get attributes
     weights = [d["e_weight"] for u, v, d in graph.edges(data=True)]
     nodes = np.array([n for n, d in graph.degree(graph.nodes())])
@@ -323,14 +321,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     unique_hubs = len(np.unique(hubs_deg))
     # Get positions. Larger k values make the nodes spread out more
     pos = nx.spring_layout(graph, k=0.2, iterations=30)
-    # Get cmaps
-    # Gray scale for nodes (select how many greys to pick)
-    node_colors = sns.color_palette(palette = col_map_n, 
-                                    n_colors = max(degrees) - hub_num + 1)
-    cmap_n = LinearSegmentedColormap.from_list(name = 'node_colors', 
-                                               colors = node_colors, 
-                                               N = len(node_colors))
-    # Color palette for edges
+    # Get cmap for edges
     edge_colors = sns.color_palette(palette = col_map_e, n_colors =  256)
     cmap_e = ListedColormap(edge_colors, name = 'edge_colors', N = 256)
     # Remove border
@@ -355,6 +346,13 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
                                edgecolors = 'black')
     elif unique_hubs > 1:
         # Use colormap if more than 1 unique hubs
+        # Gray scale for nodes (select how many greys to pick)
+        node_colors = sns.color_palette(palette = col_map_n, 
+                                        n_colors = max(degrees) - hub_num + 1)
+
+        cmap_n = LinearSegmentedColormap.from_list(name = 'node_colors', 
+                                                   colors = node_colors, 
+                                                   N = len(node_colors))
         nx.draw_networkx_nodes(graph, 
                                pos, 
                                nodelist = list(hubs),
@@ -523,6 +521,7 @@ def main():
     parser.add_argument("-c", "--hub-cutoff",
                         dest = "hub",
                         default = c_default,
+                        type = int,
                         help = c_helpstr)
 
     mo_default = "metapath"
@@ -617,20 +616,24 @@ def main():
                                       node_threshold = args.node_thresh,
                                       edge_threshold = args.edge_thresh)
 
-        # Plot graph (basic)
-        plot_graph(fname = f"{args.m_out}", 
-                   graph = metapath_graph, 
-                   hub_num = args.hub,
-                   col_map_e = "rocket_r",
-                   col_map_n = "gray_r",
-                   dpi = 100)
+        # If metapath found
+        if not nx.is_empty(metapath_graph):
+            # Remove file extensions
+            args.m_out = os.path.splitext(args.m_out)[0]
+            # Plot graph
+            plot_graph(fname = f"{args.m_out}", 
+                    graph = metapath_graph, 
+                    hub_num = args.hub,
+                    col_map_e = "rocket_r",
+                    col_map_n = "gray_r",
+                    dpi = 100)
 
-        # Fill metapath graph with nodes for all residues
-        metapath_graph.add_nodes_from(identifiers)
-        # Create matrix
-        sys.stdout.write(f"Saving output: {args.m_out}\n")
-        metapath_matrix = nx.to_numpy_matrix(metapath_graph)
-        np.savetxt(f"{args.m_out}.dat", metapath_matrix)
+            # Fill metapath graph with nodes for all residues
+            metapath_graph.add_nodes_from(identifiers)
+            # Create matrix
+            sys.stdout.write(f"Saving output: {args.m_out}\n")
+            metapath_matrix = nx.to_numpy_matrix(metapath_graph)
+            np.savetxt(f"{args.m_out}.dat", metapath_matrix)
 
 
 if __name__ == "__main__":
