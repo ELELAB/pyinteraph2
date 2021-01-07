@@ -226,8 +226,9 @@ def get_all_shortest_paths(graph, res_id, res_space):
                             source = node1,
                             target = node2))
             for p in path:
-                # Add path to output
-                paths.append(p)
+                # Add path to output if it contains more than one edge
+                if len(p) > 2:
+                    paths.append(p)
         except Exception:
             # If no path is found log info
             log.debug(f"No path found between {node1} and {node2}")
