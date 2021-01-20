@@ -101,14 +101,14 @@ def get_persistence_graph(graph, paths, identifiers):
     """
 
     pers_graph = nx.Graph()
+    # Add all nodes
+    pers_graph.add_nodes_from(identifiers)
     # Add all paths
     for p in paths:
         pers_graph.add_path(p)
     # Add all edge weights
     edge_weights = [(u, v, graph[u][v]['weight']) for u, v in pers_graph.edges()]
     pers_graph.add_weighted_edges_from(edge_weights)
-    # Add all remaining nodes
-    pers_graph.add_nodes_from(identifiers)
     return pers_graph
 
 def get_shortest_paths(graph, source, target):
@@ -329,7 +329,7 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, norma
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
 
-def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
+def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi, node_space, node_size):
     """Takes in a graph and saves a pdf of the plot. Also takes in a hub
     cutoff value. Nodes with a larger number of edges than the cutoff
     are highlighted.
@@ -346,7 +346,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     non_hubs_deg = degrees[np.logical_not(selection)]
     unique_hubs = len(np.unique(hubs_deg))
     # Get positions. Larger k values make the nodes spread out more
-    pos = nx.spring_layout(graph, k=0.2, iterations=30)
+    pos = nx.spring_layout(graph, k=node_space, iterations=30)
     # Get cmap for edges
     edge_colors = sns.color_palette(palette = col_map_e, n_colors =  256)
     cmap_e = ListedColormap(edge_colors, name = 'edge_colors', N = 256)
@@ -357,7 +357,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
     nx.draw_networkx_nodes(graph, 
                            pos, 
                            node_list = list(non_hubs),
-                           node_size = 900,
+                           node_size = node_size,
                            node_color = 'white',
                            edgecolors = 'black',
                            label = list(non_hubs_deg))
@@ -367,7 +367,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
         nx.draw_networkx_nodes(graph, 
                                pos, 
                                nodelist = list(hubs),
-                               node_size = 900,
+                               node_size = node_size,
                                node_color = 'gray',
                                edgecolors = 'black')
         # Add label for single unique hub (temporary, fix later)
@@ -387,7 +387,7 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
         nx.draw_networkx_nodes(graph, 
                                pos, 
                                nodelist = list(hubs),
-                               node_size = 900,
+                               node_size = node_size,
                                node_color = list(hubs_deg),
                                cmap = cmap_n,
                                edgecolors = 'black',
@@ -434,6 +434,13 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi):
         cbar_n.set_label('Node Degree')
     # Save figure
     plt.savefig(f"{fname}.pdf", dpi = dpi, bbox_inches = 'tight', format = 'pdf')
+
+def reorder_graph(graph, identifiers):
+    ordered_graph = nx.Graph()
+    ordered_graph.add_nodes_from(identifiers)
+    weighted_edges = [(u, v, d["e_weight"]) for u, v, d in graph.edges(data=True)]
+    ordered_graph.add_weighted_edges_from(weighted_edges)
+    return(ordered_graph)
 
 
 def main():
@@ -564,6 +571,24 @@ def main():
                         type = int,
                         help = c_helpstr)
 
+    k_default = 0.2
+    k_helpstr = f"Node spacing during metapath plotting. Higher values cause " \
+                f"nodes to be more spread apart (default: {k_default}"
+    parser.add_argument("-k", "--node-spacing",
+                        dest = "node_space",
+                        default = k_default,
+                        type = float,
+                        help = k_helpstr)
+
+    ns_default = 900
+    ns_helpstr = f"Node size during metapath plotting. Higher values create " \
+                f"larger nodes (default: {ns_default}"
+    parser.add_argument("-ns", "--node-size",
+                        dest = "node_size",
+                        default = ns_default,
+                        type = int,
+                        help = ns_helpstr)
+
     mo_default = "metapath"
     mo_helpstr = f"Metapath plot name (default: {mo_default}.pdf)"
     parser.add_argument("-mo", "--metapath-output",
@@ -668,10 +693,12 @@ def main():
                     hub_num = args.hub,
                     col_map_e = "rocket_r",
                     col_map_n = "gray_r",
-                    dpi = 100)
+                    dpi = 100,
+                    node_space = args.node_space,
+                    node_size = args.node_size)
 
             # Fill metapath graph with nodes for all residues
-            metapath_graph.add_nodes_from(identifiers)
+            metapath_graph = reorder_graph(metapath_graph, identifiers)
             # Create matrix
             sys.stdout.write(f"Saving output: {args.m_out}\n")
             metapath_matrix = nx.to_numpy_matrix(metapath_graph)
