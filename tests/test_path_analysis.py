@@ -1,6 +1,7 @@
 import os
 import os.path
 import numpy as np
+import networkx as nx
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 from pyinteraph import path_analysis as pa
@@ -39,8 +40,11 @@ def sb_shortest_path(sb_graph, sb_source, sb_target):
                                  source = sb_source,
                                  target = sb_target)
 
-# @pytest.fixture
-# def sb_shortest_path_graph()
+@pytest.fixture
+def sb_shortest_path_graph(sb_graph, sb_shortest_path):
+    return pa.get_persistence_graph(graph = sb_graph[1], 
+                                    paths = sb_shortest_path, 
+                                    identifiers = sb_graph[0])
 
 @pytest.fixture
 def sb_shortest_table(sb_graph, sb_shortest_path):
@@ -74,7 +78,10 @@ def test_shortest_path(sb_shortest_table, sb_ref_name):
             ref_csv.append(line)
     assert sb_shortest_table == ref_csv
 
-
+def test_shortest_path_graph(sb_shortest_path_graph, sb_ref_name):
+    ref_graph = np.loadtxt(sb_ref_name['shortest_dat'])
+    graph = nx.to_numpy_matrix(sb_shortest_path_graph)
+    assert_equal(graph, ref_graph)
 
 
 # Test simple paths
