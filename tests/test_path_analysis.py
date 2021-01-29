@@ -15,9 +15,9 @@ def ref_dir(request):
 def data_files(ref_dir):
     return { 
              'pdb' : os.path.join(ref_dir, 'sim.prot.twochains.pdb'),
-             'sb' : os.path.join(ref_dir, 'sb-graph_twochains_all.dat'),
-             'hc' : os.path.join(ref_dir, 'hc-graph.dat'),
-             'hb' : os.path.join(ref_dir, 'hb-graph.dat'),
+             'sb' : os.path.join(ref_dir, 'sb-graph_twochains_all.dat')
+            #  'hc' : os.path.join(ref_dir, 'hc-graph.dat'),
+            #  'hb' : os.path.join(ref_dir, 'hb-graph.dat'),
            }
 
 @pytest.fixture
@@ -114,12 +114,10 @@ def test_shortest_path(sb_shortest_table, sb_ref_name):
     with open(sb_ref_name['shortest_csv'], "r") as f:
         for line in f:
             # remove white space and split line
-            print(line)
             li, s, t, l, w1, w2 = line.rstrip().split('\t')
             # change to correct format
             line = (eval(li), s, t, int(l), float(w1), float(w2))
             ref_csv.append(line)
-    print(sb_shortest_table)
     assert sb_shortest_table == ref_csv
 
 def test_shortest_path_graph(sb_shortest_path_graph, sb_ref_name):
@@ -133,12 +131,10 @@ def test_all_path(sb_all_table, sb_ref_name):
     with open(sb_ref_name['all_csv'], "r") as f:
         for line in f:
             # remove white space and split line
-            print(line)
             li, s, t, l, w1, w2 = line.rstrip().split('\t')
             # change to correct format
             line = (eval(li), s, t, int(l), float(w1), float(w2))
             ref_csv.append(line)
-    print(sb_all_table)
     assert sb_all_table == ref_csv
 
 def test_all_path_graph(sb_all_path_graph, sb_ref_name):
