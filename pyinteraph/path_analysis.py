@@ -510,7 +510,7 @@ def main():
 
     po_default = "shortest_paths"
     po_helpstr = f"Output file name for paths calculation (see option -l) " \
-                f"(default: {po_default}.txt"
+                 f"(default: {po_default}.txt"
     parser.add_argument("-po", "--path-output",
                         dest = "p_out",
                         default = po_default,
