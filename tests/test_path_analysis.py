@@ -31,7 +31,7 @@ def sb_source(sb_graph):
 
 @pytest.fixture
 def sb_target(sb_graph):
-    return pa.convert_input_to_list(user_input = "A5,B1042",
+    return pa.convert_input_to_list(user_input = "A5,A11,B1042",
                                     identifiers = sb_graph[0])
 
 @pytest.fixture
@@ -41,30 +41,45 @@ def sb_shortest_path(sb_graph, sb_source, sb_target):
                                  target = sb_target)
 
 @pytest.fixture
+def sb_all_path(sb_graph, sb_source, sb_target):
+    return pa.get_all_simple_paths(graph = sb_graph[1],
+                                 source = sb_source,
+                                 target = sb_target,
+                                 maxl = 3)
+
+@pytest.fixture
 def sb_shortest_path_graph(sb_graph, sb_shortest_path):
     return pa.get_persistence_graph(graph = sb_graph[1], 
                                     paths = sb_shortest_path, 
                                     identifiers = sb_graph[0])
 
 @pytest.fixture
+def sb_all_path_graph(sb_graph, sb_all_path):
+    return pa.get_persistence_graph(graph = sb_graph[1], 
+                                    paths = sb_all_path, 
+                                    identifiers = sb_graph[0])
+
+@pytest.fixture
 def sb_shortest_table(sb_graph, sb_shortest_path):
     return pa.sort_paths(graph = sb_graph[1],
                          paths = sb_shortest_path,
-                         sort_by = "length")
+                         sort_by = "average_weight")
+
+@pytest.fixture
+def sb_all_table(sb_graph, sb_all_path):
+    return pa.sort_paths(graph = sb_graph[1],
+                         paths = sb_all_path,
+                         sort_by = "average_weight")
 
 @pytest.fixture
 def sb_ref_name(ref_dir):
     return {
              'shortest_csv' : os.path.join(ref_dir, 'shortest_paths.txt'),
-             'shortest_dat' : os.path.join(ref_dir, 'shortest_paths.dat')
+             'shortest_dat' : os.path.join(ref_dir, 'shortest_paths.dat'),
+             'all_csv' : os.path.join(ref_dir, 'all_paths_3.txt'),
+             'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat')
            }
 
-# @pytest.fixture
-# def sb_ref(sb_ref_name):
-#     return {
-#              'shortest_csv' : np.genfromtxt(sb_ref_name['shortest_csv'], delimiter=','),
-#              'shortest_dat' : np.loadtxt(sb_ref_name['shortest_dat'])
-#            }
 
 # Test shortest paths
 def test_shortest_path(sb_shortest_table, sb_ref_name):
@@ -72,10 +87,12 @@ def test_shortest_path(sb_shortest_table, sb_ref_name):
     with open(sb_ref_name['shortest_csv'], "r") as f:
         for line in f:
             # remove white space and split line
+            print(line)
             li, s, t, l, w1, w2 = line.rstrip().split('\t')
             # change to correct format
             line = (eval(li), s, t, int(l), float(w1), float(w2))
             ref_csv.append(line)
+    print(sb_shortest_table)
     assert sb_shortest_table == ref_csv
 
 def test_shortest_path_graph(sb_shortest_path_graph, sb_ref_name):
@@ -83,8 +100,26 @@ def test_shortest_path_graph(sb_shortest_path_graph, sb_ref_name):
     graph = nx.to_numpy_matrix(sb_shortest_path_graph)
     assert_equal(graph, ref_graph)
 
-
 # Test simple paths
+def test_all_path(sb_all_table, sb_ref_name):
+    ref_csv = []
+    with open(sb_ref_name['all_csv'], "r") as f:
+        for line in f:
+            # remove white space and split line
+            print(line)
+            li, s, t, l, w1, w2 = line.rstrip().split('\t')
+            # change to correct format
+            line = (eval(li), s, t, int(l), float(w1), float(w2))
+            ref_csv.append(line)
+    print(sb_all_table)
+    assert sb_all_table == ref_csv
+
+def test_all_path_graph(sb_all_path_graph, sb_ref_name):
+    ref_graph = np.loadtxt(sb_ref_name['all_dat'])
+    graph = nx.to_numpy_matrix(sb_all_path_graph)
+    assert_equal(graph, ref_graph)
+
+
 
 # Test metapath
 
