@@ -70,6 +70,31 @@ def sb_all_table(sb_graph, sb_all_path):
     return pa.sort_paths(graph = sb_graph[1],
                          paths = sb_all_path,
                          sort_by = "average_weight")
+                        
+@pytest.fixture
+def sb_metapath(sb_graph):
+    metapath = pa.get_metapath(graph = sb_graph[1],
+                               res_id = sb_graph[0],
+                               res_space = 3,
+                               node_threshold = 0.1,
+                               edge_threshold = 0.1,
+                               normalize = False)
+    metapath = pa.reorder_graph(metapath, sb_graph[0])
+    metapath = nx.to_numpy_matrix(metapath)
+    return metapath
+
+@pytest.fixture
+def sb_metapath_norm(sb_graph):
+    metapath = pa.get_metapath(graph = sb_graph[1],
+                               res_id = sb_graph[0],
+                               res_space = 3,
+                               node_threshold = 0.1,
+                               edge_threshold = 0.1,
+                               normalize = True)
+    metapath = pa.reorder_graph(metapath, sb_graph[0])
+    metapath = nx.to_numpy_matrix(metapath)
+    return metapath
+
 
 @pytest.fixture
 def sb_ref_name(ref_dir):
@@ -77,7 +102,9 @@ def sb_ref_name(ref_dir):
              'shortest_csv' : os.path.join(ref_dir, 'shortest_paths.txt'),
              'shortest_dat' : os.path.join(ref_dir, 'shortest_paths.dat'),
              'all_csv' : os.path.join(ref_dir, 'all_paths_3.txt'),
-             'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat')
+             'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat'),
+             'metapath' : os.path.join(ref_dir, 'metapath.dat'),
+             'metapath_norm' : os.path.join(ref_dir, 'metapath_norm.dat')
            }
 
 
@@ -119,7 +146,12 @@ def test_all_path_graph(sb_all_path_graph, sb_ref_name):
     graph = nx.to_numpy_matrix(sb_all_path_graph)
     assert_equal(graph, ref_graph)
 
-
-
 # Test metapath
+def test_metapath(sb_metapath, sb_ref_name):
+    ref_metapath = np.loadtxt(sb_ref_name['metapath'])
+    assert_equal(sb_metapath, ref_metapath)
+
+def test_metapath_norm(sb_metapath_norm, sb_ref_name):
+    ref_metapath = np.loadtxt(sb_ref_name['metapath_norm'])
+    assert_almost_equal(sb_metapath_norm, ref_metapath)
 
