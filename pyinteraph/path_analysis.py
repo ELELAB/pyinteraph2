@@ -498,7 +498,7 @@ def main():
                         type = str,
                         help = t_helpstr)
 
-    b_choices = ["length", "cumulative_weight", "avg_weight"]
+    b_choices = ["length", "cumulative_weight", "average_weight"]
     b_default = "length"
     b_helpstr = "How to sort pathways in output. Possible choices are: " \
                 f"{b_choices} (default: {b_default}"
