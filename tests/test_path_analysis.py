@@ -24,7 +24,7 @@ def data(data_files):
 
 @pytest.fixture
 def source(data):
-    return pa.convert_input_to_list(user_input = "A2,A57",
+    return pa.convert_input_to_list(user_input = "A1:A2,A57",
                                     identifiers = data[0])
 
 @pytest.fixture
