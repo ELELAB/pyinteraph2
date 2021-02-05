@@ -191,6 +191,7 @@ def write_table(fname, table):
     # For each line in table, add line in file
     with open(f"{fname}.txt", "w") as f:
         for path, source, target, lengths, sum_weight, avg_weight in table:
+            path = ','.join(path)
             line = f"{path}\t{source}\t{target}\t{lengths}" \
                    f"\t{sum_weight}\t{avg_weight}\n"
             f.write(line)
@@ -297,6 +298,7 @@ def normalize_graph(graph, normalize):
     returns a graph where all weights are normalized (divided by max
     weight)
     """
+
     normalized_graph = nx.Graph()
     # Get max weights for nodes and edges
     max_edge = max([d["e_weight"] for u, v, d in graph.edges(data = True)])
@@ -310,6 +312,7 @@ def normalize_graph(graph, normalize):
                                     graph.nodes()[v]["n_weight"]/max_node)
         # Add edge
         normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge)
+
     return normalized_graph
 
 
@@ -329,7 +332,7 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, norma
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
 
-def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi, node_space, node_size):
+def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi, node_space, node_size, patch_col):
     """Takes in a graph and saves a pdf of the plot. Also takes in a hub
     cutoff value. Nodes with a larger number of edges than the cutoff
     are highlighted.
@@ -370,8 +373,9 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi, node_space, nod
                                node_size = node_size,
                                node_color = 'gray',
                                edgecolors = 'black')
-        # Add label for single unique hub (temporary, fix later)
-        label = matplotlib.patches.Patch(color='gray', label=np.unique(hubs_deg)[0])
+        # Add label for single unique hub
+        label = matplotlib.patches.Patch(color = patch_col, 
+                                         label = np.unique(hubs_deg)[0])
         plt.legend(handles=[label], title="Node degree")
 
     # If more than one unique hub, add colorbar
@@ -524,7 +528,7 @@ def main():
                         default = False,
                         help = m_helpstr)
 
-    w_helpstr = f"During metapath calculation, normalize the edge and node" \
+    w_helpstr = f"During metapath calculation, normalize the edge and node " \
                 f"weights"
     parser.add_argument("-w", "--normalize-weights",
                         dest = "do_normalize",
@@ -689,13 +693,14 @@ def main():
             args.m_out = os.path.splitext(args.m_out)[0]
             # Plot graph
             plot_graph(fname = f"{args.m_out}", 
-                    graph = metapath_graph, 
-                    hub_num = args.hub,
-                    col_map_e = "rocket_r",
-                    col_map_n = "gray_r",
-                    dpi = 100,
-                    node_space = args.node_space,
-                    node_size = args.node_size)
+                       graph = metapath_graph, 
+                       hub_num = args.hub,
+                       col_map_e = "rocket_r",
+                       col_map_n = "gray_r",
+                       dpi = 100,
+                       node_space = args.node_space,
+                       node_size = args.node_size,
+                       patch_col = 'gray')
 
             # Fill metapath graph with nodes for all residues
             metapath_graph = reorder_graph(metapath_graph, identifiers)
