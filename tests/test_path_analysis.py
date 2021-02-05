@@ -19,6 +19,17 @@ def data_files(ref_dir):
            }
 
 @pytest.fixture
+def ref_name(ref_dir):
+    return {
+             'shortest_csv' : os.path.join(ref_dir, 'shortest_paths.txt'),
+             'shortest_dat' : os.path.join(ref_dir, 'shortest_paths.dat'),
+             'all_csv' : os.path.join(ref_dir, 'all_paths_3.txt'),
+             'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat'),
+             'metapath' : os.path.join(ref_dir, 'metapath.dat'),
+             'metapath_norm' : os.path.join(ref_dir, 'metapath_norm.dat')
+           }
+
+@pytest.fixture
 def data(data_files):
     return pa.build_graph(data_files['psn'], data_files['pdb'])
 
@@ -31,7 +42,6 @@ def source(data):
 def target(data):
     return pa.convert_input_to_list(user_input = "B1042",
                                     identifiers = data[0])
-
 
 @pytest.fixture
 def shortest_path(data, source, target):
@@ -94,19 +104,6 @@ def metapath_norm(data):
     metapath = nx.to_numpy_matrix(metapath)
     return metapath
 
-
-@pytest.fixture
-def ref_name(ref_dir):
-    return {
-             'shortest_csv' : os.path.join(ref_dir, 'shortest_paths.txt'),
-             'shortest_dat' : os.path.join(ref_dir, 'shortest_paths.dat'),
-             'all_csv' : os.path.join(ref_dir, 'all_paths_3.txt'),
-             'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat'),
-             'metapath' : os.path.join(ref_dir, 'metapath.dat'),
-             'metapath_norm' : os.path.join(ref_dir, 'metapath_norm.dat')
-           }
-
-
 # Test shortest paths
 def test_shortest_path(shortest_table, ref_name):
     ref_csv = []
@@ -115,7 +112,7 @@ def test_shortest_path(shortest_table, ref_name):
             # remove white space and split line
             li, s, t, l, w1, w2 = line.rstrip().split('\t')
             # change to correct format
-            line = (eval(li), s, t, int(l), float(w1), float(w2))
+            line = (li.split(','), s, t, int(l), float(w1), float(w2))
             ref_csv.append(line)
     assert shortest_table == ref_csv
 
@@ -132,7 +129,7 @@ def test_all_path(all_table, ref_name):
             # remove white space and split line
             li, s, t, l, w1, w2 = line.rstrip().split('\t')
             # change to correct format
-            line = (eval(li), s, t, int(l), float(w1), float(w2))
+            line = (li.split(','), s, t, int(l), float(w1), float(w2))
             ref_csv.append(line)
     assert all_table == ref_csv
 
@@ -150,4 +147,3 @@ def test_metapath_norm(metapath_norm, ref_name):
     ref_metapath = np.loadtxt(ref_name['metapath_norm'])
     print((ref_metapath == metapath_norm).sum())
     assert_almost_equal(metapath_norm, ref_metapath)
-
