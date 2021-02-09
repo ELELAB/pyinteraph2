@@ -538,8 +538,9 @@ def calc_dist_matrix(uni, \
                 this_coords = \
                     np.array(np.concatenate(coords[s_index][0]), \
                              dtype = np.float64)
+
                 # compute the distances within the cut-off
-                inner_loop = il.LoopDistances(this_coords, this_coords, co)
+                inner_loop = il.LoopDistances(this_coords, this_coords, co, rg_corrections)
                 percmats.append(\
                     inner_loop.run_triangular_mindist(\
                         sets_sizes[s_index][0]))
@@ -581,13 +582,22 @@ def calc_dist_matrix(uni, \
                         percmat[ix_k_n, ix_j_p] = percmats[s_index][j,k]
                      
     else:
+
+        def rg_correction(resname, frame):
+            ### Compute rg correction factor for the given residue at the given frame ###
+            return 0 
+
+
         # empty list of matrices of centers of mass
         all_coms = []
-        # empty list of matrices of rg corrections (to be computed later)
+
+        # empty list of rg corrections
         all_rg_corrections = []
+
         # for each frame in the trajectory
         numframe = 1
-        for ts in uni.trajectory:
+        for ts_i, ts in enumerate(uni.trajectory):
+            print(len(uni.trajectory))
             # log the progress along the trajectory
             logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
             sys.stdout.write(logstr.format(\
@@ -600,20 +610,19 @@ def calc_dist_matrix(uni, \
             
             # matrix of centers of mass for the chosen selections
             coms_list = [sel.center(sel.masses) for sel in chosenselections]
+            rg_corrections = [rg_correction(sel.resnames[0], ts_i) for sel in chosenselections]
+
             coms = np.array(coms_list, dtype = np.float64)
             all_coms.append(coms)
-           
-            # matrix of rg corrections (to be computed later)
-            rg_corrections = np.ones(coms.shape, dtype=np.float64).ravel() * 10
             all_rg_corrections.append(rg_corrections)
 
         # create a matrix of all centers of mass along the trajectory
         all_coms = np.concatenate(all_coms)
-        all_rg_corrections = np.concatenate(all_rg_corrections)
 
+        all_rg_corrections = np.concatenate(all_rg_corrections).astype(float)
         # compute the distances within the cut-off
-        inner_loop = il.LoopDistances(all_coms, all_coms, co)
-        percmat = inner_loop.run_triangular_distmatrix(coms.shape[0], all_rg_corrections)
+        inner_loop = il.LoopDistances(all_coms, all_coms, co, rg_corrections = all_rg_corrections)
+        percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
 
     # convert the matrix into an array
     percmat = np.array(percmat, dtype = np.float64)/numframes*100.0
