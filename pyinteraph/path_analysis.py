@@ -35,7 +35,7 @@ def build_graph(fname, pdb = None):
     else:
         # generate automatic identifiers going from 1 to the
         # total number of residues considered
-        identifiers = [str(i) for i in range(1, adj_matrix.shape[0]+1)]
+        identifiers = [f"_{i}" for i in range(1, adj_matrix.shape[0]+1)]
     
     # generate a graph from the data loaded
     G = nx.Graph(adj_matrix)
@@ -105,7 +105,7 @@ def get_persistence_graph(graph, paths, identifiers):
     pers_graph.add_nodes_from(identifiers)
     # Add all paths
     for p in paths:
-        pers_graph.add_path(p)
+        nx.add_path(pers_graph, p)
     # Add all edge weights
     edge_weights = [(u, v, graph[u][v]['weight']) for u, v in pers_graph.edges()]
     pers_graph.add_weighted_edges_from(edge_weights)
@@ -621,9 +621,12 @@ def main():
     nodes = graph.nodes()
     edges = graph.edges()
     # print nodes
-    info = f"Graph loaded! {len(nodes)} nodes, {len(edges)} edges\n" \
-           f"Node list:\n{np.array(identifiers)}\n"
-    sys.stdout.write(info)
+    sys.stdout.write("Node list:\n")
+    for node in identifiers:
+        sys.stdout.write(f"{node}\n")
+    sys.stdout.write(f"Graph loaded! {len(nodes)} nodes, {len(edges)} edges\n")
+    if args.pdb is None:
+        log.warning("No reference PDB file provided.")
 
     ############################## PATHS ##############################
 
@@ -682,6 +685,12 @@ def main():
     ############################# METAPATH ############################
 
     if args.do_metapath:
+        if args.res_gap <= 0:
+            err_str = "Residue Spacing (option -g) must be a positive integer. " \
+                      "Exiting ..."
+            log.error(err_str)
+            exit(1)
+
         # Get metapath graph
         metapath_graph = get_metapath(graph = graph,
                                       res_id = identifiers,
