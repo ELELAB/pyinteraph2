@@ -48,7 +48,11 @@ def get_betweeness_cent(G):
     betweeness_dict = nxc.betweenness_centrality(G)
     return betweeness_dict
 
-def get_centrality_dict(cent_name, function_map, graph):
+def get_closeness_cent(G):
+    closeness_cent = nxc.closeness_centrality(G)
+    return closeness_cent
+
+def get_centrality_dict(cent_list, function_map, graph):
     """
     Returns a dictionary where the key is the name of a centrality 
     measure and the value is a dictionary of centrality values for each
@@ -56,15 +60,9 @@ def get_centrality_dict(cent_name, function_map, graph):
     """
 
     centrality_dict = {}
-    if cent_name == "all":
-        # Add all centrality values to the dictionary
-        for key, func in function_map.items():
-            cent_dict = func(graph)
-            centrality_dict[key] = cent_dict
-    else:
-        # Only add specified values
-        cent_dict = function_map[cent_name](graph)
-        centrality_dict[key] = cent_dict
+    for name in cent_list:
+        cent_dict = function_map[name](graph)
+        centrality_dict[name] = cent_dict
     return centrality_dict
 
 
@@ -115,11 +113,12 @@ def main():
                         type = str)
 
     c_choices = ["all", "degree", "betweenness"]
-    c_default = "all"
-    c_helpstr = "Select which centrality measure to calculate: " \
+    c_default = None
+    c_helpstr = "Select which centrality measures to calculate: " \
                 f"{c_choices} (default: {c_default}"
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
+                        nargs = "+",
                         choices = c_choices,
                         default = c_default,
                         help =  c_helpstr)
@@ -156,11 +155,18 @@ def main():
     ############################ CENTRALITY ############################
 
     function_map = {'degree': get_degree_cent, 
-                    'betweenness': get_betweeness_cent}
+                    'betweenness': get_betweeness_cent,
+                    'closeness': get_closeness_cent}
     
-    centrality_dict = get_centrality_dict(args.cent, function_map, graph)
-    write_table(args.c_out, centrality_dict, identifiers)
-
+    if args.cent is not None:
+        # Get list of all centrality measures
+        if "all" in args.cent:
+            args.cent = list(function_map.keys())
+    
+        # Get dictionary of centrality values
+        centrality_dict = get_centrality_dict(args.cent, function_map, graph)
+        # Save dictionary as table
+        write_table(args.c_out, centrality_dict, identifiers)
 
 
 if __name__ == "__main__":
