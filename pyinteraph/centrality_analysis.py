@@ -68,6 +68,32 @@ def get_centrality_dict(cent_name, function_map, graph):
     return centrality_dict
 
 
+def write_table(fname, centrality_dict, identifiers):
+    """
+    Takes in a dictionary of dictionaries and saves a file where each 
+    row consists of a node and its corresponding centrality values.
+    """
+
+    # Remove any file extensions
+    fname = os.path.splitext(fname)[0]
+
+    with open(f"{fname}.txt", "w") as f:
+        # Add first line (header)
+        line = f"node"
+        for key in centrality_dict.keys():
+            # Add name of each centrality
+            line += f"\t{key}"
+        line += "\n"
+        f.write(line)
+        # Add each row (represents a node)
+        for node in identifiers:
+            line = f"{node}"
+            for c_dict in centrality_dict.values():
+                # Add each centrality vlue
+                line += f"\t{c_dict[node]}"
+            line += "\n"
+            f.write(line)
+
 def main():
 
     ######################### ARGUMENT PARSER #########################
@@ -98,6 +124,14 @@ def main():
                         default = c_default,
                         help =  c_helpstr)
 
+    co_default = "centrality"
+    co_helpstr = f"Output file name for centrality measures " \
+                 f"(default: {co_default}.txt"
+    parser.add_argument("-co", "--centrality-output",
+                        dest = "c_out",
+                        default = co_default,
+                        help = co_helpstr)
+
     args = parser.parse_args()
 
 
@@ -125,19 +159,8 @@ def main():
                     'betweenness': get_betweeness_cent}
     
     centrality_dict = get_centrality_dict(args.cent, function_map, graph)
-    for key, value in centrality_dict.items():
-        print(value)
+    write_table(args.c_out, centrality_dict, identifiers)
 
-    # x = cent_func_map['degree'](graph)
-    # print(x)
-    # if args.cent == 'all':
-    #     for key, func in function_map.items():
-    #         cent_dict = func(graph)
-    #         cent_values.append(x)
-    # print(cent_values)
-    # degree_dict = get_degree_cent(graph)
-    # betweeness_dict = get_betweeness_cent(graph)
-    # print(betweeness_dict)
 
 
 if __name__ == "__main__":
