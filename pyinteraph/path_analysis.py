@@ -502,8 +502,8 @@ def main():
                         type = str,
                         help = t_helpstr)
 
-    b_choices = ["length", "cumulative_weight", "average_weight"]
-    b_default = "length"
+    b_choices = ["path", "length", "cumulative_weight", "average_weight"]
+    b_default = "path"
     b_helpstr = "How to sort pathways in output. Possible choices are: " \
                 f"{b_choices} (default: {b_default}"
     parser.add_argument("-b", "--sort-paths",
@@ -512,13 +512,13 @@ def main():
                         default = b_default,
                         help =  b_helpstr)
 
-    po_default = "shortest_paths"
-    po_helpstr = f"Output file name for paths calculation (see option -l) " \
-                 f"(default: {po_default}.txt"
+    a_default = "shortest_paths"
+    a_helpstr = f"Output file name for paths calculation (see option -l) " \
+                 f"(default: {a_default}.txt"
     parser.add_argument("-po", "--path-output",
                         dest = "p_out",
-                        default = po_default,
-                        help = po_helpstr)
+                        default = a_default,
+                        help = a_helpstr)
 
     # Metapath
     m_helpstr = "Calculate metapath"
@@ -584,21 +584,21 @@ def main():
                         type = float,
                         help = k_helpstr)
 
-    ns_default = 900
-    ns_helpstr = f"Node size during metapath plotting. Higher values create " \
-                f"larger nodes (default: {ns_default}"
+    z_default = 900
+    z_helpstr = f"Node size during metapath plotting. Higher values create " \
+                f"larger nodes (default: {z_default}"
     parser.add_argument("-ns", "--node-size",
                         dest = "node_size",
-                        default = ns_default,
+                        default = z_default,
                         type = int,
-                        help = ns_helpstr)
+                        help = z_helpstr)
 
-    mo_default = "metapath"
-    mo_helpstr = f"Metapath plot name (default: {mo_default}.pdf)"
+    e_default = "metapath"
+    e_helpstr = f"Metapath plot name (default: {e_default}.pdf)"
     parser.add_argument("-mo", "--metapath-output",
                         dest = "m_out",
-                        default = mo_default,
-                        help = mo_helpstr)
+                        default = e_default,
+                        help = e_helpstr)
     
 
     args = parser.parse_args()
