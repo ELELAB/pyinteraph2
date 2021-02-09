@@ -171,7 +171,10 @@ def sort_paths(graph, paths, sort_by):
     avg_weights = [np.mean(w) for w in weights]
     # Sort paths
     paths = zip(paths, source, target, lengths, sum_weights, avg_weights)
-    if sort_by == "length":
+    if sort_by == "path":
+        key = lambda x: x[0]
+        reverse = False
+    elif sort_by == "length":
         key = lambda x: x[3]
         reverse = False
     elif sort_by == "cumulative_weight":
