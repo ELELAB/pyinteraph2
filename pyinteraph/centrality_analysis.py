@@ -42,11 +42,14 @@ def build_graph(fname, pdb = None):
     return identifiers, G
 
 def get_degree_cent(G):
+    """Returns a dictionary of degree centrality values"""
+
     degree_dict = nxc.degree_centrality(G)
     return degree_dict
 
 def get_betweeness_cent(G):
-    betweeness_dict = nxc.betweenness_centrality(G)
+    """Returns a dictionary of betweeness centrality values"""
+    betweeness_dict = nxc.betweenness_centrality(G, weight = "weight")
     return betweeness_dict
 
 def get_closeness_cent(G):
@@ -123,7 +126,9 @@ def write_pdb_files(centrality_dict, pdb, fname):
     """
 
     for cent_name, cent_dict in centrality_dict.items():
+        # Create input array
         cent_array = np.array([val for val in cent_dict.values()])
+        # Replace column and save PDB file
         replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
 
 
@@ -225,8 +230,15 @@ def main():
         else:
             # Warn if no PDB provided
             warn_str = "No reference PDB file provided, no PDB files will be "\
-                       "created"
+                       "created."
             log.warning(warn_str)
+
+        x = nx.Graph()
+        y = [(0, 1), (1, 2), (2,3)]
+        x.add_edges_from(y)
+        print(nxc.betweenness_centrality(x))
+        print('\n')
+        print(nxc.betweenness_centrality(x, endpoints = True))
 
 if __name__ == "__main__":
     main()
