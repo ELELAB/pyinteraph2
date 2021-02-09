@@ -147,7 +147,7 @@ def main():
                         default = None,
                         type = str)
 
-    c_choices = ["all", "degree", "betweenness"]
+    c_choices = ["all", "degree", "betweenness", "closeness"]
     c_default = None
     c_helpstr = "Select which centrality measures to calculate: " \
                 f"{c_choices} (default: {c_default}"
@@ -215,6 +215,7 @@ def main():
                             pdb = args.pdb,
                             fname = args.c_out)
         else:
+            # Warn if no PDB provided
             warn_str = "No reference PDB file provided, no PDB files will be "\
                        "created"
             log.warning(warn_str)
