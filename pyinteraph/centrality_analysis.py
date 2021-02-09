@@ -166,6 +166,14 @@ def main():
                         default = co_default,
                         help = co_helpstr)
 
+    po_helpstr = f"For each centrality measure calculated, create a PDB file " \
+                 f"where the bfactor column is replace by the centrality value."
+    parser.add_argument("-po", "--pdb_output",
+                        dest = "save_pdb",
+                        action = "store_true",
+                        default = False,
+                        help = po_helpstr)
+
     args = parser.parse_args()
 
 
@@ -209,8 +217,8 @@ def main():
                     centrality_dict = centrality_dict, 
                     identifiers = identifiers)
 
-        # Write PDB files (if reference provided)
-        if args.pdb is not None:
+        # Write PDB files if request (and if reference provided)
+        if args.save_pdb and args.pdb is not None:
             write_pdb_files(centrality_dict = centrality_dict,
                             pdb = args.pdb,
                             fname = args.c_out)
