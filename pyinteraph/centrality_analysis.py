@@ -6,6 +6,7 @@ import numpy as np
 import networkx as nx
 import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
+from Bio import PDB
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -92,6 +93,40 @@ def write_table(fname, centrality_dict, identifiers):
             line += "\n"
             f.write(line)
 
+def replace_bfac_column(pdb, vals, pdb_out):
+    """Replace the column containing B-factors in a PDB with
+    custom values. Takes in the reference pdb file name, an array of
+    values and the output pdb file name
+    """
+
+    # create the PDB parser
+    parser = PDB.PDBParser()
+    # get the protein structure
+    structure = parser.get_structure("protein", pdb)
+    io = PDB.PDBIO()
+    chain_offset = 0
+    for model in structure:
+        for chain in model:
+            for i, residue in enumerate(chain):
+                for atom in residue:
+                    # set the custom value
+                    atom.set_bfactor(float(vals[i+chain_offset]))
+            chain_offset += len(chain)
+    # set the structure for the output
+    io.set_structure(structure)
+    # save the structure to a new PDB file
+    io.save(pdb_out)
+
+def write_pdb_files(centrality_dict, pdb, fname):
+    """Save a pdb file for every centrality measure in the input 
+    centrality dictionary
+    """
+
+    for cent_name, cent_dict in centrality_dict.items():
+        cent_array = np.array([val for val in cent_dict.values()])
+        replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
+
+
 def main():
 
     ######################### ARGUMENT PARSER #########################
@@ -161,13 +196,24 @@ def main():
     if args.cent is not None:
         # Get list of all centrality measures
         if "all" in args.cent:
-            args.cent = list(function_map.keys())
+            centrality_names = list(function_map.keys())
+        else:
+            centrality_names = args.cent
     
         # Get dictionary of centrality values
-        centrality_dict = get_centrality_dict(args.cent, function_map, graph)
+        centrality_dict = get_centrality_dict(cent_list = centrality_names,
+                                              function_map = function_map, 
+                                              graph = graph)
         # Save dictionary as table
-        write_table(args.c_out, centrality_dict, identifiers)
+        write_table(fname = args.c_out,
+                    centrality_dict = centrality_dict, 
+                    identifiers = identifiers)
 
+        # Write PDB files (if reference provided)
+        if args.pdb is not None:
+            write_pdb_files(centrality_dict = centrality_dict,
+                            pdb = args.pdb,
+                            fname = args.c_out)
 
 if __name__ == "__main__":
     main()
