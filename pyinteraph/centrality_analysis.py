@@ -214,6 +214,10 @@ def main():
             write_pdb_files(centrality_dict = centrality_dict,
                             pdb = args.pdb,
                             fname = args.c_out)
+        else:
+            warn_str = "No reference PDB file provided, no PDB files will be "\
+                       "created"
+            log.warning(warn_str)
 
 if __name__ == "__main__":
     main()
