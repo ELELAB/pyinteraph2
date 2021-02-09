@@ -41,13 +41,14 @@ class LoopDistances():
 
         return np.reshape(results, (nframes,nsets,4))
 
-    def run_triangular_distmatrix(self, natoms_p):
+    def run_triangular_distmatrix(self, natoms_p, all_rg_corrections_p):
         cdef int natoms = natoms_p
         cdef int nframes = self.coords1.shape[0]/natoms_p
         cdef np.ndarray[np.int_t,    ndim=1] results = np.zeros((natoms*natoms), dtype=np.int)
         cdef np.ndarray[np.float64_t, ndim=2] coords1 = self.coords1
+        cdef np.ndarray[np.float64_t, ndim=1] all_rg_corrections = all_rg_corrections_p
 
-        innerloops.triangular_distmatrix(<double*> coords1.data, natoms, nframes, self.co, <long*> results.data)
+        innerloops.triangular_distmatrix(<double*> coords1.data, natoms, nframes, self.co, <long*> results.data, <double*> all_rg_corrections.data)
 
         return np.reshape(results, (natoms,natoms))       
 

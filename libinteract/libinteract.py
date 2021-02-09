@@ -583,6 +583,8 @@ def calc_dist_matrix(uni, \
     else:
         # empty list of matrices of centers of mass
         all_coms = []
+        # empty list of matrices of rg corrections (to be computed later)
+        all_rg_corrections = []
         # for each frame in the trajectory
         numframe = 1
         for ts in uni.trajectory:
@@ -600,13 +602,19 @@ def calc_dist_matrix(uni, \
             coms_list = [sel.center(sel.masses) for sel in chosenselections]
             coms = np.array(coms_list, dtype = np.float64)
             all_coms.append(coms)
+           
+            # matrix of rg corrections (to be computed later)
+            rg_corrections = np.ones(coms.shape, dtype=np.float64).ravel() * 10
+            all_rg_corrections.append(rg_corrections)
 
         # create a matrix of all centers of mass along the trajectory
         all_coms = np.concatenate(all_coms)
+        all_rg_corrections = np.concatenate(all_rg_corrections)
+
         # compute the distances within the cut-off
         inner_loop = il.LoopDistances(all_coms, all_coms, co)
-        percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
-    
+        percmat = inner_loop.run_triangular_distmatrix(coms.shape[0], all_rg_corrections)
+
     # convert the matrix into an array
     percmat = np.array(percmat, dtype = np.float64)/numframes*100.0
 
