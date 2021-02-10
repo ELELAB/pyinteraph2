@@ -52,9 +52,9 @@ def shortest_path(data, source, target):
 @pytest.fixture
 def all_path(data, source, target):
     return pa.get_all_simple_paths(graph = data[1],
-                                 source = source,
-                                 target = target,
-                                 maxl = 3)
+                                   source = source,
+                                   target = target,
+                                   maxl = 3)
 
 @pytest.fixture
 def shortest_path_graph(data, shortest_path):
@@ -72,13 +72,28 @@ def all_path_graph(data, all_path):
 def shortest_table(data, shortest_path):
     return pa.sort_paths(graph = data[1],
                          paths = shortest_path,
-                         sort_by = "average_weight")
+                         sort_by = "path")
 
 @pytest.fixture
 def all_table(data, all_path):
     return pa.sort_paths(graph = data[1],
                          paths = all_path,
-                         sort_by = "average_weight")
+                         sort_by = "path")
+
+@pytest.fixture
+def combinations(data):
+    return pa.get_combinations(res_id = data[0],
+                               res_space = 3)
+
+@pytest.fixture
+def all_shortest_paths(data):
+    return pa.get_all_shortest_paths(graph = data[1],
+                                     res_id = data[0],
+                                     res_space = 0)
+
+@pytest.fixture
+def graph_from_paths(all_shortest_paths):
+    return pa.get_graph_from_paths(all_shortest_paths)
                         
 @pytest.fixture
 def metapath(data):
@@ -104,8 +119,14 @@ def metapath_norm(data):
     metapath = nx.to_numpy_matrix(metapath)
     return metapath
 
-# Test shortest paths
-def test_shortest_path(shortest_table, ref_name):
+# Test path helper functions
+def test_convert_input_to_list(source):
+    source.sort()
+    ref = ['A1', 'A2', 'A57']
+    assert source == ref
+
+# Test shortest path outputs
+def test_sort_paths_shortest_table(shortest_table, ref_name):
     ref_csv = []
     with open(ref_name['shortest_csv'], "r") as f:
         for line in f:
@@ -122,7 +143,7 @@ def test_shortest_path_graph(shortest_path_graph, ref_name):
     assert_equal(graph, ref_graph)
 
 # Test simple paths
-def test_all_path(all_table, ref_name):
+def test_sort_paths_all_table(all_table, ref_name):
     ref_csv = []
     with open(ref_name['all_csv'], "r") as f:
         for line in f:
@@ -138,6 +159,15 @@ def test_all_path_graph(all_path_graph, ref_name):
     graph = nx.to_numpy_matrix(all_path_graph)
     assert_equal(graph, ref_graph)
 
+# Test metapath helper functions
+def test_get_combinations(data):
+    combinations = pa.get_combinations(data[0], 3)
+    for combination in combinations:
+        idx1 = data[0].index(combination[0])
+        idx2 = data[0].index(combination[1])
+        if combination[0][0] == combination[1][0]:
+            assert abs(idx1 - idx2) >= 3
+
 # Test metapath
 def test_metapath(metapath, ref_name):
     ref_metapath = np.loadtxt(ref_name['metapath'])
@@ -145,5 +175,4 @@ def test_metapath(metapath, ref_name):
 
 def test_metapath_norm(metapath_norm, ref_name):
     ref_metapath = np.loadtxt(ref_name['metapath_norm'])
-    print((ref_metapath == metapath_norm).sum())
     assert_almost_equal(metapath_norm, ref_metapath)
