@@ -94,7 +94,15 @@ def all_shortest_paths(data):
 @pytest.fixture
 def graph_from_paths(all_shortest_paths):
     return pa.get_graph_from_paths(all_shortest_paths)
-                        
+
+@pytest.fixture
+def filtered_graph(graph_from_paths):
+    return pa.filter_graph(graph_from_paths, 0.3, 0.1)
+
+@pytest.fixture
+def normalized_graph(graph_from_paths):
+    return pa.normalize_graph(graph_from_paths)
+
 @pytest.fixture
 def metapath(data):
     metapath = pa.get_metapath(graph = data[1],
@@ -167,6 +175,20 @@ def test_get_combinations(data):
         idx2 = data[0].index(combination[1])
         if combination[0][0] == combination[1][0]:
             assert abs(idx1 - idx2) >= 3
+
+def test_filter_graph(filtered_graph):
+    for u, v, d in filtered_graph.edges(data = True):
+        assert d['e_weight'] < 0.1
+    for n, d in filtered_graph.nodes(data = True):
+        assert d['n_weight'] < 0.3
+
+def test_normalized_graph(graph_from_paths, normalized_graph):
+    max_edge = max([d['e_weight'] for u, v, d in graph_from_paths.edges(data = True)])
+    max_node = max([d['n_weight'] for n, d in graph_from_paths.nodes(data = True)])
+    for u, v, d in normalized_graph.edges(data = True):
+        assert_almost_equal(graph_from_paths[u][v]['e_weight'], d['e_weight']*max_edge)
+    for n, d in normalized_graph.nodes(data = True):
+        assert_almost_equal(graph_from_paths.nodes()[n]['n_weight'], d['n_weight']*max_node)
 
 # Test metapath
 def test_metapath(metapath, ref_name):

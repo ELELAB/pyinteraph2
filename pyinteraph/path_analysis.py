@@ -296,7 +296,7 @@ def filter_graph(graph, node_threshold, edge_threshold):
         log.warning("No metapaths found.")
     return filterd_graph
 
-def normalize_graph(graph, normalize):
+def normalize_graph(graph):
     """Takes in a graph where all weights ranged between 0 to 1 and 
     returns a graph where all weights are normalized (divided by max
     weight)
@@ -330,7 +330,7 @@ def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, norma
     paths_graph = get_graph_from_paths(paths)
     # Normalize graph
     if normalize:
-        paths_graph = normalize_graph(paths_graph, normalize)
+        paths_graph = normalize_graph(paths_graph)
     # Filter graph
     metapath_graph = filter_graph(paths_graph, node_threshold, edge_threshold)
     return metapath_graph
