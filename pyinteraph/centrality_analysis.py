@@ -41,6 +41,53 @@ def build_graph(fname, pdb = None):
     # return the idenfiers and the graph
     return identifiers, G
 
+def convert_input_to_list(user_input, identifiers):
+    """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
+    and a list of names of all the residues (graph nodes). Replaces the 
+    range indicated by the colon with all residues in that range and 
+    keeps all residues separated by commas. Removes duplicates.
+    """
+
+    res_list = []
+    # Split by comma and then colon to make list of list
+    split_list = [elem.split(':') for elem in user_input.split(',')]
+    for sub_list in split_list:
+        # If list size is one, word is separated by comma
+        if len(sub_list) == 1:
+            try:
+                res = sub_list[0]
+                # Find index
+                identifiers.index(res)
+                # Append to list
+                res_list.append(res)
+            except:
+                raise ValueError(f"Residue not in PDB: {res}")
+        # If list size is 2, word is separated by a single colon
+        elif len(sub_list) == 2:
+            try:
+                # Get indexes for residue in identifiers
+                u_idx, v_idx = [identifiers.index(res) for res in sub_list]
+            except:
+                raise ValueError(f"Residue range not in PDB: {':'.join(sub_list)}")
+            # Check if order of residues is reversed
+            if u_idx >= v_idx:
+                raise ValueError(f"Range not specified correctly: {':'.join(sub_list)}")
+            try:
+                # This block should not cause an error
+                # Create list with all residues in that range
+                res_range = identifiers[u_idx:v_idx + 1]
+                # Concatenate with output list
+                res_list += res_range
+            except Exception as e:
+                raise e
+        # Other list sizes means multiple colons
+        else:
+            err_str = f"Incorrect format, only one ':' allowed: {':'.join(sub_list)}"
+            raise ValueError(err_str)
+    # Remove duplicates
+    res_list = list(set(res_list))
+    return res_list
+
 def get_degree_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of degree centrality values"""
 
@@ -62,7 +109,20 @@ def get_closeness_cent(G, node_list, weight_name, norm):
     closeness_cent = nxc.closeness_centrality(G = G)
     return closeness_cent
 
-#def get_group_betweenness_cent(G, node_list, weight_name, norm):
+def get_group_betweenness_cent(G, node_list, weight_name, norm):
+    """Returns a dictionary of group betweeness centrality values"""
+
+    betweeness_val = nxc.group_betweenness_centrality(G = G,
+                                                      C = node_list,
+                                                      normalized = norm,
+                                                      weight = weight_name)
+    betweeness_dict = {}
+    for node in G.nodes():
+        if node in node_list:
+            betweeness_dict[node] = betweeness_val
+        else:
+            betweeness_dict[node] = 0
+    return betweeness_dict
 
 
 def get_centrality_dict(cent_list, function_map, graph, node_list, weight_name, norm):
@@ -164,7 +224,7 @@ def main():
                         default = None,
                         type = str)
 
-    c_choices = ["all", "degree", "betweenness", "closeness"]
+    c_choices = ["all", "degree", "betweenness", "closeness", "group_betweenness"]
     c_default = None
     c_helpstr = "Select which centrality measures to calculate: " \
                 f"{c_choices} (default: {c_default}"
@@ -192,6 +252,15 @@ def main():
                         action = "store_true",
                         default = n_default,
                         help = n_helpstr)
+
+    g_helpstr = "List of residues used for group centrality calculations. " \
+                "e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
+                "reference PDB file provided. e.g. _42,_57"
+    parser.add_argument("-g", "--group",
+                        dest = "group",
+                        default = None,
+                        type = str,
+                        help = g_helpstr)
 
     o_default = "centrality"
     o_helpstr = f"Output file name for centrality measures " \
@@ -234,15 +303,31 @@ def main():
 
     ############################ CENTRALITY ############################
 
-    function_map = {'degree': get_degree_cent, 
+    # Function map of all implemented measures
+    node_map = {'degree': get_degree_cent, 
                     'betweenness': get_betweeness_cent,
                     'closeness': get_closeness_cent}
+    group_map = {'group_betweenness' : get_group_betweenness_cent}
+    #edge_map = {}
     
+    # Get list of all centrality measures
     if args.cent is not None:
-        # Get list of all centrality measures
-        if "all" in args.cent:
+        # If groups are not specified, calculate all node centralities
+        if "all" in args.cent and args.group is None:
+            function_map = node_map
             centrality_names = list(function_map.keys())
+        # If groups are specified, calculate all centralities
+        elif "all" in args.cent and args.group is not None:
+            node_list = convert_input_to_list(args.group, identifiers)
+            # Combine both dictionaries
+            function_map = {**node_map, **group_map}
+            centrality_names = list(function_map.keys())
+        elif args.cent in group_map.keys() and args.group is None:
+            log.error("Group must be specified to calculate group centrality.")
         else:
+            node_list = convert_input_to_list(args.group, identifiers)
+            # Combine both dictionaries
+            function_map = {**node_map, **group_map}
             centrality_names = args.cent
 
         # Change weight boolean to weight name or None
@@ -255,7 +340,7 @@ def main():
         centrality_dict = get_centrality_dict(cent_list = centrality_names,
                                               function_map = function_map, 
                                               graph = graph,
-                                              node_list = None,
+                                              node_list = node_list,
                                               weight_name = args.weight,
                                               norm = args.norm)
         # Save dictionary as table
@@ -268,18 +353,19 @@ def main():
             write_pdb_files(centrality_dict = centrality_dict,
                             pdb = args.pdb,
                             fname = args.c_out)
-        else:
+        elif args.pdb is None:
             # Warn if no PDB provided
             warn_str = "No reference PDB file provided, no PDB files will be "\
                        "created."
             log.warning(warn_str)
 
+
+        # Delete later
         x = nx.Graph()
         y = [(0, 1), (1, 2), (2,3)]
         x.add_edges_from(y)
-        print(nxc.closeness_centrality(x))
-        print('\n')
-        print(nxc.closeness_centrality(x, u=True))
+        print(nxc.betweenness_centrality(x))
+        print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
 
 if __name__ == "__main__":
     main()
