@@ -112,18 +112,31 @@ def get_closeness_cent(G, node_list, weight_name, norm):
 def get_group_betweenness_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of group betweeness centrality values"""
 
-    betweeness_val = nxc.group_betweenness_centrality(G = G,
+    centrality_val = nxc.group_betweenness_centrality(G = G,
                                                       C = node_list,
                                                       normalized = norm,
                                                       weight = weight_name)
-    betweeness_dict = {}
+    centrality_dict = {}
     for node in G.nodes():
         if node in node_list:
-            betweeness_dict[node] = betweeness_val
+            centrality_dict[node] = centrality_val
         else:
-            betweeness_dict[node] = 0
-    return betweeness_dict
+            centrality_dict[node] = 0
+    return centrality_dict
 
+def get_group_closeness_cent(G, node_list, weight_name, norm):
+    """Returns a dictionary of group closeness centrality values"""
+
+    centrality_val = nxc.group_closeness_centrality(G = G,
+                                                    S = node_list,
+                                                    weight = weight_name)
+    centrality_dict = {}
+    for node in G.nodes():
+        if node in node_list:
+            centrality_dict[node] = centrality_val
+        else:
+            centrality_dict[node] = 0
+    return centrality_dict
 
 def get_centrality_dict(cent_list, function_map, graph, node_list, weight_name, norm):
     """
@@ -305,9 +318,10 @@ def main():
 
     # Function map of all implemented measures
     node_map = {'degree': get_degree_cent, 
-                    'betweenness': get_betweeness_cent,
-                    'closeness': get_closeness_cent}
-    group_map = {'group_betweenness' : get_group_betweenness_cent}
+                'betweenness': get_betweeness_cent,
+                'closeness': get_closeness_cent}
+    group_map = {'group_betweenness' : get_group_betweenness_cent,
+                 'group_closeness' : get_group_closeness_cent}
     #edge_map = {}
     
     # Get list of all centrality measures
