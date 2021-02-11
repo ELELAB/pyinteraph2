@@ -41,22 +41,31 @@ def build_graph(fname, pdb = None):
     # return the idenfiers and the graph
     return identifiers, G
 
-def get_degree_cent(G):
+def get_degree_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of degree centrality values"""
 
     degree_dict = nxc.degree_centrality(G)
     return degree_dict
 
-def get_betweeness_cent(G):
+def get_betweeness_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of betweeness centrality values"""
-    betweeness_dict = nxc.betweenness_centrality(G, weight = "weight")
+
+    # Need to consider if endpoints should be used or not
+    betweeness_dict = nxc.betweenness_centrality(G = G,
+                                                 normalized = norm,
+                                                 weight = weight_name)
     return betweeness_dict
 
-def get_closeness_cent(G):
-    closeness_cent = nxc.closeness_centrality(G)
+def get_closeness_cent(G, node_list, weight_name, norm):
+    """Returns a dictionary of closeness centrality values"""
+
+    closeness_cent = nxc.closeness_centrality(G = G)
     return closeness_cent
 
-def get_centrality_dict(cent_list, function_map, graph):
+#def get_group_betweenness_cent(G, node_list, weight_name, norm):
+
+
+def get_centrality_dict(cent_list, function_map, graph, node_list, weight_name, norm):
     """
     Returns a dictionary where the key is the name of a centrality 
     measure and the value is a dictionary of centrality values for each
@@ -65,7 +74,10 @@ def get_centrality_dict(cent_list, function_map, graph):
 
     centrality_dict = {}
     for name in cent_list:
-        cent_dict = function_map[name](graph)
+        cent_dict = function_map[name](G = graph, 
+                                       node_list = node_list,
+                                       weight_name = weight_name, 
+                                       norm = norm)
         centrality_dict[name] = cent_dict
     return centrality_dict
 
@@ -163,21 +175,41 @@ def main():
                         default = c_default,
                         help =  c_helpstr)
 
-    co_default = "centrality"
-    co_helpstr = f"Output file name for centrality measures " \
-                 f"(default: {co_default}.txt"
-    parser.add_argument("-co", "--centrality-output",
-                        dest = "c_out",
-                        default = co_default,
-                        help = co_helpstr)
+    w_default = False
+    w_helpstr = f"Use edge weights to calculate centrality measures. " \
+                f"(default: {w_default})."
+    parser.add_argument("-w", "--use_weights",
+                        dest = "weight",
+                        action = "store_true",
+                        default = w_default,
+                        help = w_helpstr)
 
-    po_helpstr = f"For each centrality measure calculated, create a PDB file " \
-                 f"where the bfactor column is replace by the centrality value."
-    parser.add_argument("-po", "--pdb_output",
+    n_default = True
+    n_helpstr = f"Normalize centrality measures. " \
+                f"(default: {n_default})."
+    parser.add_argument("-n", "--normalize",
+                        dest = "norm",
+                        action = "store_true",
+                        default = n_default,
+                        help = n_helpstr)
+
+    o_default = "centrality"
+    o_helpstr = f"Output file name for centrality measures " \
+                f"(default: {o_default}.txt"
+    parser.add_argument("-o", "--centrality-output",
+                        dest = "c_out",
+                        default = o_default,
+                        help = o_helpstr)
+
+    p_default = False
+    p_helpstr = f"For each centrality measure calculated, create a PDB file " \
+                f"where the bfactor column is replace by the centrality value." \
+                f" (default: {p_default}"
+    parser.add_argument("-p", "--pdb_output",
                         dest = "save_pdb",
                         action = "store_true",
                         default = False,
-                        help = po_helpstr)
+                        help = p_helpstr)
 
     args = parser.parse_args()
 
@@ -212,11 +244,20 @@ def main():
             centrality_names = list(function_map.keys())
         else:
             centrality_names = args.cent
-    
+
+        # Change weight boolean to weight name or None
+        if args.weight is False:
+            args.weight = None
+        else:
+            args.weight = "weight"
+        
         # Get dictionary of centrality values
         centrality_dict = get_centrality_dict(cent_list = centrality_names,
                                               function_map = function_map, 
-                                              graph = graph)
+                                              graph = graph,
+                                              node_list = None,
+                                              weight_name = args.weight,
+                                              norm = args.norm)
         # Save dictionary as table
         write_table(fname = args.c_out,
                     centrality_dict = centrality_dict, 
@@ -236,9 +277,9 @@ def main():
         x = nx.Graph()
         y = [(0, 1), (1, 2), (2,3)]
         x.add_edges_from(y)
-        print(nxc.betweenness_centrality(x))
+        print(nxc.closeness_centrality(x))
         print('\n')
-        print(nxc.betweenness_centrality(x, endpoints = True))
+        print(nxc.closeness_centrality(x, u=True))
 
 if __name__ == "__main__":
     main()
