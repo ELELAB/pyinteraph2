@@ -245,11 +245,13 @@ def main():
                         default = None,
                         type = str)
 
-    c_choices = ["all", "degree", "betweenness", "closeness", "communicability", 
-                 "group_betweenness", "group_closeness"]
+    c_choices = ["node", "degree", "betweenness", "closeness", "communicability",
+                 "group", "group_betweenness", "group_closeness",
+                 "edge"]
     c_default = None
     c_helpstr = "Select which centrality measures to calculate: " \
-                f"{c_choices} (default: {c_default}"
+                f"{c_choices} (default: {c_default} Group centralities " \
+                "will only be calcu"
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
                         nargs = "+",
@@ -325,33 +327,48 @@ def main():
 
     ############################ CENTRALITY ############################
 
+    # Groups
+    node = ["degree", "betweenness", "closeness"]
+    group = ["group_betweenness", "group_closeness"]
+    edge = []
+
     # Function map of all implemented measures
-    node_map = {'degree': get_degree_cent, 
-                'betweenness': get_betweeness_cent,
-                'closeness': get_closeness_cent,
-                'communicability' : get_communicability_betweenness_centrality}
-    group_map = {'group_betweenness' : get_group_betweenness_cent,
-                 'group_closeness' : get_group_closeness_cent}
-    #edge_map = {}
+    function_map = {'degree': get_degree_cent, 
+                    'betweenness': get_betweeness_cent,
+                    'closeness': get_closeness_cent,
+                    'communicability' : get_communicability_betweenness_centrality,
+                    'group_betweenness' : get_group_betweenness_cent,
+                    'group_closeness' : get_group_closeness_cent}
     
     # Get list of all centrality measures
     if args.cent is not None:
-        # If groups are not specified, calculate all node centralities
-        if "all" in args.cent and args.group is None:
-            function_map = node_map
-            centrality_names = list(function_map.keys())
-        # If groups are specified, calculate all centralities
-        elif "all" in args.cent and args.group is not None:
+        # Get node list if present
+        if args.group is not None:
             node_list = convert_input_to_list(args.group, identifiers)
-            # Combine both dictionaries
-            function_map = {**node_map, **group_map}
-            centrality_names = list(function_map.keys())
-        elif args.cent in group_map.keys() and args.group is None:
-            log.error("Group must be specified to calculate group centrality.")
         else:
-            node_list = convert_input_to_list(args.group, identifiers)
-            # Combine both dictionaries
-            function_map = {**node_map, **group_map}
+            node_list = args.group
+
+        # Find all node centralities
+        if "node" in args.cent:
+            centrality_names = node
+        # Find all group centralities if group specified
+        elif "group" in args.cent and args.group is not None:
+            centrality_names = group
+        # Throw error if no group is requested but not specified
+        elif ("group" in args.cent or \
+            # One of the group centralities is requested
+            len([cent for cent in args.cent if cent in group]) > 0) \
+            and args.group is None:
+            error_str = "A group of residues must be specified to calculate " \
+                        "group centrality (see option -g). Exiting..."
+            log.error(error_str)
+            exit(1)
+        # Find all edge centralities
+        elif "edge" in args.cent:
+            centrality_names = edge
+            log.error("Not implemented")
+        else:
+            # Get list of specified centrality names
             centrality_names = args.cent
 
         # Change weight boolean to weight name or None
@@ -359,6 +376,11 @@ def main():
             args.weight = None
         else:
             args.weight = "weight"
+
+        # Print message
+        sys.stdout.write("Calculating:\n")
+        for name in centrality_names:
+            sys.stdout.write(f"{name} centrality\n")
         
         # Get dictionary of centrality values
         centrality_dict = get_centrality_dict(cent_list = centrality_names,
@@ -388,8 +410,9 @@ def main():
         x = nx.Graph()
         y = [(0, 1), (1, 2), (2,3)]
         x.add_edges_from(y)
-        print(nxc.betweenness_centrality(x))
-        print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
+        print(x.degree())
+        #print(nxc.betweenness_centrality(x))
+        #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
 
 if __name__ == "__main__":
     main()
