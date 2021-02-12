@@ -88,6 +88,11 @@ def convert_input_to_list(user_input, identifiers):
     res_list = list(set(res_list))
     return res_list
 
+def get_hubs(G, node_list, weight_name, norm):
+    degree_tuple = G.degree()
+    hubs = {n : d for n, d in degree_tuple}
+    return hubs
+
 def get_degree_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of degree centrality values"""
 
@@ -327,13 +332,14 @@ def main():
 
     ############################ CENTRALITY ############################
 
-    # Groups
-    node = ["degree", "betweenness", "closeness"]
+    # Centrality types
+    node = ["hubs", "degree", "betweenness", "closeness"] # add communicability
     group = ["group_betweenness", "group_closeness"]
     edge = []
 
     # Function map of all implemented measures
-    function_map = {'degree': get_degree_cent, 
+    function_map = {'hubs' : get_hubs,
+                    'degree': get_degree_cent, 
                     'betweenness': get_betweeness_cent,
                     'closeness': get_closeness_cent,
                     'communicability' : get_communicability_betweenness_centrality,
@@ -406,13 +412,14 @@ def main():
             log.warning(warn_str)
 
 
-        # Delete later
-        x = nx.Graph()
-        y = [(0, 1), (1, 2), (2,3)]
-        x.add_edges_from(y)
-        print(x.degree())
-        #print(nxc.betweenness_centrality(x))
-        #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
+    # Delete later
+    x = nx.Graph()
+    y = [(0, 1), (1, 2), (2,3)]
+    x.add_edges_from(y)
+    print(x.degree())
+    print(x.edges())
+    #print(nxc.betweenness_centrality(x))
+    #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
 
 if __name__ == "__main__":
     main()
