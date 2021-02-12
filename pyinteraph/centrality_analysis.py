@@ -118,7 +118,7 @@ def get_closeness_cent(G, **kwargs):
     return centrality_dict
 
 
-def get_communicability_betweenness_centrality(G, **kwargs):
+def get_communicability_betweenness_cent(G, **kwargs):
     """Returns a dictionary of communicability betweenness centrality values"""
 
     centrality_dict = nxc.communicability_betweenness_centrality(G = G,
@@ -235,7 +235,7 @@ def main():
     ######################### ARGUMENT PARSER #########################
 
     description = "Path analysis"
-    parser = argparse.ArgumentParser(description= description)
+    parser = argparse.ArgumentParser(description = description)
 
     i_helpstr = ".dat file matrix"
     parser.add_argument("-i", "--input-dat",
@@ -353,14 +353,14 @@ def main():
     # Centrality types
     node = ["hubs", "degree", "betweenness", "closeness"] # add communicability
     group = ["group_betweenness", "group_closeness"]
-    edge = []
+    edge = ["edge_betweenness"]
 
     # Function map of all implemented measures
     function_map = {'hubs' : get_hubs,
                     'degree': get_degree_cent, 
                     'betweenness': get_betweeness_cent,
                     'closeness': get_closeness_cent,
-                    'communicability' : get_communicability_betweenness_centrality,
+                    'communicability' : get_communicability_betweenness_cent,
                     'group_betweenness' : get_group_betweenness_cent,
                     'group_closeness' : get_group_closeness_cent}
     
@@ -407,25 +407,30 @@ def main():
         for name in centrality_names:
             sys.stdout.write(f"{name} centrality\n")
 
+        # Create dictionary of optional arguments
         kwargs = {'node_list' : node_list,
                   'weight_name' : args.weight,
                   'norm' : args.norm,
                   'endpoint' : args.endpoint,
                   'hub': args.hub}
+
+        # node = any([True for n in centrality_names if n in node or n in group])
+        # edge = any([True for n in centrality_names if n in edge])
+        # print(node)
         
-        # Get dictionary of centrality values
-        centrality_dict = get_centrality_dict(cent_list = centrality_names,
+        # Get dictionary of node/group centrality values
+        node_dict = get_centrality_dict(cent_list = centrality_names,
                                               function_map = function_map, 
                                               graph = graph,
                                               **kwargs)
         # Save dictionary as table
         write_table(fname = args.c_out,
-                    centrality_dict = centrality_dict, 
+                    centrality_dict = node_dict, 
                     identifiers = identifiers)
 
         # Write PDB files if request (and if reference provided)
         if args.save_pdb and args.pdb is not None:
-            write_pdb_files(centrality_dict = centrality_dict,
+            write_pdb_files(centrality_dict = node_dict,
                             pdb = args.pdb,
                             fname = args.c_out)
         elif args.pdb is None:
@@ -441,6 +446,7 @@ def main():
     x.add_edges_from(y)
     print(x.degree())
     print(x.edges())
+    print(nxc.edge_betweenness_centrality(x))
     #print(nxc.betweenness_centrality(x))
     #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
 
