@@ -357,12 +357,12 @@ def plot_graph(fname, graph, hub_num, col_map_e, col_map_n, dpi, node_space, nod
     edge_colors = sns.color_palette(palette = col_map_e, n_colors =  256)
     cmap_e = ListedColormap(edge_colors, name = 'edge_colors', N = 256)
     # Remove border
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     ax.axis('off')
     # Draw non hubs
     nx.draw_networkx_nodes(graph, 
                            pos, 
-                           node_list = list(non_hubs),
+                           nodelist = list(non_hubs),
                            node_size = node_size,
                            node_color = 'white',
                            edgecolors = 'black',
