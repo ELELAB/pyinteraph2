@@ -88,70 +88,73 @@ def convert_input_to_list(user_input, identifiers):
     res_list = list(set(res_list))
     return res_list
 
-def get_hubs(G, node_list, weight_name, norm):
+def get_hubs(G, **kwargs):
+    """Returns a dictionary of degree values for each node"""
+
     degree_tuple = G.degree()
     hubs = {n : d for n, d in degree_tuple}
     return hubs
 
-def get_degree_cent(G, node_list, weight_name, norm):
+def get_degree_cent(G, **kwargs):
     """Returns a dictionary of degree centrality values"""
 
     centrality_dict = nxc.degree_centrality(G)
     return centrality_dict
 
-def get_betweeness_cent(G, node_list, weight_name, norm):
+def get_betweeness_cent(G, **kwargs):
     """Returns a dictionary of betweeness centrality values"""
 
     # Need to consider if endpoints should be used or not
     centrality_dict = nxc.betweenness_centrality(G = G,
-                                                 normalized = norm,
-                                                 weight = weight_name)
+                                                 normalized = kwargs['norm'],
+                                                 weight = kwargs['weight_name'],
+                                                 endpoints = kwargs['endpoint'])
     return centrality_dict
 
-def get_closeness_cent(G, node_list, weight_name, norm):
+def get_closeness_cent(G, **kwargs):
     """Returns a dictionary of closeness centrality values"""
 
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
 
 
-def get_communicability_betweenness_centrality(G, node_list, weight_name, norm):
+def get_communicability_betweenness_centrality(G, **kwargs):
     """Returns a dictionary of communicability betweenness centrality values"""
 
     centrality_dict = nxc.communicability_betweenness_centrality(G = G,
-                                                                 normalized = norm)
+                                                                 normalized = kwargs['norm'])
     return centrality_dict
 
-def get_group_betweenness_cent(G, node_list, weight_name, norm):
+def get_dict_with_group_val(G, node_list, value):
+    """Take in a graph, list of nodes and a single value. Returns a dict
+    containing each node in the graph. If the node is in the list, its
+    value is the given value or else it is 0.
+    """
+
+    node_dict = {n : (value if n in node_list else 0) for n in G.nodes()}
+    return node_dict
+
+
+def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values"""
 
     centrality_val = nxc.group_betweenness_centrality(G = G,
-                                                      C = node_list,
-                                                      normalized = norm,
-                                                      weight = weight_name)
-    centrality_dict = {}
-    for node in G.nodes():
-        if node in node_list:
-            centrality_dict[node] = centrality_val
-        else:
-            centrality_dict[node] = 0
+                                                      C = kwargs['node_list'],
+                                                      normalized = kwargs['norm'],
+                                                      weight = kwargs['weight_name'])
+    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
-def get_group_closeness_cent(G, node_list, weight_name, norm):
+def get_group_closeness_cent(G, **kwargs):
     """Returns a dictionary of group closeness centrality values"""
 
     centrality_val = nxc.group_closeness_centrality(G = G,
-                                                    S = node_list,
-                                                    weight = weight_name)
-    centrality_dict = {}
-    for node in G.nodes():
-        if node in node_list:
-            centrality_dict[node] = centrality_val
-        else:
-            centrality_dict[node] = 0
+                                                    S = kwargs['node_list'],
+                                                    weight = kwargs['weight_name'])
+    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
-def get_centrality_dict(cent_list, function_map, graph, node_list, weight_name, norm):
+def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """
     Returns a dictionary where the key is the name of a centrality 
     measure and the value is a dictionary of centrality values for each
@@ -160,10 +163,7 @@ def get_centrality_dict(cent_list, function_map, graph, node_list, weight_name, 
 
     centrality_dict = {}
     for name in cent_list:
-        cent_dict = function_map[name](G = graph, 
-                                       node_list = node_list,
-                                       weight_name = weight_name, 
-                                       norm = norm)
+        cent_dict = function_map[name](G = graph, **kwargs)
         centrality_dict[name] = cent_dict
     return centrality_dict
 
@@ -282,6 +282,15 @@ def main():
                         default = n_default,
                         help = n_helpstr)
 
+    e_default = False
+    e_helpstr = f"Use endpoints when calculating centrality measures. " \
+                f"(default: {e_default})."
+    parser.add_argument("-e", "--use_endpoints",
+                        dest = "endpoint",
+                        action = "store_true",
+                        default = e_default,
+                        help = e_helpstr)
+
     g_helpstr = "List of residues used for group centrality calculations. " \
                 "e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
                 "reference PDB file provided. e.g. _42,_57"
@@ -373,6 +382,7 @@ def main():
         elif "edge" in args.cent:
             centrality_names = edge
             log.error("Not implemented")
+            exit(1)
         else:
             # Get list of specified centrality names
             centrality_names = args.cent
@@ -387,14 +397,17 @@ def main():
         sys.stdout.write("Calculating:\n")
         for name in centrality_names:
             sys.stdout.write(f"{name} centrality\n")
+
+        kwargs = {'node_list' : node_list,
+                  'weight_name' : args.weight,
+                  'norm' : args.norm,
+                  'endpoint' : args.endpoint}
         
         # Get dictionary of centrality values
         centrality_dict = get_centrality_dict(cent_list = centrality_names,
                                               function_map = function_map, 
                                               graph = graph,
-                                              node_list = node_list,
-                                              weight_name = args.weight,
-                                              norm = args.norm)
+                                              **kwargs)
         # Save dictionary as table
         write_table(fname = args.c_out,
                     centrality_dict = centrality_dict, 
