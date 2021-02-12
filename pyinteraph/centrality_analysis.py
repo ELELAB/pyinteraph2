@@ -91,23 +91,31 @@ def convert_input_to_list(user_input, identifiers):
 def get_degree_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of degree centrality values"""
 
-    degree_dict = nxc.degree_centrality(G)
-    return degree_dict
+    centrality_dict = nxc.degree_centrality(G)
+    return centrality_dict
 
 def get_betweeness_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of betweeness centrality values"""
 
     # Need to consider if endpoints should be used or not
-    betweeness_dict = nxc.betweenness_centrality(G = G,
+    centrality_dict = nxc.betweenness_centrality(G = G,
                                                  normalized = norm,
                                                  weight = weight_name)
-    return betweeness_dict
+    return centrality_dict
 
 def get_closeness_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of closeness centrality values"""
 
-    closeness_cent = nxc.closeness_centrality(G = G)
-    return closeness_cent
+    centrality_dict = nxc.closeness_centrality(G = G)
+    return centrality_dict
+
+
+def get_communicability_betweenness_centrality(G, node_list, weight_name, norm):
+    """Returns a dictionary of communicability betweenness centrality values"""
+
+    centrality_dict = nxc.communicability_betweenness_centrality(G = G,
+                                                                 normalized = norm)
+    return centrality_dict
 
 def get_group_betweenness_cent(G, node_list, weight_name, norm):
     """Returns a dictionary of group betweeness centrality values"""
@@ -237,7 +245,8 @@ def main():
                         default = None,
                         type = str)
 
-    c_choices = ["all", "degree", "betweenness", "closeness", "group_betweenness"]
+    c_choices = ["all", "degree", "betweenness", "closeness", "communicability", 
+                 "group_betweenness", "group_closeness"]
     c_default = None
     c_helpstr = "Select which centrality measures to calculate: " \
                 f"{c_choices} (default: {c_default}"
@@ -319,7 +328,8 @@ def main():
     # Function map of all implemented measures
     node_map = {'degree': get_degree_cent, 
                 'betweenness': get_betweeness_cent,
-                'closeness': get_closeness_cent}
+                'closeness': get_closeness_cent,
+                'communicability' : get_communicability_betweenness_centrality}
     group_map = {'group_betweenness' : get_group_betweenness_cent,
                  'group_closeness' : get_group_closeness_cent}
     #edge_map = {}
