@@ -92,7 +92,7 @@ def get_hubs(G, **kwargs):
     """Returns a dictionary of degree values for each node"""
 
     degree_tuple = G.degree()
-    hubs = {n : d for n, d in degree_tuple}
+    hubs = {n : (d if d >= kwargs['hub'] else 0) for n, d in degree_tuple}
     return hubs
 
 def get_degree_cent(G, **kwargs):
@@ -291,6 +291,15 @@ def main():
                         default = e_default,
                         help = e_helpstr)
 
+    k_default = 3
+    k_helpstr = f"The minimum cutoff for a node to be considered a hub. " \
+                f"(default: {c_default}"
+    parser.add_argument("-k", "--hub-cutoff",
+                        dest = "hub",
+                        default = k_default,
+                        type = int,
+                        help = k_helpstr)
+
     g_helpstr = "List of residues used for group centrality calculations. " \
                 "e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
                 "reference PDB file provided. e.g. _42,_57"
@@ -401,7 +410,8 @@ def main():
         kwargs = {'node_list' : node_list,
                   'weight_name' : args.weight,
                   'norm' : args.norm,
-                  'endpoint' : args.endpoint}
+                  'endpoint' : args.endpoint,
+                  'hub': args.hub}
         
         # Get dictionary of centrality values
         centrality_dict = get_centrality_dict(cent_list = centrality_names,
