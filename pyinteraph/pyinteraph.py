@@ -146,6 +146,17 @@ def main():
                         default = None, \
                         help = hcgraph_helpstr)
 
+    hc_correction_func_default = "null"
+    hc_correction_func_helpstr = \
+        "Function for deriving correction factors to " \
+        "persistence matrix"
+    parser.add_argument("--hc-cf", "--hc-correction-func", \
+                        type = str, \
+                        dest = "hc_cf", \
+                        default = hc_correction_func_default, \
+                        choices = ["null", "rg"], \
+                        help = hc_correction_func_helpstr)
+
     #---------------------------- Salt bridges ---------------------------#
 
     sbco_default = 4.5
@@ -306,6 +317,7 @@ def main():
                         default = None, \
                         help = hbcustom2_helpstr)
 
+
     #----------------------------- Potential -----------------------------#
 
     kbpff_default = pkg_resources.resource_filename('pyinteraph', "ff.S050.bin64")
@@ -417,6 +429,7 @@ def main():
     hc_co = args.hc_co
     hc_perco = args.hc_perco
     hc_dat = args.hc_dat
+    hc_cf = args.hc_cf
     # salt bridges
     do_sb = args.do_sb
     cgs_file = args.cgs_file
@@ -476,12 +489,13 @@ def main():
         str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                              pdb = pdb,
                                              uni = uni,
-                                             co = hc_co, 
+                                             co = hc_co,
                                              perco = hc_perco,
-                                             ffmasses = ffmasses, 
+                                             ffmasses = ffmasses,
                                              fullmatrixfunc = fmfunc,
                                              mindist = False,
-                                             reslist = hc_reslist)
+                                             reslist = hc_reslist,
+                                             correction_func = hc_cf)
 
         # Save .dat
         with open(hc_dat, "w") as out:

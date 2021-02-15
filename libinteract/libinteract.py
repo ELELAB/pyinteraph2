@@ -414,6 +414,26 @@ def do_potential(kbp_atomlist,
     # return the output string and the matrix
     return (outstr, dm)
 
+
+def null_correction(chosenselections, frame):
+### Do not incorporate correction factors into the persistence calculation ###
+    return np.array([0 for sel in chosenselections], dtype=np.float64)
+
+
+def rg_correction(chosenselections, frame):
+### Compute rg correction factor for the given residue at the given frame ###
+    return np.array([-100 if sel.resnames[0] == "TRP" else 0 for sel in chosenselections], dtype=np.float64)
+
+
+def correction_map(str):
+### Select appropriate correction function based on user-inputted argument ###
+    assert str in ["null", "rg"]
+    if str == "null":
+        return null_correction
+    elif str == "rg":
+        return rg_correction
+
+
 def calc_dist_matrix(uni, \
                      idxs, \
                      chosenselections, \
@@ -421,9 +441,11 @@ def calc_dist_matrix(uni, \
                      mindist = False, \
                      mindist_mode = None, \
                      pos_char = "p", \
-                     neg_char = "n"):
+                     neg_char = "n", \
+                     correction_func = "null"):
+
     """Compute matrix of distances"""
-    
+
     numframes = len(uni.trajectory)
     # initialize the final matrix
     percmat = \
@@ -457,7 +479,7 @@ def calc_dist_matrix(uni, \
                 neg_idxs.append(idxs[i])
                 neg_sizes.append(len(chosenselections[i]))
             # if none of the above
-            else: 
+            else:
                 errstr = \
                     "Accepted values are either '{:s}' or '{:s}', " \
                     "but {:s} was found."
@@ -487,7 +509,7 @@ def calc_dist_matrix(uni, \
             sets_idxs = [(idxs, idxs)]
             sizes =  [len(s) for s in chosenselections]
             sets_sizes = [(sizes, sizes)]
-        # unrecognized choice             
+        # unrecognized choice
         else:
             choices = ["diff", "same", "both"]
             errstr = \
@@ -513,7 +535,7 @@ def calc_dist_matrix(uni, \
             sys.stdout.flush()
             # update the frame number
             numframe += 1
-            
+
             # for each set of atoms
             for s_index, s in enumerate(sets):
                 if s[0] == s[1]:
@@ -539,7 +561,7 @@ def calc_dist_matrix(uni, \
                              dtype = np.float64)
 
                 # compute the distances within the cut-off
-                inner_loop = il.LoopDistances(this_coords, this_coords, co, rg_corrections)
+                inner_loop = il.LoopDistances(this_coords, this_coords, co, corrections)
                 percmats.append(\
                     inner_loop.run_triangular_mindist(\
                         sets_sizes[s_index][0]))
@@ -548,7 +570,7 @@ def calc_dist_matrix(uni, \
                 # square case
                 this_coords1 = \
                     np.array(np.concatenate(coords[s_index][0]), \
-                             dtype = np.float64)              
+                             dtype = np.float64)
                 this_coords2 = \
                     np.array(np.concatenate(coords[s_index][1]), \
                              dtype = np.float64)
@@ -559,7 +581,7 @@ def calc_dist_matrix(uni, \
                         sets_sizes[s_index][0], \
                         sets_sizes[s_index][1]))
 
-        for s_index, s in enumerate(sets): 
+        for s_index, s in enumerate(sets):
             # recover the final matrix
             pos_idxs = sets_idxs[s_index][0]
             neg_idxs = sets_idxs[s_index][1]
@@ -569,29 +591,24 @@ def calc_dist_matrix(uni, \
                     for k in range(0, j):
                         ix_j = idxs.index(pos_idxs[j])
                         ix_k = idxs.index(pos_idxs[k])
-                        percmat[ix_j, ix_k] = percmats[s_index][j,k]         
+                        percmat[ix_j, ix_k] = percmats[s_index][j,k]
                         percmat[ix_k, ix_j] = percmats[s_index][j,k]
-            else: 
+            else:
                 # square case
                 for j in range(len(s[0])):
                     for k in range(len(s[1])):
                         ix_j_p = idxs.index(pos_idxs[j])
                         ix_k_n = idxs.index(neg_idxs[k])
-                        percmat[ix_j_p, ix_k_n] = percmats[s_index][j,k]         
+                        percmat[ix_j_p, ix_k_n] = percmats[s_index][j,k]
                         percmat[ix_k_n, ix_j_p] = percmats[s_index][j,k]
-                     
+
     else:
-
-        def rg_correction(resname, frame):
-            ### Compute rg correction factor for the given residue at the given frame ###
-            return 0 
-
 
         # empty list of matrices of centers of mass
         all_coms = []
 
-        # empty list of rg corrections
-        all_rg_corrections = []
+        # empty list of corrections
+        all_corrections = []
 
         # for each frame in the trajectory
         numframe = 1
@@ -606,21 +623,26 @@ def calc_dist_matrix(uni, \
             sys.stdout.flush()
             # update the frame number
             numframe += 1
-            
+
             # matrix of centers of mass for the chosen selections
             coms_list = [sel.center(sel.masses) for sel in chosenselections]
-            rg_corrections = [rg_correction(sel.resnames[0], ts_i) for sel in chosenselections]
+
+            # matrix of correction factors for the chosen selections
+            c_func = correction_map(correction_func)
+            corrections = c_func(chosenselections, ts_i)
 
             coms = np.array(coms_list, dtype = np.float64)
             all_coms.append(coms)
-            all_rg_corrections.append(rg_corrections)
+            all_corrections.append(corrections)
 
         # create a matrix of all centers of mass along the trajectory
         all_coms = np.concatenate(all_coms)
 
-        all_rg_corrections = np.concatenate(all_rg_corrections).astype(float)
+        # create a matrix of all correction factors along the trajectory
+        all_corrections = np.concatenate(all_corrections)
+
         # compute the distances within the cut-off
-        inner_loop = il.LoopDistances(all_coms, all_coms, co, rg_corrections = all_rg_corrections)
+        inner_loop = il.LoopDistances(all_coms, all_coms, co, corrections = all_corrections)
         percmat = inner_loop.run_triangular_distmatrix(coms.shape[0])
 
     # convert the matrix into an array
@@ -639,7 +661,7 @@ def assign_ff_masses(ffmasses, chosenselections):
             atom_resname = atom.residue.resname
             atom_resid = atom.residue.resid
             atom_name = atom.name
-            try:                
+            try:
                 atom.mass = ffdata[1][atom_resname][atom_name]
             except:
                 warnstr = \
@@ -648,7 +670,7 @@ def assign_ff_masses(ffmasses, chosenselections):
                     "Atomic mass will be guessed."
                 log.warning(warnstr.format(atom_resid, \
                                            atom_resname, \
-                                           atom_name))   
+                                           atom_name))
 
 def generate_cg_identifiers(pdb, uni, **kwargs):
     """Generate charged atoms identifiers."""
@@ -897,6 +919,7 @@ def do_interact(identfunc, \
                 fullmatrixfunc = None, \
                 mindist = False, \
                 mindist_mode = None, \
+                correction_func = "null", \
                 **identargs):
     
     # get identifiers, indexes and atom selections
@@ -918,7 +941,8 @@ def do_interact(identfunc, \
                                chosenselections = chosenselections, \
                                co = co, \
                                mindist = mindist, \
-                               mindist_mode = mindist_mode)
+                               mindist_mode = mindist_mode, \
+                               correction_func = correction_func)
     # get shortened indexes and identifiers
     short_idxs = [i[0:3] for i in idxs]
     short_ids = [i[0:3] for i in identifiers]
