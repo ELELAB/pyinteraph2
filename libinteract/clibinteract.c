@@ -66,7 +66,7 @@ int potential_distances(double* coords, int nsets, int set_size, int nframes, do
   return 1;
 }
 
-int triangular_distmatrix(double* coords, int natoms, int nframes, double co, long* out_mat, double* rg_corrections) {
+int triangular_distmatrix(double* coords, int natoms, int nframes, double co, long* out_mat, double* corrections) {
  
   int i = 0;
   int j = 0;
@@ -87,7 +87,7 @@ int triangular_distmatrix(double* coords, int natoms, int nframes, double co, lo
       for (k=0; k<j; k++) {
 	idx_k = i*natoms*3 + k*3;
 	//printf("%d %d: %.3f\n", j, k, ed(coords, coords, idx_j, idx_k));
-	if (ed(coords, coords, idx_j, idx_k) - rg_corrections[j] - rg_corrections[k] <= co) {
+	if (ed(coords, coords, idx_j, idx_k) - corrections[j] - corrections[k] <= co) {
 	  out_mat[sqmI(natoms,j,k)] += 1;
 	  out_mat[sqmI(natoms,k,j)] += 1;
 	}
