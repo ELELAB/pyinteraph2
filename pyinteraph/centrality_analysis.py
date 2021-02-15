@@ -7,6 +7,7 @@ import networkx as nx
 import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
 from Bio import PDB
+import matplotlib.pyplot as plt
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -31,7 +32,7 @@ def build_graph(fname, pdb = None):
     else:
         # generate automatic identifiers going from 1 to the
         # total number of residues considered
-        identifiers = [str(i) for i in range(1, adj_matrix.shape[0]+1)]
+        identifiers = [f"_{i}" for i in range(1, adj_matrix.shape[0]+1)]
 
     # generate a graph from the data loaded
     G = nx.Graph(adj_matrix)
@@ -167,6 +168,13 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
         centrality_dict[name] = cent_dict
     return centrality_dict
 
+def sort_dictionary(centrality_dict):
+    # Only works with one dict, fix for multiple dict
+    sorted_dict = {}
+    for name, node_dict in centrality_dict.items():
+        sorted_node_dict = {n : v for n, v in sorted(node_dict.items(), key = lambda item:item[1], reverse= True)}
+        sorted_dict[name] = sorted_node_dict
+    return sorted_dict
 
 def write_table(fname, centrality_dict, identifiers):
     """
@@ -186,7 +194,10 @@ def write_table(fname, centrality_dict, identifiers):
         line += "\n"
         f.write(line)
         # Add each row (represents a node)
-        for node in identifiers:
+        first_cent = list(centrality_dict.keys())[0]
+        sorted_nodes = [n for n in centrality_dict[first_cent].keys()]
+        #for node in identifiers:
+        for node in sorted_nodes:
             line = f"{node}"
             for c_dict in centrality_dict.values():
                 # Add each centrality vlue
@@ -419,18 +430,22 @@ def main():
         # print(node)
         
         # Get dictionary of node/group centrality values
-        node_dict = get_centrality_dict(cent_list = centrality_names,
+        centrality_dict = get_centrality_dict(cent_list = centrality_names,
                                               function_map = function_map, 
                                               graph = graph,
                                               **kwargs)
+
+        # Convert dictionary to sorted list
+        centrality_dict = sort_dictionary(centrality_dict)
+
         # Save dictionary as table
         write_table(fname = args.c_out,
-                    centrality_dict = node_dict, 
+                    centrality_dict = centrality_dict, 
                     identifiers = identifiers)
 
         # Write PDB files if request (and if reference provided)
         if args.save_pdb and args.pdb is not None:
-            write_pdb_files(centrality_dict = node_dict,
+            write_pdb_files(centrality_dict = centrality_dict,
                             pdb = args.pdb,
                             fname = args.c_out)
         elif args.pdb is None:
@@ -441,14 +456,27 @@ def main():
 
 
     # Delete later
+    print(centrality_dict['betweenness']['_99'])
     x = nx.Graph()
-    y = [(0, 1), (1, 2), (2,3)]
-    x.add_edges_from(y)
+    a = [('A', 'B'), ('B', 'C'), ('C','D')]
+    b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
+    c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
+    d = [('A', 'B'), ('B', 'C'), ('C','A')]
+    x.add_edges_from(b)
     print(x.degree())
     print(x.edges())
-    print(nxc.edge_betweenness_centrality(x))
+    print(nxc.betweenness_centrality(x))
+    print(nxc.betweenness_centrality(x, endpoints = True))
     #print(nxc.betweenness_centrality(x))
     #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
+
+    # #plot graph
+    # weights = [d["weight"] for u, v, d in graph.edges(data=True)]
+    # pos = nx.spring_layout(graph, k = 0.5)
+    # nx.draw_networkx_nodes(graph, pos)
+    # nx.draw_networkx_edges(graph, pos, edge_color = weights)
+    # nx.draw_networkx_labels(graph, pos)
+    # plt.savefig("graph.png")
 
 if __name__ == "__main__":
     main()
