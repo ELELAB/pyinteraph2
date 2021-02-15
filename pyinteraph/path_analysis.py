@@ -265,12 +265,18 @@ def get_graph_from_paths(paths):
                 graph[node1][node2]["e_weight"] += inc
             # If edge does not exist
             else:
-                # One of the nodes may already exist so
-                for node in [node1, node2]:
-                    if node not in graph:
-                        # Add weight if it exists (skip otherwise)
-                        graph.add_node(node, n_weight = inc)
-                # Add edge
+                # One of the nodes may exist, always check first node
+                if i == 0:
+                    # Increment node if present, else add
+                    if node1 in graph:
+                        graph.nodes()[node1]["n_weight"] += inc
+                    else:
+                        graph.add_node(node1, n_weight = inc)
+                # Increment second node if present, else add
+                if node2 in graph:
+                    graph.nodes()[node2]["n_weight"] += inc
+                else:
+                    graph.add_node(node2, n_weight = inc)
                 graph.add_edge(node1, node2, e_weight = inc)
     return graph
 
