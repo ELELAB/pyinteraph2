@@ -493,7 +493,7 @@ def main():
 
     def rg_correction(chosenselections, frame):
     ### Compute rg correction factor for the given residue at the given frame ###
-        return np.array([-100 if sel.resnames[0] == "TRP" else 0 for sel in chosenselections], dtype=np.float64)
+        return np.array([sel.radius_of_gyration() for sel in chosenselections], dtype=np.float64)
 
 
     def correction_map(str):

@@ -594,7 +594,6 @@ def calc_dist_matrix(uni, \
         # for each frame in the trajectory
         numframe = 1
         for ts_i, ts in enumerate(uni.trajectory):
-            print(len(uni.trajectory))
             # log the progress along the trajectory
             logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
             sys.stdout.write(logstr.format(\
