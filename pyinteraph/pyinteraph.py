@@ -484,6 +484,27 @@ def main():
 
     ######################## HYDROPHOBIC CONTACTS #########################
 
+    # Correction functions
+
+    def null_correction(chosenselections, frame):
+    ### Do not incorporate correction factors into the persistence calculation ###
+        return np.array([0 for sel in chosenselections], dtype=np.float64)
+
+
+    def rg_correction(chosenselections, frame):
+    ### Compute rg correction factor for the given residue at the given frame ###
+        return np.array([-100 if sel.resnames[0] == "TRP" else 0 for sel in chosenselections], dtype=np.float64)
+
+
+    def correction_map(str):
+    ### Select appropriate correction function based on user-inputted argument ###
+        assert str in ["null", "rg"]
+        if str == "null":
+            return null_correction
+        elif str == "rg":
+            return rg_correction
+
+
     if do_hc:
         fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
         str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
@@ -495,7 +516,7 @@ def main():
                                              fullmatrixfunc = fmfunc,
                                              mindist = False,
                                              reslist = hc_reslist,
-                                             correction_func = hc_cf)
+                                             correction_func = correction_map(hc_cf))
 
         # Save .csv
         table_dict = li.create_table_dict(table_out)
