@@ -21,69 +21,14 @@ def data_files(ref_dir):
 @pytest.fixture
 def ref_name(ref_dir):
     return {
-             'shortest_csv' : os.path.join(ref_dir, 'shortest_paths.txt'),
-             'shortest_dat' : os.path.join(ref_dir, 'shortest_paths.dat'),
              'all_csv' : os.path.join(ref_dir, 'all_paths_3.txt'),
              'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat'),
              'metapath' : os.path.join(ref_dir, 'metapath.dat'),
-             'metapath_norm' : os.path.join(ref_dir, 'metapath_norm.dat')
            }
 
 @pytest.fixture
 def data(data_files):
     return pa.build_graph(data_files['psn'], data_files['pdb'])
-
-@pytest.fixture
-def source(data):
-    return pa.convert_input_to_list(user_input = "A1:A2,A57",
-                                    identifiers = data[0])
-
-@pytest.fixture
-def target(data):
-    return pa.convert_input_to_list(user_input = "B1042",
-                                    identifiers = data[0])
-
-@pytest.fixture
-def shortest_path(data, source, target):
-    return pa.get_shortest_paths(graph = data[1],
-                                 source = source,
-                                 target = target)
-
-@pytest.fixture
-def all_path(data, source, target):
-    return pa.get_all_simple_paths(graph = data[1],
-                                   source = source,
-                                   target = target,
-                                   maxl = 3)
-
-@pytest.fixture
-def shortest_path_graph(data, shortest_path):
-    return pa.get_persistence_graph(graph = data[1], 
-                                    paths = shortest_path, 
-                                    identifiers = data[0])
-
-@pytest.fixture
-def all_path_graph(data, all_path):
-    return pa.get_persistence_graph(graph = data[1], 
-                                    paths = all_path, 
-                                    identifiers = data[0])
-
-@pytest.fixture
-def shortest_table(data, shortest_path):
-    return pa.sort_paths(graph = data[1],
-                         paths = shortest_path,
-                         sort_by = "path")
-
-@pytest.fixture
-def all_table(data, all_path):
-    return pa.sort_paths(graph = data[1],
-                         paths = all_path,
-                         sort_by = "path")
-
-@pytest.fixture
-def combinations(data):
-    return pa.get_combinations(res_id = data[0],
-                               res_space = 3)
 
 @pytest.fixture
 def example_metapath():
@@ -99,17 +44,56 @@ def example_metapath():
     return G
 
 @pytest.fixture
-def all_shortest_paths(example_metapath):
-    id = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+def id():
+    return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+
+# Shortest path fixtures
+@pytest.fixture
+def source(data):
+    return pa.convert_input_to_list(user_input = "A1:A2,A57",
+                                    identifiers = data[0])
+
+@pytest.fixture
+def target(data):
+    return pa.convert_input_to_list(user_input = "B1042",
+                                    identifiers = data[0])
+
+@pytest.fixture
+def shortest_path(example_metapath):
+    return pa.get_shortest_paths(graph = example_metapath,
+                                 source = 'A',
+                                 target = 'H')
+
+@pytest.fixture
+def all_path(data, source, target):
+    return pa.get_all_simple_paths(graph = data[1],
+                                   source = source,
+                                   target = target,
+                                   maxl = 3)
+
+@pytest.fixture
+def all_path_graph(data, all_path):
+    return pa.get_persistence_graph(graph = data[1], 
+                                    paths = all_path, 
+                                    identifiers = data[0])
+
+@pytest.fixture
+def all_table(data, all_path):
+    return pa.sort_paths(graph = data[1],
+                         paths = all_path,
+                         sort_by = "path")
+
+# Metapath fixtures
+@pytest.fixture
+def combinations(data):
+    return pa.get_combinations(res_id = data[0],
+                               res_space = 3)
+
+@pytest.fixture
+def all_shortest_paths(example_metapath, id):
     return pa.get_all_shortest_paths(graph = example_metapath, 
                                      res_id = id, 
                                      res_space = 1)
-
-# @pytest.fixture
-# def all_shortest_paths(data):
-#     return pa.get_all_shortest_paths(graph = data[1],
-#                                      res_id = data[0],
-#                                      res_space = 0)
 
 @pytest.fixture
 def graph_from_paths(all_shortest_paths):
@@ -124,8 +108,7 @@ def normalized_graph(graph_from_paths):
     return pa.normalize_graph(graph_from_paths)
 
 @pytest.fixture
-def metapath(example_metapath):
-    id = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+def metapath(example_metapath, id):
     return pa.get_metapath(graph = example_metapath,
                                       res_id = id,
                                       res_space = 1,
@@ -149,58 +132,59 @@ def metapath_matrix(reordered_graph):
     matrix = nx.to_numpy_matrix(reordered_graph)
     return matrix
 
-# @pytest.fixture
-# def metapath_norm(data):
-#     metapath = pa.get_metapath(graph = data[1],
-#                                res_id = data[0],
-#                                res_space = 3,
-#                                node_threshold = 0.1,
-#                                edge_threshold = 0.1,
-#                                normalize = True)
-#     metapath = pa.reorder_graph(metapath, data[0])
-#     metapath = nx.to_numpy_matrix(metapath)
-#     return metapath
+# Test path functions
+def test_convert_input_to_list(source):
+    source.sort()
+    ref = ['A1', 'A2', 'A57']
+    assert source == ref
 
+def test_get_shortest_paths(example_metapath):
+    ref_paths = [['A', 'B', 'D', 'E', 'F', 'H'], ['A', 'C', 'D', 'E', 'F', 'H'], 
+                 ['A', 'B', 'D', 'E', 'G', 'H'], ['A', 'C', 'D', 'E', 'G', 'H']]
+    paths = pa.get_shortest_paths(example_metapath, 'A', 'H')
+    assert paths == ref_paths
 
-# # Test path helper functions
-# def test_convert_input_to_list(source):
-#     source.sort()
-#     ref = ['A1', 'A2', 'A57']
-#     assert source == ref
+def test_get_all_simple_paths(example_metapath):
+    ref_paths = [['A', 'B', 'D', 'E', 'F'], ['A', 'C', 'D', 'E', 'F']]
+    paths = pa.get_all_simple_paths(example_metapath, 'A', 'F', 5)
+    assert paths == ref_paths
 
-# # Test shortest path outputs
-# def test_sort_paths_shortest_table(shortest_table, ref_name):
-#     ref_csv = []
-#     with open(ref_name['shortest_csv'], "r") as f:
-#         for line in f:
-#             # remove white space and split line
-#             li, s, t, l, w1, w2 = line.rstrip().split('\t')
-#             # change to correct format
-#             line = (li.split(','), s, t, int(l), float(w1), float(w2))
-#             ref_csv.append(line)
-#     assert shortest_table == ref_csv
+def test_get_persistence_graph(example_metapath, shortest_path, id):
+    graph = pa.get_persistence_graph(example_metapath, shortest_path, id)
+    assert nx.is_isomorphic(example_metapath, graph)
 
-# def test_shortest_path_graph(shortest_path_graph, ref_name):
-#     ref_graph = np.loadtxt(ref_name['shortest_dat'])
-#     graph = nx.to_numpy_matrix(shortest_path_graph)
-#     assert_equal(graph, ref_graph)
+def test_sort_paths(example_metapath, shortest_path):
+    ref_path = [['A', 'B', 'D', 'E', 'F', 'H'], ['A', 'B', 'D', 'E', 'G', 'H'],
+                ['A', 'C', 'D', 'E', 'F', 'H'], ['A', 'C', 'D', 'E', 'G', 'H']]
+    path_table = pa.sort_paths(example_metapath, shortest_path, "path")
+    for i in range(len(ref_path)):
+        assert path_table[i][0] == ref_path[i]
+        assert path_table[i][1] == ref_path[i][0]
+        assert path_table[i][2] == ref_path[i][-1]
+        assert path_table[i][3] == len(ref_path[i])
+        weights = [example_metapath[ref_path[i][j]][ref_path[i][j+1]]["weight"] \
+                    for j in range(len(ref_path[i]) - 1)]
+        cumulative = sum(weights)
+        average = cumulative/len(weights)
+        assert path_table[i][4] == cumulative
+        assert path_table[i][5] == average
 
-# # Test simple paths
-# def test_sort_paths_all_table(all_table, ref_name):
-#     ref_csv = []
-#     with open(ref_name['all_csv'], "r") as f:
-#         for line in f:
-#             # remove white space and split line
-#             li, s, t, l, w1, w2 = line.rstrip().split('\t')
-#             # change to correct format
-#             line = (li.split(','), s, t, int(l), float(w1), float(w2))
-#             ref_csv.append(line)
-#     assert all_table == ref_csv
+# Test simple paths output
+def test_sort_paths_all_table(all_table, ref_name):
+    ref_csv = []
+    with open(ref_name['all_csv'], "r") as f:
+        for line in f:
+            # remove white space and split line
+            li, s, t, l, w1, w2 = line.rstrip().split('\t')
+            # change to correct format
+            line = (li.split(','), s, t, int(l), float(w1), float(w2))
+            ref_csv.append(line)
+    assert all_table == ref_csv
 
-# def test_all_path_graph(all_path_graph, ref_name):
-#     ref_graph = np.loadtxt(ref_name['all_dat'])
-#     graph = nx.to_numpy_matrix(all_path_graph)
-#     assert_equal(graph, ref_graph)
+def test_all_path_graph(all_path_graph, ref_name):
+    ref_graph = np.loadtxt(ref_name['all_dat'])
+    graph = nx.to_numpy_matrix(all_path_graph)
+    assert_equal(graph, ref_graph)
 
 # Test metapath
 def test_get_combinations(data):
@@ -211,7 +195,7 @@ def test_get_combinations(data):
         if combination[0][0] == combination[1][0]:
             assert abs(idx1 - idx2) >= 3
 
-def test_get_all_shortest_paths(example_metapath):
+def test_get_all_shortest_paths(example_metapath, id):
     ref_paths = [['A', 'B', 'D'], ['A', 'C', 'D'], ['A', 'B', 'D', 'E'], 
                  ['A', 'C', 'D', 'E'], ['A', 'B', 'D', 'E', 'F'], 
                  ['A', 'C', 'D', 'E', 'F'], ['A', 'B', 'D', 'E', 'G'], 
@@ -225,7 +209,6 @@ def test_get_all_shortest_paths(example_metapath):
                  ['D', 'E', 'F'], ['D', 'E', 'G'], ['D', 'E', 'F', 'H'], 
                  ['D', 'E', 'G', 'H'], ['E', 'F', 'H'], ['E', 'G', 'H'], 
                  ['F', 'E', 'G'], ['F', 'H', 'G']]
-    id = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     paths = pa.get_all_shortest_paths(example_metapath, id, 1)
     assert paths == ref_paths
 
@@ -267,4 +250,3 @@ def test_reorder_graph(reordered_graph, data):
 def test_metapath_matrix(metapath_matrix, ref_name):
     ref_metapath = np.loadtxt(ref_name['metapath'])
     assert_equal(metapath_matrix, ref_metapath)
-
