@@ -415,25 +415,6 @@ def do_potential(kbp_atomlist,
     return (outstr, dm)
 
 
-def null_correction(chosenselections, frame):
-### Do not incorporate correction factors into the persistence calculation ###
-    return np.array([0 for sel in chosenselections], dtype=np.float64)
-
-
-def rg_correction(chosenselections, frame):
-### Compute rg correction factor for the given residue at the given frame ###
-    return np.array([-100 if sel.resnames[0] == "TRP" else 0 for sel in chosenselections], dtype=np.float64)
-
-
-def correction_map(str):
-### Select appropriate correction function based on user-inputted argument ###
-    assert str in ["null", "rg"]
-    if str == "null":
-        return null_correction
-    elif str == "rg":
-        return rg_correction
-
-
 def calc_dist_matrix(uni, \
                      idxs, \
                      chosenselections, \
@@ -628,8 +609,7 @@ def calc_dist_matrix(uni, \
             coms_list = [sel.center(sel.masses) for sel in chosenselections]
 
             # matrix of correction factors for the chosen selections
-            c_func = correction_map(correction_func)
-            corrections = c_func(chosenselections, ts_i)
+            corrections = correction_func(chosenselections, ts_i)
 
             coms = np.array(coms_list, dtype = np.float64)
             all_coms.append(coms)
