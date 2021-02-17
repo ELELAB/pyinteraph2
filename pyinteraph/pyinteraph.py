@@ -152,6 +152,7 @@ def main():
     parser.add_argument("--hc-cf", "--hc-correction-func", \
                         type = str, \
                         dest = "hc_cf", \
+                        default = None, \
                         choices = ["null", "rg"], \
                         help = hc_correction_func_helpstr)
 
@@ -489,6 +490,13 @@ def main():
 
     if do_hc:
         fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
+
+        # Select appropriate correction function
+        if hc_cf is None or hc_cf =='null':
+            selected_func = li.null_correction
+        elif hc_cf == 'rg':
+            selected_func = li.rg_correction
+
         str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                              pdb = pdb,
                                              uni = uni,
@@ -498,7 +506,7 @@ def main():
                                              fullmatrixfunc = fmfunc,
                                              mindist = False,
                                              reslist = hc_reslist,
-                                             correction_func = correction_map(hc_cf))
+                                             correction_func = selected_func)
 
         # Save .csv
         table_dict = li.create_table_dict(table_out)
