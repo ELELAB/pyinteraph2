@@ -180,6 +180,7 @@ def test_sort_paths(example_metapath, shortest_path):
 # Check output files
 def test_sort_paths_all_table(all_table, ref_name):
     ref_csv = []
+    # Recreate out
     with open(ref_name['all_csv'], "r") as f:
         for line in f:
             # remove white space and split line
@@ -246,6 +247,7 @@ def test_normalized_graph(graph_from_paths, normalized_graph):
         assert_almost_equal(graph_from_paths.nodes()[n]['n_weight'], d['n_weight']*max_node)
 
 def test_metapath(metapath, example_metapath):
+    # Remove these edges since a filter of 0.3 was used
     edges = [('A', 'B'), ('A', 'C'), ('F', 'H'), ('G', 'H')]
     example_metapath.remove_edges_from(edges)
     for u, v, d in metapath.edges(data = True):
