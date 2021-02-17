@@ -551,7 +551,7 @@ def calc_dist_matrix(uni, \
                              dtype = np.float64)
 
                 # compute the distances within the cut-off
-                inner_loop = il.LoopDistances(this_coords, this_coords, co, corrections)
+                inner_loop = il.LoopDistances(this_coords, this_coords, co, corrections = None)
                 percmats.append(\
                     inner_loop.run_triangular_mindist(\
                         sets_sizes[s_index][0]))
@@ -565,7 +565,7 @@ def calc_dist_matrix(uni, \
                     np.array(np.concatenate(coords[s_index][1]), \
                              dtype = np.float64)
                 # compute the distances within the cut-off
-                inner_loop = il.LoopDistances(this_coords1, this_coords2, co)
+                inner_loop = il.LoopDistances(this_coords1, this_coords2, co, corrections = None)
                 percmats.append(\
                     inner_loop.run_square_mindist(\
                         sets_sizes[s_index][0], \
