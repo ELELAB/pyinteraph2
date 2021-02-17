@@ -146,14 +146,12 @@ def main():
                         default = None, \
                         help = hcgraph_helpstr)
 
-    hc_correction_func_default = "null"
     hc_correction_func_helpstr = \
         "Function for deriving correction factors to " \
         "persistence matrix"
     parser.add_argument("--hc-cf", "--hc-correction-func", \
                         type = str, \
                         dest = "hc_cf", \
-                        default = hc_correction_func_default, \
                         choices = ["null", "rg"], \
                         help = hc_correction_func_helpstr)
 
@@ -481,28 +479,12 @@ def main():
         log.error(logstr)
         exit(1)
 
+    # Warn user if correction is specified but --hc is not used
+    if hc_cf is not None and not do_hc:
+        log.warn('Correction function (--hc-cf) is specified but hydrophobic network (--hc) is not used. Correction function will be ignored.')
+
 
     ######################## HYDROPHOBIC CONTACTS #########################
-
-    # Correction functions
-
-    def null_correction(chosenselections, frame):
-    ### Do not incorporate correction factors into the persistence calculation ###
-        return np.array([0 for sel in chosenselections], dtype=np.float64)
-
-
-    def rg_correction(chosenselections, frame):
-    ### Compute rg correction factor for the given residue at the given frame ###
-        return np.array([sel.radius_of_gyration() for sel in chosenselections], dtype=np.float64)
-
-
-    def correction_map(str):
-    ### Select appropriate correction function based on user-inputted argument ###
-        assert str in ["null", "rg"]
-        if str == "null":
-            return null_correction
-        elif str == "rg":
-            return rg_correction
 
 
     if do_hc:

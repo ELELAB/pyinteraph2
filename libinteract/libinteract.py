@@ -414,6 +414,24 @@ def do_potential(kbp_atomlist,
     # return the output string and the matrix
     return (outstr, dm)
 
+def null_correction(chosenselections, frame):
+    ### Do not incorporate correction factors into the persistence calculation ###
+        return np.repeat(0.0, len(selection), dtype=np.float64)
+
+
+    def rg_correction(chosenselections, frame):
+    ### Compute rg correction factor for the given residue at the given frame ###
+        return np.array([sel.radius_of_gyration() for sel in chosenselections], dtype=np.float64)
+
+
+    def correction_map(str):
+    ### Select appropriate correction function based on user-inputted argument ###
+        assert str in ["null", "rg"]
+        if str == "null":
+            return null_correction
+        elif str == "rg":
+            return rg_correction
+
 
 def calc_dist_matrix(uni, \
                      idxs, \
