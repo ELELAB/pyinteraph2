@@ -433,7 +433,7 @@ def calc_dist_matrix(uni, \
                      mindist_mode = None, \
                      pos_char = "p", \
                      neg_char = "n", \
-                     correction_func = "null"):
+                     correction_func = null_correction):
 
     """Compute matrix of distances"""
 
