@@ -31,16 +31,22 @@ def data(data_files):
     return pa.build_graph(data_files['psn'], data_files['pdb'])
 
 @pytest.fixture
-def example_metapath():
-    edges = [('A', 'B', 7/32), ('A', 'C', 7/32), ('B', 'D', 12/32), 
-             ('C', 'D', 12/32), ('D', 'E', 24/32), ('E', 'F', 12/32), 
-             ('E', 'G', 12/32), ('F', 'H', 7/32), ('G', 'H', 7/32)]
-    nodes = {'A' : 13/32, 'B' : 13/32, 'C' : 13/32, 'D' : 27/32,
-             'E' : 27/32, 'F' : 13/32, 'G' : 13/32, 'H' : 13/32}
+def metapath_edge():
+    return [('A', 'B', 7/32), ('A', 'C', 7/32), ('B', 'D', 12/32), 
+            ('C', 'D', 12/32), ('D', 'E', 24/32), ('E', 'F', 12/32), 
+            ('E', 'G', 12/32), ('F', 'H', 7/32), ('G', 'H', 7/32)]
+
+@pytest.fixture
+def metapath_node():
+    return {'A' : 13/32, 'B' : 13/32, 'C' : 13/32, 'D' : 27/32,
+            'E' : 27/32, 'F' : 13/32, 'G' : 13/32, 'H' : 13/32}
+
+@pytest.fixture
+def example_metapath(metapath_edge, metapath_node):
     G = nx.Graph()
-    G.add_weighted_edges_from(edges)
+    G.add_weighted_edges_from(metapath_edge)
     for n in G.nodes:
-        G.add_node(n, n_weight=nodes[n])
+        G.add_node(n, n_weight=metapath_node[n])
     return G
 
 @pytest.fixture
@@ -132,7 +138,7 @@ def metapath_matrix(reordered_graph):
     matrix = nx.to_numpy_matrix(reordered_graph)
     return matrix
 
-# Test path functions
+# Test functions required for shortest/simple paths
 def test_convert_input_to_list(source):
     source.sort()
     ref = ['A1', 'A2', 'A57']
@@ -150,6 +156,8 @@ def test_get_all_simple_paths(example_metapath):
     assert paths == ref_paths
 
 def test_get_persistence_graph(example_metapath, shortest_path, id):
+    # Using the shortest paths from the example metapath (with source A and sink H)
+    # should result in a graph that is identical to the example metapath
     graph = pa.get_persistence_graph(example_metapath, shortest_path, id)
     assert nx.is_isomorphic(example_metapath, graph)
 
@@ -169,7 +177,7 @@ def test_sort_paths(example_metapath, shortest_path):
         assert path_table[i][4] == cumulative
         assert path_table[i][5] == average
 
-# Test simple paths output
+# Check output files
 def test_sort_paths_all_table(all_table, ref_name):
     ref_csv = []
     with open(ref_name['all_csv'], "r") as f:
@@ -186,8 +194,9 @@ def test_all_path_graph(all_path_graph, ref_name):
     graph = nx.to_numpy_matrix(all_path_graph)
     assert_equal(graph, ref_graph)
 
-# Test metapath
+# Test functions required for metapath calculation
 def test_get_combinations(data):
+    # Check combination distances are correct
     combinations = pa.get_combinations(data[0], 3)
     for combination in combinations:
         idx1 = data[0].index(combination[0])
@@ -215,18 +224,20 @@ def test_get_all_shortest_paths(example_metapath, id):
 def test_graph_from_paths(example_metapath, all_shortest_paths):
     metapath = pa.get_graph_from_paths(all_shortest_paths)
     assert nx.is_isomorphic(metapath, example_metapath)
-    for u, v, d in metapath.edges(data= True):
+    for u, v, d in metapath.edges(data = True):
         assert d['e_weight'] == example_metapath[u][v]['weight']
-    for n, d in metapath.nodes(data= True):
+    for n, d in metapath.nodes(data = True):
         assert d['n_weight'] == example_metapath.nodes()[n]["n_weight"]
 
 def test_filter_graph(filtered_graph):
+    # Check that values are within the filtered range
     for _, _, d in filtered_graph.edges(data = True):
         assert d['e_weight'] > 0.3
     for _, d in filtered_graph.nodes(data = True):
         assert d['n_weight'] > 0.3
 
 def test_normalized_graph(graph_from_paths, normalized_graph):
+    # Check that original values can be recalculated from normalized values
     max_edge = max([d['e_weight'] for u, v, d in graph_from_paths.edges(data = True)])
     max_node = max([d['n_weight'] for n, d in graph_from_paths.nodes(data = True)])
     for u, v, d in normalized_graph.edges(data = True):
@@ -237,9 +248,9 @@ def test_normalized_graph(graph_from_paths, normalized_graph):
 def test_metapath(metapath, example_metapath):
     edges = [('A', 'B'), ('A', 'C'), ('F', 'H'), ('G', 'H')]
     example_metapath.remove_edges_from(edges)
-    for u, v, d in metapath.edges(data= True):
+    for u, v, d in metapath.edges(data = True):
         assert d['e_weight'] == example_metapath[u][v]['weight']
-    for n, d in metapath.nodes(data= True):
+    for n, d in metapath.nodes(data = True):
         assert d['n_weight'] == example_metapath.nodes()[n]["n_weight"]
 
 def test_reorder_graph(reordered_graph, data):
@@ -247,6 +258,7 @@ def test_reorder_graph(reordered_graph, data):
     for i in range(len(data[0])):
         assert nodes[i] == data[0][i]
 
+# Test output file
 def test_metapath_matrix(metapath_matrix, ref_name):
     ref_metapath = np.loadtxt(ref_name['metapath'])
     assert_equal(metapath_matrix, ref_metapath)
