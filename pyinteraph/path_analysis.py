@@ -460,16 +460,18 @@ def main():
 
     ######################### ARGUMENT PARSER #########################
     
-    description = "Path analysis"
-    parser = argparse.ArgumentParser(description= description)
+    description = "Path analysis module for PyInteraph. Allows calculation of " \
+                  "shortest or simple paths between a given source and target " \
+                  "(see option -l) and the metapath (option -m)."
+    parser = argparse.ArgumentParser(description = description)
 
-    i_helpstr = ".dat file matrix"
+    i_helpstr = ".dat file matrix."
     parser.add_argument("-i", "--input-dat",
                         dest = "input_matrix",
                         help = i_helpstr,
                         type = str)
     
-    r_helpstr = "Reference PDB file"
+    r_helpstr = "Reference PDB file."
     parser.add_argument("-r", "--pdb",
                         dest = "pdb",
                         help = r_helpstr,
@@ -478,7 +480,7 @@ def main():
 
     # Path analysis
     p_helpstr = "Calculate shortest or all paths between source and target "\
-                "(see option -l)"
+                "(see option -l)."
     parser.add_argument("-p", "--path",
                         dest = "do_path",
                         action = "store_true",
@@ -490,21 +492,21 @@ def main():
                 f"If 'shortest' is used, calculates the shortest paths between " \
                 f"the source and target. If an integer is used, calculates " \
                 f"all paths with a length smaller than or equal to the integer " \
-                f"between the source and target (default: {l_default}"
+                f"between the source and target (default: {l_default})."
     parser.add_argument("-l", "--path_length", 
                         dest = "path_l",
                         default = l_default,
                         type = str,
                         help = l_helpstr)
 
-    s_helpstr = "Source residues for paths calculation (see option -l)"
+    s_helpstr = "Source residues for paths calculation (see option -l)."
     parser.add_argument("-s", "--source",
                         dest = "source",
                         default = None,
                         type = str,
                         help = s_helpstr)
 
-    t_helpstr = "Target residues for paths calculation (see option -l)"
+    t_helpstr = "Target residues for paths calculation (see option -l)."
     parser.add_argument("-t", "--target",
                         dest = "target",
                         default = None,
@@ -514,7 +516,7 @@ def main():
     b_choices = ["path", "length", "cumulative_weight", "average_weight"]
     b_default = "path"
     b_helpstr = "How to sort pathways in output. Possible choices are: " \
-                f"{b_choices} (default: {b_default}"
+                f"{b_choices} (default: {b_default})."
     parser.add_argument("-b", "--sort-paths",
                         dest = "sort_by",
                         choices = b_choices,
@@ -523,14 +525,14 @@ def main():
 
     a_default = "shortest_paths"
     a_helpstr = f"Output file name for paths calculation (see option -l) " \
-                 f"(default: {a_default}.txt"
-    parser.add_argument("-po", "--path-output",
+                f"(default: {a_default}.txt)."
+    parser.add_argument("-a", "--path-output",
                         dest = "p_out",
                         default = a_default,
                         help = a_helpstr)
 
     # Metapath
-    m_helpstr = "Calculate metapath"
+    m_helpstr = "Calculate metapath."
     parser.add_argument("-m", "--metapath",
                         dest = "do_metapath",
                         action = "store_true",
@@ -538,7 +540,7 @@ def main():
                         help = m_helpstr)
 
     w_helpstr = f"During metapath calculation, normalize the edge and node " \
-                f"weights"
+                f"weights."
     parser.add_argument("-w", "--normalize-weights",
                         dest = "do_normalize",
                         action = "store_true",
@@ -550,7 +552,7 @@ def main():
                 f"residues that are separated by this number of residues or " \
                 f"more in the protein backbone. The last residue of a chain " \
                 f"and the first residue of the subsequent chain are counted " \
-                f"as adjacent residues (default: {g_default})"
+                f"as adjacent residues (default: {g_default})."
     parser.add_argument("-g", "--residue-gap", 
                         dest = "res_gap",
                         default = g_default,
@@ -559,7 +561,7 @@ def main():
 
     e_default  = 0.1
     e_helpstr = f"During metapath filtering, only keep edges that occur more " \
-                f"frequently than this value (default: {e_default})"
+                f"frequently than this value (default: {e_default})."
     parser.add_argument("-e", "--edge-threshold", 
                         dest = "edge_thresh",
                         default = e_default,
@@ -568,7 +570,7 @@ def main():
 
     n_default  = 0.1
     n_helpstr = f"During metapath filtering, only keep nodes that occur more " \
-                f"frequently than this value (default: {n_default})"
+                f"frequently than this value (default: {n_default})."
     parser.add_argument("-n", "--node-threshold", 
                         dest = "node_thresh",
                         default = n_default,
@@ -577,7 +579,7 @@ def main():
 
     c_default = 3
     c_helpstr = f"During metapath plotting, nodes with a degree higher than " \
-                f"this value are designated as hubs (default: {c_default}"
+                f"this value are designated as hubs (default: {c_default})."
     parser.add_argument("-c", "--hub-cutoff",
                         dest = "hub",
                         default = c_default,
@@ -586,7 +588,7 @@ def main():
 
     k_default = 0.2
     k_helpstr = f"Node spacing during metapath plotting. Higher values cause " \
-                f"nodes to be more spread apart (default: {k_default}"
+                f"nodes to be more spread apart (default: {k_default})."
     parser.add_argument("-k", "--node-spacing",
                         dest = "node_space",
                         default = k_default,
@@ -595,16 +597,16 @@ def main():
 
     z_default = 900
     z_helpstr = f"Node size during metapath plotting. Higher values create " \
-                f"larger nodes (default: {z_default}"
-    parser.add_argument("-ns", "--node-size",
+                f"larger nodes (default: {z_default})."
+    parser.add_argument("-z", "--node-size",
                         dest = "node_size",
                         default = z_default,
                         type = int,
                         help = z_helpstr)
 
     e_default = "metapath"
-    e_helpstr = f"Metapath plot name (default: {e_default}.pdf)"
-    parser.add_argument("-mo", "--metapath-output",
+    e_helpstr = f"Metapath plot name (default: {e_default}.pdf)."
+    parser.add_argument("-e", "--metapath-output",
                         dest = "m_out",
                         default = e_default,
                         help = e_helpstr)
