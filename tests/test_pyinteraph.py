@@ -181,16 +181,6 @@ class TestGraphAnalysis(object):
     def target(self):
         return "A-92LEU"
 
-    @pytest.fixture(scope = "class")
-    def paths(self, G, source, target):
-        maxl = 3
-        sort_paths_by = "cumulative_weight"
-        return ga.get_paths(G = G,
-                            source = source,
-                            target = target,
-                            maxl = maxl,
-                            sort_paths_by = sort_paths_by)
-
     #---------------------------- Tests ------------------------------#
 
     def test_hubs(self, hubs):
@@ -235,16 +225,6 @@ class TestGraphAnalysis(object):
                      {'A-144TRP'}, {'A-145THR'}, {'A-146ARG'}, {'A-148TYR'}, {'A-150SER'}]
         assert_equal(ccs, expected)
 
-    def test_paths(self, paths):
-        expected = [(['A-56ILE', 'A-69MET', 'A-92LEU'], 3, 97.4, 48.7),
-                    (['A-56ILE', 'A-69MET', 'A-105ALA', 'A-92LEU'], 4, 93.4, 31.133333333333336),
-                    (['A-56ILE', 'A-54VAL', 'A-69MET', 'A-92LEU'], 4, 32.5, 10.833333333333334), 
-                    (['A-56ILE', 'A-102LEU', 'A-105ALA', 'A-92LEU'], 4, 4.7, 1.5666666666666667)]
-        print(expected)
-        print("-------")
-        print(paths)
-        assert_equal(paths, expected)
-
     def test_get_resnum(self, resstring):
         return ga.get_resnum(resstring = resstring)
 
@@ -275,15 +255,3 @@ class TestGraphAnalysis(object):
                 ref = pdb_fname,
                 hubs_pdb = hubs_pdb,
                 replace_bfac_func = ga.replace_bfac_column)
-
-    def test_write_paths(self, paths):
-        return ga.write_paths(paths = paths,
-                              outfile = None)
-
-    def test_write_paths_matrices(self, identifiers,
-                                  G, paths, results_dir):
-        return ga.write_paths_matrices(identifiers = identifiers,
-                                       G = G,
-                                       paths = paths,
-                                       fmt = "%.1f",
-                                       where = results_dir)
