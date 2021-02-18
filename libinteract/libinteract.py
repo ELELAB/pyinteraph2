@@ -615,7 +615,7 @@ def calc_dist_matrix(uni, \
             numframe += 1
 
             # matrix of centers of mass for the chosen selections
-            coms_list = [sel.center(sel.masses) for sel in chosenselections] 
+            coms_list = [sel.center(sel.masses) for sel in chosenselections]
 
             # matrix of correction factors for the chosen selections
             corrections = correction_func(chosenselections, ts_i)
