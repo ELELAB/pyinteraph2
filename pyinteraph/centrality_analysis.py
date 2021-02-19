@@ -139,28 +139,27 @@ def get_dict_with_group_val(G, node_list, value):
 def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values"""
 
-    centrality_dict = nxc.group_betweenness_centrality(G = G,
-                                                      C = kwargs['node_list'],
-                                                      normalized = kwargs['norm'],
-                                                      weight = kwargs['weight_name'])
+    centrality_val = nxc.group_betweenness_centrality(G = G,
+                                                       S = kwargs['node_list'],
+                                                       normalized = kwargs['norm'],
+                                                       weight = kwargs['weight_name'])
+    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
 def get_group_closeness_cent(G, **kwargs):
     """Returns a dictionary of group closeness centrality values"""
 
     centrality_val = nxc.group_closeness_centrality(G = G,
-                                                    normalized = kwargs['norm'],
+                                                    S = kwargs['node_list'],
                                                     weight = kwargs['weight_name'])
     centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
 def get_edge_betweenness_cent(G, **kwargs):
     """Returns a dictionary of edge betweenness centrality values"""
-
-    centrality_val = nxc.edge_betweenness_centrality(G = G,
-                                                    S = kwargs['node_list'],
-                                                    weight = kwargs['weight_name'])
-    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
+    centrality_dict = nxc.edge_betweenness_centrality(G = G,
+                                                      normalized = kwargs['norm'],
+                                                      weight = kwargs['weight_name'])
     return centrality_dict
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
@@ -277,7 +276,7 @@ def main():
 
     c_choices = ["node", "degree", "betweenness", "closeness", "communicability",
                  "group", "group_betweenness", "group_closeness",
-                 "edge"]
+                 "edge", "edge_betweenness"]
     c_default = None
     c_helpstr = "Select which centrality measures to calculate: " \
                 f"{c_choices} (default: {c_default}). Group centralities " \
@@ -457,7 +456,7 @@ def main():
                                                    **kwargs)
 
         # Dictionary is not empty so node centralities have been requested
-        if not node_dict:
+        if node_dict:
             # Convert dictionary to sorted list
             node_dict = sort_dictionary(node_dict)
 
@@ -477,7 +476,8 @@ def main():
                         "created."
                 log.warning(warn_str)
 
-        if not edge_dict:
+        # Dictionary is not empty so edge centralities have been requested
+        if edge_dict:
             print(edge_dict)
             # possibly sort dictionary
             #make csv
