@@ -8,6 +8,7 @@ import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
 from Bio import PDB
 import matplotlib.pyplot as plt
+import itertools
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -39,7 +40,7 @@ def build_graph(fname, pdb = None):
     # set the names of the graph nodes (in place)
     node_names = dict(zip(range(adj_matrix.shape[0]), identifiers))
     nx.relabel_nodes(G, mapping = node_names, copy = False)
-    # return the idenfiers and the graph
+    # return the identifiers and the graph
     return identifiers, G
 
 def convert_input_to_list(user_input, identifiers):
@@ -251,6 +252,53 @@ def write_pdb_files(centrality_dict, pdb, fname):
         # Replace column and save PDB file
         replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
 
+def write_edge_table(fname, centrality_dict, identifiers):
+    """
+    Takes in a dictionary of dictionaries and saves a file where each 
+    row consists of a node and its corresponding centrality values.
+    """
+
+    # Remove any file extensions
+    fname = os.path.splitext(fname)[0]
+    all_edges = []
+    for inner_dict in centrality_dict.values():
+        edges = inner_dict.keys()
+        for edge in edges:
+            if edge not in all_edges:
+                all_edges.append(edge)
+    all_edges.sort()
+
+
+    with open(f"{fname}.txt", "w") as f:
+        # Add first line (header)
+        line = f"edge"
+        for key in centrality_dict.keys():
+            # Add name of each centrality
+            line += f"\t{key}"
+        line += "\n"
+        f.write(line)
+        #for edge in identifiers:
+        for edge in all_edges:
+            # Write edge name
+            line = f"{edge[0]},{edge[1]}"
+            for c_dict in centrality_dict.values():
+                # Add entrality value if edge exists in this dict
+                if c_dict.get(edge):
+                    line += f"\t{c_dict[edge]}"
+                # Else add 0
+                else:
+                    line += "\t0"
+            line += "\n"
+            f.write(line)
+
+def save_matrix(centrality_dict, identifiers):
+    for name, edge_dict in centrality_dict.items():
+        G = nx.Graph()
+        G.add_nodes_from(identifiers)
+        edges = [(edge[0], edge[1], cent) for edge, cent in edge_dict.items()]
+        G.add_weighted_edges_from(edges)
+        matrix = nx.to_numpy_matrix(G)
+        np.savetxt(f"{name}.dat", matrix)
 
 def main():
 
@@ -351,6 +399,16 @@ def main():
                         action = "store_true",
                         default = False,
                         help = p_helpstr)
+
+    m_default = False
+    m_helpstr = f"For each edge centrality measure calculated, create a .dat " \
+                f"file (matrix) containing the centrality values. " \
+                f" (default: {m_default})."
+    parser.add_argument("-m", "--matrix_output",
+                        dest = "save_mat",
+                        action = "store_true",
+                        default = False,
+                        help = m_helpstr)
 
     args = parser.parse_args()
 
@@ -457,7 +515,7 @@ def main():
 
         # Dictionary is not empty so node centralities have been requested
         if node_dict:
-            # Convert dictionary to sorted list
+            # Convert dictionary to sorted list ??? this is still a dict
             node_dict = sort_dictionary(node_dict)
 
             # Save dictionary as table
@@ -472,16 +530,18 @@ def main():
                                 fname = args.c_out)
             elif args.pdb is None:
                 # Warn if no PDB provided
-                warn_str = "No reference PDB file provided, no PDB files will be "\
-                        "created."
+                warn_str = "No reference PDB file provided, no PDB files will "\
+                           "be created."
                 log.warning(warn_str)
 
         # Dictionary is not empty so edge centralities have been requested
         if edge_dict:
-            print(edge_dict)
-            # possibly sort dictionary
-            #make csv
-            #make matrix
+            write_edge_table(fname = f"{args.c_out}_edge",
+                             centrality_dict = edge_dict, 
+                             identifiers =  identifiers)
+            if args.save_mat:
+                save_matrix(centrality_dict = edge_dict, 
+                            identifiers = identifiers)
 
 
     # Delete later
