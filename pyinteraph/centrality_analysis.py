@@ -162,11 +162,15 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     node. e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}}
     """
 
-    centrality_dict = {}
+    node_dict = {}
+    edge_dict = {}
     for name in cent_list:
         cent_dict = function_map[name](G = graph, **kwargs)
-        centrality_dict[name] = cent_dict
-    return centrality_dict
+        if "edge" in name:
+            edge_dict[name] = cent_dict
+        else:
+            node_dict[name] = cent_dict
+    return node_dict, edge_dict
 
 def sort_dictionary(centrality_dict):
     # Only works with one dict, fix for multiple dict
@@ -245,7 +249,9 @@ def main():
 
     ######################### ARGUMENT PARSER #########################
 
-    description = "Path analysis"
+    description = "Centrality analysis module for PyInteraph. Allows for " \
+                  "calcution of hubs, node centralities, group centralities " \
+                  "and edge centralities."
     parser = argparse.ArgumentParser(description = description)
 
     i_helpstr = ".dat file matrix"
@@ -266,8 +272,9 @@ def main():
                  "edge"]
     c_default = None
     c_helpstr = "Select which centrality measures to calculate: " \
-                f"{c_choices} (default: {c_default} Group centralities " \
-                "will only be calcu"
+                f"{c_choices} (default: {c_default}). Group centralities " \
+                "will only be calculated if a list of nodes is provided " \
+                "(see option -g)."
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
                         nargs = "+",
@@ -304,7 +311,7 @@ def main():
 
     k_default = 3
     k_helpstr = f"The minimum cutoff for a node to be considered a hub. " \
-                f"(default: {c_default}"
+                f"(default: {c_default})."
     parser.add_argument("-k", "--hub-cutoff",
                         dest = "hub",
                         default = k_default,
@@ -313,7 +320,7 @@ def main():
 
     g_helpstr = "List of residues used for group centrality calculations. " \
                 "e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
-                "reference PDB file provided. e.g. _42,_57"
+                "reference PDB file provided. e.g. _42,_57."
     parser.add_argument("-g", "--group",
                         dest = "group",
                         default = None,
@@ -322,7 +329,7 @@ def main():
 
     o_default = "centrality"
     o_helpstr = f"Output file name for centrality measures " \
-                f"(default: {o_default}.txt"
+                f"(default: {o_default}.txt)."
     parser.add_argument("-o", "--centrality-output",
                         dest = "c_out",
                         default = o_default,
@@ -331,7 +338,7 @@ def main():
     p_default = False
     p_helpstr = f"For each centrality measure calculated, create a PDB file " \
                 f"where the bfactor column is replace by the centrality value." \
-                f" (default: {p_default}"
+                f" (default: {p_default})."
     parser.add_argument("-p", "--pdb_output",
                         dest = "save_pdb",
                         action = "store_true",
@@ -365,6 +372,7 @@ def main():
     node = ["hubs", "degree", "betweenness", "closeness"] # add communicability
     group = ["group_betweenness", "group_closeness"]
     edge = ["edge_betweenness"]
+    all_cent = node + edge
 
     # Function map of all implemented measures
     function_map = {'hubs' : get_hubs,
@@ -383,13 +391,17 @@ def main():
         else:
             node_list = args.group
 
+        # Find group names based on user request
+        # Find all non group centralities
+        if "all" in args.cent:
+            centrality_names = all_cent
         # Find all node centralities
         if "node" in args.cent:
             centrality_names = node
-        # Find all group centralities if group specified
+        # Find all group centralities if node list specified
         elif "group" in args.cent and args.group is not None:
             centrality_names = group
-        # Throw error if no group is requested but not specified
+        # Throw error if no group is requested but node list not specified
         elif ("group" in args.cent or \
             # One of the group centralities is requested
             len([cent for cent in args.cent if cent in group]) > 0) \
@@ -430,33 +442,41 @@ def main():
         # print(node)
         
         # Get dictionary of node/group centrality values
-        centrality_dict = get_centrality_dict(cent_list = centrality_names,
-                                              function_map = function_map, 
-                                              graph = graph,
-                                              **kwargs)
+        node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
+                                                   function_map = function_map, 
+                                                   graph = graph,
+                                                   **kwargs)
 
-        # Convert dictionary to sorted list
-        centrality_dict = sort_dictionary(centrality_dict)
+        # Dictionary is not empty so node centralities have been requested
+        if not node_dict:
+            # Convert dictionary to sorted list
+            node_dict = sort_dictionary(node_dict)
 
-        # Save dictionary as table
-        write_table(fname = args.c_out,
-                    centrality_dict = centrality_dict, 
-                    identifiers = identifiers)
+            # Save dictionary as table
+            write_table(fname = args.c_out,
+                        centrality_dict = node_dict, 
+                        identifiers = identifiers)
 
-        # Write PDB files if request (and if reference provided)
-        if args.save_pdb and args.pdb is not None:
-            write_pdb_files(centrality_dict = centrality_dict,
-                            pdb = args.pdb,
-                            fname = args.c_out)
-        elif args.pdb is None:
-            # Warn if no PDB provided
-            warn_str = "No reference PDB file provided, no PDB files will be "\
-                       "created."
-            log.warning(warn_str)
+            # Write PDB files if request (and if reference provided)
+            if args.save_pdb and args.pdb is not None:
+                write_pdb_files(centrality_dict = node_dict,
+                                pdb = args.pdb,
+                                fname = args.c_out)
+            elif args.pdb is None:
+                # Warn if no PDB provided
+                warn_str = "No reference PDB file provided, no PDB files will be "\
+                        "created."
+                log.warning(warn_str)
+
+        if not edge_dict:
+            # possibly sort dictionary
+            #make csv
+            #make matrix
+            pass
 
 
     # Delete later
-    print(centrality_dict['betweenness']['_99'])
+    print(node_dict['betweenness']['_99'])
     x = nx.Graph()
     a = [('A', 'B'), ('B', 'C'), ('C','D')]
     b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
