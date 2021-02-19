@@ -141,9 +141,9 @@ def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values"""
 
     centrality_val = nxc.group_betweenness_centrality(G = G,
-                                                       S = kwargs['node_list'],
-                                                       normalized = kwargs['norm'],
-                                                       weight = kwargs['weight_name'])
+                                                      C = kwargs['node_list'],
+                                                      normalized = kwargs['norm'],
+                                                      weight = kwargs['weight_name'])
     centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
@@ -260,6 +260,8 @@ def write_edge_table(fname, centrality_dict, identifiers):
 
     # Remove any file extensions
     fname = os.path.splitext(fname)[0]
+    
+    # Get sorted list of all edges in the whole dictionary
     all_edges = []
     for inner_dict in centrality_dict.values():
         edges = inner_dict.keys()
@@ -267,7 +269,6 @@ def write_edge_table(fname, centrality_dict, identifiers):
             if edge not in all_edges:
                 all_edges.append(edge)
     all_edges.sort()
-
 
     with open(f"{fname}.txt", "w") as f:
         # Add first line (header)
@@ -292,11 +293,19 @@ def write_edge_table(fname, centrality_dict, identifiers):
             f.write(line)
 
 def save_matrix(centrality_dict, identifiers):
+    """
+    Takes in a dictionary of dictionary and saves a matrix file for
+    each inner dictionary.
+    """
+
     for name, edge_dict in centrality_dict.items():
+        # Create a graph for each inner dictionary
         G = nx.Graph()
         G.add_nodes_from(identifiers)
+        # create list of (node1, node2, edge weight)
         edges = [(edge[0], edge[1], cent) for edge, cent in edge_dict.items()]
         G.add_weighted_edges_from(edges)
+        # Convert graph to matrix
         matrix = nx.to_numpy_matrix(G)
         np.savetxt(f"{name}.dat", matrix)
 
@@ -479,8 +488,6 @@ def main():
         # Find all edge centralities
         elif "edge" in args.cent:
             centrality_names = edge
-            log.error("Not implemented")
-            exit(1)
         else:
             # Get list of specified centrality names
             centrality_names = args.cent
