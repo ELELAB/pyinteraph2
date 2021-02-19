@@ -139,17 +139,25 @@ def get_dict_with_group_val(G, node_list, value):
 def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values"""
 
-    centrality_val = nxc.group_betweenness_centrality(G = G,
+    centrality_dict = nxc.group_betweenness_centrality(G = G,
                                                       C = kwargs['node_list'],
                                                       normalized = kwargs['norm'],
                                                       weight = kwargs['weight_name'])
-    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
 def get_group_closeness_cent(G, **kwargs):
     """Returns a dictionary of group closeness centrality values"""
 
     centrality_val = nxc.group_closeness_centrality(G = G,
+                                                    normalized = kwargs['norm'],
+                                                    weight = kwargs['weight_name'])
+    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
+    return centrality_dict
+
+def get_edge_betweenness_cent(G, **kwargs):
+    """Returns a dictionary of edge betweenness centrality values"""
+
+    centrality_val = nxc.edge_betweenness_centrality(G = G,
                                                     S = kwargs['node_list'],
                                                     weight = kwargs['weight_name'])
     centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
@@ -379,9 +387,10 @@ def main():
                     'degree': get_degree_cent, 
                     'betweenness': get_betweeness_cent,
                     'closeness': get_closeness_cent,
-                    'communicability' : get_communicability_betweenness_cent,
+                    #'communicability' : get_communicability_betweenness_cent,
                     'group_betweenness' : get_group_betweenness_cent,
-                    'group_closeness' : get_group_closeness_cent}
+                    'group_closeness' : get_group_closeness_cent,
+                    'edge_betweenness' : get_edge_betweenness_cent}
     
     # Get list of all centrality measures
     if args.cent is not None:
@@ -469,24 +478,24 @@ def main():
                 log.warning(warn_str)
 
         if not edge_dict:
+            print(edge_dict)
             # possibly sort dictionary
             #make csv
             #make matrix
-            pass
 
 
     # Delete later
-    print(node_dict['betweenness']['_99'])
-    x = nx.Graph()
-    a = [('A', 'B'), ('B', 'C'), ('C','D')]
-    b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
-    c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
-    d = [('A', 'B'), ('B', 'C'), ('C','A')]
-    x.add_edges_from(b)
-    print(x.degree())
-    print(x.edges())
-    print(nxc.betweenness_centrality(x))
-    print(nxc.betweenness_centrality(x, endpoints = True))
+    # print(node_dict['betweenness']['_99'])
+    # x = nx.Graph()
+    # a = [('A', 'B'), ('B', 'C'), ('C','D')]
+    # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
+    # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
+    # d = [('A', 'B'), ('B', 'C'), ('C','A')]
+    # x.add_edges_from(b)
+    # print(x.degree())
+    # print(x.edges())
+    # print(nxc.betweenness_centrality(x))
+    # print(nxc.betweenness_centrality(x, endpoints = True))
     #print(nxc.betweenness_centrality(x))
     #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
 
