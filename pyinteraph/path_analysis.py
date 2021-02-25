@@ -604,12 +604,12 @@ def main():
                         type = int,
                         help = z_helpstr)
 
-    e_default = "metapath"
-    e_helpstr = f"Metapath plot name (default: {e_default}.pdf)."
-    parser.add_argument("-e", "--metapath-output",
+    d_default = "metapath"
+    d_helpstr = f"Metapath plot name (default: {d_default}.pdf)."
+    parser.add_argument("-d", "--metapath-output",
                         dest = "m_out",
-                        default = e_default,
-                        help = e_helpstr)
+                        default = d_default,
+                        help = d_helpstr)
     
 
     args = parser.parse_args()
