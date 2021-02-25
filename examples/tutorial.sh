@@ -210,12 +210,30 @@ graph_analysis -u -r sim.prot.A.pdb -a macro-IIN.dat -ub macro-IIN-hubs.pdb
 
 graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pdb
 
-# Finally, we calculate paths. between residues. graph_analysis calculates by default all simple
-# paths between pairs of residues, up to a certain length defined by option -l. If -l is not large
-# enough to find paths between such residues, the program will suggest a minimum path length
-# which corresponds to the length of the shortest paths. The program accepts the usual inputs plus
-# options -r1 and -r2 which are the source and target residues. These are specified according to node
-# names that are printed by graph_analysis. Option -d saves each path indipendently as an adjacency
-# matrix encoding exclusively that residue. 
+# 4) Perform path analysis on any of the obtained graphs. By default path_analysis only loads the
+# graph and displays the node names. 
+# In order to perform path analysis between specific residues, the user must use the -p option and
+# specify the source (option -s) and target (option -t) nodes of the path. By default, shortest 
+# paths are calculated. In this example, shortest paths are being calculated between residues 
+# A4 and A120. Node names consist of the chain ID and residue number in the reference PDB file. 
+# The output file name is specified as "hb_shortest".
 
-graph_analysis -p -r sim.prot.A.pdb -a macro-IIN.dat -r1 A-10GLU -r2 A-20ALA -l 4
+path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -a hb_shortest
+
+# If the user is instead interested in all simple paths between these two residues, the -l option
+# should be used to specify the maximum length of the paths. Here paths with a maximum length of
+# 10 are calculated.
+
+path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -l 10 -a hb_simple
+
+# If the user is interested in finding the metapath for a network, the -m option can be used.
+# In order to find the metapath, nodes and edges below a certain threshold must be filtered out.
+# The -e option sets the edge threshold while the -n option sets the node threshold. In this example
+# nodes and edges that have a recurrence value of less than 0.1 are filtered out. The -g option
+# can be used to select the minimum sequence distance between two nodes for them to be considerd.
+# In this example, a sequence distance of 5 is used, thus if two residues have less than 5 residues
+# between them, paths between these residues will not be considered during metapath calculation.
+# Optionally, the -d option can be used to set the name of the metapath output file, here "metapath_hb"
+# is used.
+
+path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -m -g 5 -e 0.1 -n 0.1 -d metapath_hb
