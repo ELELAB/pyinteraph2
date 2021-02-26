@@ -158,6 +158,7 @@ def get_group_closeness_cent(G, **kwargs):
 
 def get_edge_betweenness_cent(G, **kwargs):
     """Returns a dictionary of edge betweenness centrality values"""
+    
     centrality_dict = nxc.edge_betweenness_centrality(G = G,
                                                       normalized = kwargs['norm'],
                                                       weight = kwargs['weight_name'])
@@ -165,17 +166,24 @@ def get_edge_betweenness_cent(G, **kwargs):
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """
-    Returns a dictionary where the key is the name of a centrality 
-    measure and the value is a dictionary of centrality values for each
-    node. e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}}
+    Returns two dictionaries. For the first dictionary, the key is the 
+    name of a node centrality measure and the value is a dictionary of 
+    centrality values for each node. 
+    e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}}
+    For the second dictionary, the key is the name of an edge centrality
+    measyre and the value is a dictionary of centrality values for each
+    edge.
     """
 
     node_dict = {}
     edge_dict = {}
     for name in cent_list:
+        # Get dictionary using the function map
         cent_dict = function_map[name](G = graph, **kwargs)
+        # Add edge centralities to edge dict
         if "edge" in name:
             edge_dict[name] = cent_dict
+        # Add node centralities to node dict
         else:
             node_dict[name] = cent_dict
     return node_dict, edge_dict
