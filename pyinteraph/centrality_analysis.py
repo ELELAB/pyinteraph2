@@ -180,26 +180,6 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
             node_dict[name] = cent_dict
     return node_dict, edge_dict
 
-def sort_dictionary(centrality_dict, sort_by = 1):
-    """ 
-    Sorts a nested dictionary e.g. {degree: {A: 0.1, B: 0.7, ...}, 
-    betweenness: {A: 0.8, B: 0.2}} based on the values of a given inner
-    dictionary
-    """
-    if sort_by == "node":
-        return centrality_dict
-    else:
-        # find key index
-    # Only works with one dict, fix for multiple dict
-        sorted_dict = {}
-        for name, node_dict in centrality_dict.items():
-            sorted_node_dict = {n : v for n, v in 
-                                sorted(iterable = node_dict.items(), 
-                                       key = lambda item:item[1], 
-                                       reverse = True)}
-            sorted_dict[name] = sorted_node_dict
-    return sorted_dict
-
 def write_table(fname, centrality_dict, identifiers, sort_by):
     """
     Takes in a dictionary of dictionaries and saves a file where each 
@@ -225,14 +205,11 @@ def write_table(fname, centrality_dict, identifiers, sort_by):
                                 key = lambda tup: tup[1],
                                 reverse = True)
             sorted_nodes = [n for (n, v) in sorted_dict]
-        # col_index = centrality_dict
-        # first_cent = list(centrality_dict.keys())[0]
-        # sorted_nodes = [n for n in centrality_dict[first_cent].keys()]
-        #for node in identifiers add corresponding row:
+        # for node in identifiers, add corresponding row:
         for node in sorted_nodes:
             line = f"{node}"
             for c_dict in centrality_dict.values():
-                # Add each centrality vlue
+                # Add each centrality value
                 line += f"\t{c_dict[node]}"
             line += "\n"
             f.write(line)
@@ -542,10 +519,6 @@ def main():
                   'norm' : args.norm,
                   'endpoint' : args.endpoint,
                   'hub': args.hub}
-
-        # node = any([True for n in centrality_names if n in node or n in group])
-        # edge = any([True for n in centrality_names if n in edge])
-        # print(node)
         
         # Get dictionary of node/group centrality values
         node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
@@ -555,10 +528,6 @@ def main():
 
         # Dictionary is not empty so node centralities have been requested
         if node_dict:
-            # Sort dictionary based on user choice
-            #print(node_dict)
-            #node_dict = sort_dictionary(node_dict)
-
             # Save dictionary as table
             write_table(fname = args.c_out,
                         centrality_dict = node_dict, 
