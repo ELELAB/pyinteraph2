@@ -351,13 +351,14 @@ def main():
                         default = c_default,
                         help =  c_helpstr)
 
+    b_choices = all_cent + group
     b_default = "node"
     b_helpstr = "Sort output by centrality measure. Use the name of the" \
                 "desired measure. The name must match one of the names " \
                 f"used in option -c. (default: {b_default})."
     parser.add_argument("-b", "--sort-by",
                         dest = "sort_by",
-                        choices = c_choices,
+                        choices = b_choices,
                         default = b_default,
                         help = b_helpstr)
 
@@ -500,6 +501,13 @@ def main():
         else:
             # Get list of specified centrality names
             centrality_names = args.cent
+
+        # Check sorting options
+        if args.sort_by != "node" and args.sort_by not in centrality_names:
+            err_str = "The sorting centrality argument (option -s) must be one " \
+                      "of the centrality arguments used in option -c."
+            log.error(err_str)
+            exit(1)
 
         # Change weight boolean to weight name or None
         if args.weight is False:
