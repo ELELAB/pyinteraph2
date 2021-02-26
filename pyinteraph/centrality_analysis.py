@@ -351,16 +351,27 @@ def main():
                         default = c_default,
                         help =  c_helpstr)
 
-    b_choices = all_cent + group
+    b_choices = node + group
     b_default = "node"
-    b_helpstr = "Sort output by centrality measure. Use the name of the" \
+    b_helpstr = "Sort node centralities. Use the name of the" \
                 "desired measure. The name must match one of the names " \
                 f"used in option -c. (default: {b_default})."
-    parser.add_argument("-b", "--sort-by",
-                        dest = "sort_by",
+    parser.add_argument("-b", "--sort-node",
+                        dest = "sort_node",
                         choices = b_choices,
                         default = b_default,
                         help = b_helpstr)
+
+    d_choices = edge
+    d_default = "edge"
+    d_helpstr = "Sort edge centralities. Use the name of the" \
+                "desired measure. The name must match one of the names " \
+                f"used in option -c. (default: {d_default})."
+    parser.add_argument("-d", "--sort-edge",
+                        dest = "sort_edge",
+                        choices = d_choices,
+                        default = d_default,
+                        help = d_helpstr)
 
     w_default = False
     w_helpstr = f"Use edge weights to calculate centrality measures. " \
@@ -481,7 +492,7 @@ def main():
         if "all" in args.cent:
             centrality_names = all_cent
         # Find all node centralities
-        if "node" in args.cent:
+        elif "node" in args.cent:
             centrality_names = node
         # Find all group centralities if node list specified
         elif "group" in args.cent and args.group is not None:
@@ -503,9 +514,17 @@ def main():
             centrality_names = args.cent
 
         # Check sorting options
-        if args.sort_by != "node" and args.sort_by not in centrality_names:
-            err_str = "The sorting centrality argument (option -s) must be one " \
-                      "of the centrality arguments used in option -c."
+        # sorting arg is either node or in centrality names
+        if not (args.sort_node == "node" or args.sort_node in centrality_names):
+            err_str = "The node sorting centrality argument (option -b) must be one " \
+                      "of the node centrality arguments used in option -c. Exiting..."
+            log.error(err_str)
+            exit(1)
+
+        # sorting arg is either edge or in centrality names
+        if not (args.sort_edge == "edge" or args.sort_edge in centrality_names):
+            err_str = "The edge sorting centrality argument (option -d) must be one " \
+                      "of the edge centrality arguments used in option -c. Exiting..."
             log.error(err_str)
             exit(1)
 
@@ -542,7 +561,7 @@ def main():
             write_table(fname = args.c_out,
                         centrality_dict = node_dict, 
                         identifiers = identifiers,
-                        sort_by = args.sort_by)
+                        sort_by = args.sort_node)
 
             # Write PDB files if request (and if reference provided)
             if args.save_pdb and args.pdb is not None:
