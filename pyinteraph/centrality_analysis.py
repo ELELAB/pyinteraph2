@@ -7,8 +7,8 @@ import networkx as nx
 import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
 from Bio import PDB
-import matplotlib.pyplot as plt
-import itertools
+#import matplotlib.pyplot as plt
+#import itertools
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix"""
@@ -328,14 +328,22 @@ def main():
                         default = None,
                         type = str)
 
-    c_choices = ["node", "hubs", "degree", "betweenness", "closeness",
-                 "group", "group_betweenness", "group_closeness",
-                 "edge", "edge_betweenness"]
+    # Centrality types
+    node = ["hubs", "degree", "betweenness", "closeness"] # add communicability
+    group = ["group_betweenness", "group_closeness"]
+    edge = ["edge_betweenness"]
+    all_cent = node + edge
+
+    c_choices = all_cent + group + ["all", "node", "edge", "group"]
     c_default = None
-    c_helpstr = "Select which centrality measures to calculate: " \
-                f"{c_choices} (default: {c_default}). Group centralities " \
-                "will only be calculated if a list of nodes is provided " \
-                "(see option -g)."
+    c_helpstr = f"Select which centrality measures to calculate: {c_choices} " \
+                f"(default: {c_default}). Selecting 'node' will calculate the "\
+                f"following centralities: {node}. Selecting 'edge' will " \
+                f"calculate the following centralities: {edge}. Selecting " \
+                f"'group' will calculate the following centralities: {group}. " \
+                f"Note: Group centralities will only be calculated if a list of " \
+                f"nodes is provided (see option -g). Selecting 'all' will " \
+                f"calculate all non group centralities."
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
                         nargs = "+",
@@ -345,8 +353,8 @@ def main():
 
     b_default = "node"
     b_helpstr = "Sort output by centrality measure. Use the name of the" \
-                "desired measure (the name must match one of the names " \
-                f"used in option -c. (default: {b_default})"
+                "desired measure. The name must match one of the names " \
+                f"used in option -c. (default: {b_default})."
     parser.add_argument("-b", "--sort-by",
                         dest = "sort_by",
                         choices = c_choices,
@@ -448,12 +456,6 @@ def main():
     sys.stdout.write(info)
 
     ############################ CENTRALITY ############################
-
-    # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness"] # add communicability
-    group = ["group_betweenness", "group_closeness"]
-    edge = ["edge_betweenness"]
-    all_cent = node + edge
 
     # Function map of all implemented measures
     function_map = {'hubs' : get_hubs,
