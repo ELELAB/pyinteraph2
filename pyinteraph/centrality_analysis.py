@@ -249,7 +249,7 @@ def write_pdb_files(centrality_dict, pdb, fname):
         # Replace column and save PDB file
         replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
 
-def write_edge_table(fname, centrality_dict, identifiers):
+def write_edge_table(fname, centrality_dict, identifiers, sort_by):
     """
     Takes in a dictionary of dictionaries and saves a file where each 
     row consists of a node and its corresponding centrality values.
@@ -257,15 +257,27 @@ def write_edge_table(fname, centrality_dict, identifiers):
 
     # Remove any file extensions
     fname = os.path.splitext(fname)[0]
-    
+
     # Get sorted list of all edges in the whole dictionary
     all_edges = []
-    for inner_dict in centrality_dict.values():
-        edges = inner_dict.keys()
-        for edge in edges:
-            if edge not in all_edges:
-                all_edges.append(edge)
-    all_edges.sort()
+    if sort_by == "edge":
+        for inner_dict in centrality_dict.values():
+            edges = inner_dict.keys()
+            for edge in edges:
+                if edge not in all_edges:
+                    all_edges.append(edge)
+        sorted_edges = sorted(all_edges)
+    else:
+        # Sort edges by chosen centrality then add remaining edges
+        sorted_dict = sorted(centrality_dict[sort_by].items(), 
+                            key = lambda tup: tup[1],
+                            reverse = True)
+        sorted_edges = [e for (e, v) in sorted_dict]
+        for inner_dict in centrality_dict.values():
+            edges = inner_dict.keys()
+            for edge in edges:
+                if edge not in sorted_edges:
+                    sorted_edges.append(edge)
 
     with open(f"{fname}.txt", "w") as f:
         # Add first line (header)
@@ -276,7 +288,7 @@ def write_edge_table(fname, centrality_dict, identifiers):
         line += "\n"
         f.write(line)
         #for edge in identifiers:
-        for edge in all_edges:
+        for edge in sorted_edges:
             # Write edge name
             line = f"{edge[0]},{edge[1]}"
             for c_dict in centrality_dict.values():
@@ -578,7 +590,8 @@ def main():
         if edge_dict:
             write_edge_table(fname = f"{args.c_out}_edge",
                              centrality_dict = edge_dict, 
-                             identifiers =  identifiers)
+                             identifiers =  identifiers,
+                             sort_by = args.sort_edge)
             if args.save_mat:
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
