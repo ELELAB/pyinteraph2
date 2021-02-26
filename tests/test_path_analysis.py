@@ -197,7 +197,7 @@ def test_all_path_graph(all_path_graph, ref_name):
 
 # Test functions required for metapath calculation
 def test_get_combinations(data):
-    # Check combination distances are correct
+    # Check if the combination distances are correct
     combinations = pa.get_combinations(data[0], 3)
     for combination in combinations:
         idx1 = data[0].index(combination[0])

@@ -216,7 +216,7 @@ graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pd
 # specify the source (option -s) and target (option -t) nodes of the path. By default, shortest 
 # paths are calculated. In this example, shortest paths are being calculated between residues 
 # A4 and A120. Node names consist of the chain ID and residue number in the reference PDB file. 
-# The output file name is specified as "hb_shortest" and results in a tab separated text file called 
+# The output file name is specified as hb_shortest and results in a tab separated text file called 
 # hb_shortest.txt which contains a list of all shortest paths, source, target, path length, 
 # cumulative weight and average weight. Optionally, the output text file can be sorted based on any
 # of the columns on the file. In this example, the output is being sorted according to average weight
@@ -226,10 +226,10 @@ graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pd
 
 path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -b average_weight -a hb_shortest
 
-# If the user is instead interested in all simple paths between these two residues, the -l option
-# should be used to specify the maximum length of the paths. Here all simple paths between residues
+# If the user is interested in all simple paths between these two residues, the -l option
+# should be used to specify the maximum length of the paths. Here, all simple paths between residues
 # A4 and A120 with a maximum length of 10 are calculated. Similar to the shortest paths, two output
-# files are produced, the the tab separated text file and the .dat matrix. The text file here is optionally
+# files are produced, the tab separated text file and the .dat matrix. The text file here is optionally
 # sorted according to the length of the paths.
 
 path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -l 10 -b length -a hb_simple
@@ -238,10 +238,10 @@ path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -l 
 # In order to find the metapath, nodes and edges below a certain threshold must be filtered out.
 # The -e option sets the edge threshold while the -n option sets the node threshold. In this example
 # nodes and edges that have a recurrence value of less than 0.1 are filtered out. The -g option
-# can be used to select the minimum sequence distance between two nodes for them to be considerd.
+# can be used to select the minimum sequence distance between two nodes for them to be considered.
 # In this example, a sequence distance of 5 is used, thus if two residues have less than 5 residues
 # between them, paths between these residues will not be considered during metapath calculation.
-# Optionally, the -d option can be used to set the name of the metapath output file, here "metapath_hb"
+# Optionally, the -d option can be used to set the name of the metapath output file, here metapath_hb
 # is used. This results in a plot of a the metapath known as metapath_hb.pdf and an adjacency matrix
 # named metapath_hb.dat
 

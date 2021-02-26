@@ -460,8 +460,8 @@ def main():
 
     ######################### ARGUMENT PARSER #########################
     
-    description = "Path analysis module for PyInteraph. Allows calculation of " \
-                  "shortest or simple paths between a given source and target " \
+    description = "Path analysis module for PyInteraph. It allows calculation of " \
+                  "shortest or simple paths between a given source and target nodes" \
                   "(see option -l) and the metapath (option -m)."
     parser = argparse.ArgumentParser(description = description)
 
