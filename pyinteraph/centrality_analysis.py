@@ -180,15 +180,27 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
             node_dict[name] = cent_dict
     return node_dict, edge_dict
 
-def sort_dictionary(centrality_dict, sort_by):
+def sort_dictionary(centrality_dict, sort_by = 1):
+    """ 
+    Sorts a nested dictionary e.g. {degree: {A: 0.1, B: 0.7, ...}, 
+    betweenness: {A: 0.8, B: 0.2}} based on the values of a given inner
+    dictionary
+    """
+    if sort_by == "node":
+        return centrality_dict
+    else:
+        # find key index
     # Only works with one dict, fix for multiple dict
-    sorted_dict = {}
-    for name, node_dict in centrality_dict.items():
-        sorted_node_dict = {n : v for n, v in sorted(node_dict.items(), key = lambda item:item[1], reverse= True)}
-        sorted_dict[name] = sorted_node_dict
+        sorted_dict = {}
+        for name, node_dict in centrality_dict.items():
+            sorted_node_dict = {n : v for n, v in 
+                                sorted(iterable = node_dict.items(), 
+                                       key = lambda item:item[1], 
+                                       reverse = True)}
+            sorted_dict[name] = sorted_node_dict
     return sorted_dict
 
-def write_table(fname, centrality_dict, identifiers):
+def write_table(fname, centrality_dict, identifiers, sort_by):
     """
     Takes in a dictionary of dictionaries and saves a file where each 
     row consists of a node and its corresponding centrality values.
@@ -205,10 +217,18 @@ def write_table(fname, centrality_dict, identifiers):
             line += f"\t{key}"
         line += "\n"
         f.write(line)
-        # Add each row (represents a node)
-        first_cent = list(centrality_dict.keys())[0]
-        sorted_nodes = [n for n in centrality_dict[first_cent].keys()]
-        #for node in identifiers:
+        # Choose order of nodes
+        if sort_by == "node":
+            sorted_nodes = identifiers
+        else:
+            sorted_dict = sorted(centrality_dict[sort_by].items(), 
+                                key = lambda tup: tup[1],
+                                reverse = True)
+            sorted_nodes = [n for (n, v) in sorted_dict]
+        # col_index = centrality_dict
+        # first_cent = list(centrality_dict.keys())[0]
+        # sorted_nodes = [n for n in centrality_dict[first_cent].keys()]
+        #for node in identifiers add corresponding row:
         for node in sorted_nodes:
             line = f"{node}"
             for c_dict in centrality_dict.values():
@@ -345,6 +365,16 @@ def main():
                         choices = c_choices,
                         default = c_default,
                         help =  c_helpstr)
+
+    b_default = "node"
+    b_helpstr = "Sort output by centrality measure. Use the name of the" \
+                "desired measure (the name must match one of the names " \
+                f"used in option -c. (default: {b_default})"
+    parser.add_argument("-b", "--sort-by",
+                        dest = "sort_by",
+                        choices = c_choices,
+                        default = b_default,
+                        help = b_helpstr)
 
     w_default = False
     w_helpstr = f"Use edge weights to calculate centrality measures. " \
@@ -532,7 +562,8 @@ def main():
             # Save dictionary as table
             write_table(fname = args.c_out,
                         centrality_dict = node_dict, 
-                        identifiers = identifiers)
+                        identifiers = identifiers,
+                        sort_by = args.sort_by)
 
             # Write PDB files if request (and if reference provided)
             if args.save_pdb and args.pdb is not None:
