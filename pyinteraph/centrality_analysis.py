@@ -180,7 +180,7 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
             node_dict[name] = cent_dict
     return node_dict, edge_dict
 
-def sort_dictionary(centrality_dict):
+def sort_dictionary(centrality_dict, sort_by):
     # Only works with one dict, fix for multiple dict
     sorted_dict = {}
     for name, node_dict in centrality_dict.items():
@@ -331,7 +331,7 @@ def main():
                         default = None,
                         type = str)
 
-    c_choices = ["node", "degree", "betweenness", "closeness", "communicability",
+    c_choices = ["node", "hubs", "degree", "betweenness", "closeness",
                  "group", "group_betweenness", "group_closeness",
                  "edge", "edge_betweenness"]
     c_default = None
@@ -501,7 +501,10 @@ def main():
         # Print message
         sys.stdout.write("Calculating:\n")
         for name in centrality_names:
-            sys.stdout.write(f"{name} centrality\n")
+            if name == "hubs":
+                sys.stdout.write(f"{name}\n")
+            else:
+                sys.stdout.write(f"{name} centrality\n")
 
         # Create dictionary of optional arguments
         kwargs = {'node_list' : node_list,
@@ -522,8 +525,9 @@ def main():
 
         # Dictionary is not empty so node centralities have been requested
         if node_dict:
-            # Convert dictionary to sorted list ??? this is still a dict
-            node_dict = sort_dictionary(node_dict)
+            # Sort dictionary based on user choice
+            #print(node_dict)
+            #node_dict = sort_dictionary(node_dict)
 
             # Save dictionary as table
             write_table(fname = args.c_out,
