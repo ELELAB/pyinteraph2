@@ -7,11 +7,9 @@ import networkx as nx
 import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
 from Bio import PDB
-#import matplotlib.pyplot as plt
-#import itertools
 
 def build_graph(fname, pdb = None):
-    """Build a graph from the provided matrix"""
+    """Build a graph from the provided matrix."""
 
     try:
         adj_matrix = np.loadtxt(fname)
@@ -91,20 +89,20 @@ def convert_input_to_list(user_input, identifiers):
     return res_list
 
 def get_hubs(G, **kwargs):
-    """Returns a dictionary of degree values for each node"""
+    """Returns a dictionary of degree values for each node."""
 
     degree_tuple = G.degree()
     hubs = {n : (d if d >= kwargs['hub'] else 0) for n, d in degree_tuple}
     return hubs
 
 def get_degree_cent(G, **kwargs):
-    """Returns a dictionary of degree centrality values"""
+    """Returns a dictionary of degree centrality values for each node."""
 
     centrality_dict = nxc.degree_centrality(G)
     return centrality_dict
 
 def get_betweeness_cent(G, **kwargs):
-    """Returns a dictionary of betweeness centrality values"""
+    """Returns a dictionary of betweeness centrality values for each node."""
 
     # Need to consider if endpoints should be used or not
     centrality_dict = nxc.betweenness_centrality(G = G,
@@ -114,7 +112,7 @@ def get_betweeness_cent(G, **kwargs):
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
-    """Returns a dictionary of closeness centrality values"""
+    """Returns a dictionary of closeness centrality values for each node."""
 
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
@@ -128,9 +126,10 @@ def get_closeness_cent(G, **kwargs):
 #     return centrality_dict
 
 def get_dict_with_group_val(G, node_list, value):
-    """Take in a graph, list of nodes and a single value. Returns a dict
+    """
+    Takes in a graph, list of nodes and a group value. Returns a dict
     containing each node in the graph. If the node is in the list, its
-    value is the given value or else it is 0.
+    value is the group value or else it is 0.
     """
 
     node_dict = {n : (value if n in node_list else 0) for n in G.nodes()}
@@ -138,7 +137,7 @@ def get_dict_with_group_val(G, node_list, value):
 
 
 def get_group_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of group betweeness centrality values"""
+    """Returns a dictionary of group betweeness centrality values."""
 
     centrality_val = nxc.group_betweenness_centrality(G = G,
                                                       C = kwargs['node_list'],
@@ -148,7 +147,7 @@ def get_group_betweenness_cent(G, **kwargs):
     return centrality_dict
 
 def get_group_closeness_cent(G, **kwargs):
-    """Returns a dictionary of group closeness centrality values"""
+    """Returns a dictionary of group closeness centrality values."""
 
     centrality_val = nxc.group_closeness_centrality(G = G,
                                                     S = kwargs['node_list'],
@@ -157,7 +156,7 @@ def get_group_closeness_cent(G, **kwargs):
     return centrality_dict
 
 def get_edge_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of edge betweenness centrality values"""
+    """Returns a dictionary of edge betweenness centrality values."""
     
     centrality_dict = nxc.edge_betweenness_centrality(G = G,
                                                       normalized = kwargs['norm'],
@@ -165,14 +164,13 @@ def get_edge_betweenness_cent(G, **kwargs):
     return centrality_dict
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
-    """
-    Returns two dictionaries. For the first dictionary, the key is the 
+    """Returns two dictionaries. For the first dictionary, the key is the 
     name of a node centrality measure and the value is a dictionary of 
-    centrality values for each node. 
-    e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}}
+    centrality values for each node. (Also includes group centralities)
+    e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}, ...}
     For the second dictionary, the key is the name of an edge centrality
-    measyre and the value is a dictionary of centrality values for each
-    edge.
+    measure and the value is a dictionary of centrality values for each
+    edge, similar to the first dictionary.
     """
 
     node_dict = {}
@@ -189,8 +187,7 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     return node_dict, edge_dict
 
 def write_table(fname, centrality_dict, identifiers, sort_by):
-    """
-    Takes in a dictionary of dictionaries and saves a file where each 
+    """Takes in a dictionary of dictionaries and saves a file where each 
     row consists of a node and its corresponding centrality values.
     """
 
@@ -225,7 +222,7 @@ def write_table(fname, centrality_dict, identifiers, sort_by):
 def replace_bfac_column(pdb, vals, pdb_out):
     """Replace the column containing B-factors in a PDB with
     custom values. Takes in the reference pdb file name, an array of
-    values and the output pdb file name
+    values and the output pdb file name.
     """
 
     # create the PDB parser
@@ -248,7 +245,7 @@ def replace_bfac_column(pdb, vals, pdb_out):
 
 def write_pdb_files(centrality_dict, pdb, fname):
     """Save a pdb file for every centrality measure in the input 
-    centrality dictionary
+    centrality dictionary.
     """
 
     for cent_name, cent_dict in centrality_dict.items():
@@ -258,8 +255,7 @@ def write_pdb_files(centrality_dict, pdb, fname):
         replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
 
 def write_edge_table(fname, centrality_dict, identifiers, sort_by):
-    """
-    Takes in a dictionary of dictionaries and saves a file where each 
+    """Takes in a dictionary of dictionaries and saves a file where each 
     row consists of a node and its corresponding centrality values.
     """
 
@@ -287,6 +283,7 @@ def write_edge_table(fname, centrality_dict, identifiers, sort_by):
                 if edge not in sorted_edges:
                     sorted_edges.append(edge)
 
+    # Write file according to sorted edge list
     with open(f"{fname}.txt", "w") as f:
         # Add first line (header)
         line = f"edge"
@@ -310,8 +307,7 @@ def write_edge_table(fname, centrality_dict, identifiers, sort_by):
             f.write(line)
 
 def save_matrix(centrality_dict, identifiers):
-    """
-    Takes in a dictionary of dictionary and saves a matrix file for
+    """Takes in a dictionary of dictionary and saves a matrix file for
     each inner dictionary.
     """
 
@@ -363,7 +359,7 @@ def main():
                 f"'group' will calculate the following centralities: {group}. " \
                 f"Note: Group centralities will only be calculated if a list of " \
                 f"nodes is provided (see option -g). Selecting 'all' will " \
-                f"calculate all non group centralities."
+                f"calculate all non-group centralities."
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
                         nargs = "+",
@@ -373,8 +369,8 @@ def main():
 
     b_choices = node + group
     b_default = "node"
-    b_helpstr = "Sort node centralities. Use the name of the" \
-                "desired measure. The name must match one of the names " \
+    b_helpstr = f"Sort node centralities. Use the name of the" \
+                f"desired measure. The name must match one of the names " \
                 f"used in option -c. (default: {b_default})."
     parser.add_argument("-b", "--sort-node",
                         dest = "sort_node",
@@ -384,8 +380,8 @@ def main():
 
     d_choices = edge
     d_default = "edge"
-    d_helpstr = "Sort edge centralities. Use the name of the" \
-                "desired measure. The name must match one of the names " \
+    d_helpstr = f"Sort edge centralities. Use the name of the" \
+                f"desired measure. The name must match one of the names " \
                 f"used in option -c. (default: {d_default})."
     parser.add_argument("-d", "--sort-edge",
                         dest = "sort_edge",
@@ -429,9 +425,9 @@ def main():
                         type = int,
                         help = k_helpstr)
 
-    g_helpstr = "List of residues used for group centrality calculations. " \
-                "e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
-                "reference PDB file provided. e.g. _42,_57."
+    g_helpstr = f"List of residues used for group centrality calculations. " \
+                f"e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
+                f"reference PDB file provided. e.g. _42,_57."
     parser.add_argument("-g", "--group",
                         dest = "group",
                         default = None,
@@ -517,7 +513,7 @@ def main():
         # Find all group centralities if node list specified
         elif "group" in args.cent and args.group is not None:
             centrality_names = group
-        # Throw error if no group is requested but node list not specified
+        # Throw error if group is requested but node list is not specified
         elif ("group" in args.cent or \
             # One of the group centralities is requested
             len([cent for cent in args.cent if cent in group]) > 0) \
@@ -569,7 +565,7 @@ def main():
                   'endpoint' : args.endpoint,
                   'hub': args.hub}
         
-        # Get dictionary of node/group centrality values
+        # Get dictionary of node+group and edge centrality values
         node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
                                                    function_map = function_map, 
                                                    graph = graph,
