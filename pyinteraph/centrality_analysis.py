@@ -120,12 +120,12 @@ def get_closeness_cent(G, **kwargs):
     return centrality_dict
 
 
-def get_communicability_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of communicability betweenness centrality values"""
+# def get_communicability_betweenness_cent(G, **kwargs):
+#     """Returns a dictionary of communicability betweenness centrality values"""
 
-    centrality_dict = nxc.communicability_betweenness_centrality(G = G,
-                                                                 normalized = kwargs['norm'])
-    return centrality_dict
+#     centrality_dict = nxc.communicability_betweenness_centrality(G = G,
+#                                                                  normalized = kwargs['norm'])
+#     return centrality_dict
 
 def get_dict_with_group_val(G, node_list, value):
     """Take in a graph, list of nodes and a single value. Returns a dict
@@ -603,30 +603,6 @@ def main():
             if args.save_mat:
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
-
-
-    # Delete later
-    # print(node_dict['betweenness']['_99'])
-    # x = nx.Graph()
-    # a = [('A', 'B'), ('B', 'C'), ('C','D')]
-    # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
-    # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
-    # d = [('A', 'B'), ('B', 'C'), ('C','A')]
-    # x.add_edges_from(b)
-    # print(x.degree())
-    # print(x.edges())
-    # print(nxc.betweenness_centrality(x))
-    # print(nxc.betweenness_centrality(x, endpoints = True))
-    #print(nxc.betweenness_centrality(x))
-    #print(nx.algorithms.centrality.group_betweenness_centrality(x, C=[0,3]))
-
-    # #plot graph
-    # weights = [d["weight"] for u, v, d in graph.edges(data=True)]
-    # pos = nx.spring_layout(graph, k = 0.5)
-    # nx.draw_networkx_nodes(graph, pos)
-    # nx.draw_networkx_edges(graph, pos, edge_color = weights)
-    # nx.draw_networkx_labels(graph, pos)
-    # plt.savefig("graph.png")
 
 if __name__ == "__main__":
     main()
