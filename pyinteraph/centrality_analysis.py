@@ -507,15 +507,19 @@ def main():
         # Check sorting options
         # sorting arg is either node or in centrality names
         if not (args.sort_node == "node" or args.sort_node in centrality_names):
-            err_str = "The node sorting centrality argument (option -b) must be one " \
-                      "of the node centrality arguments used in option -c. Exiting..."
+            # expected node names
+            expected_names = [name for name in centrality_names if name not in edge]
+            err_str = f"The node sorting centrality argument (option -b) must " \
+                      f"be one of the following: {expected_names}. Exiting..."
             log.error(err_str)
             exit(1)
 
         # sorting arg is either edge or in centrality names
         if not (args.sort_edge == "edge" or args.sort_edge in centrality_names):
-            err_str = "The edge sorting centrality argument (option -d) must be one " \
-                      "of the edge centrality arguments used in option -c. Exiting..."
+            # expected edge names
+            expected_names = [name for name in centrality_names if name not in node]
+            err_str = f"The edge sorting centrality argument (option -d) must " \
+                      f"be one of the following: {expected_names}. Exiting..."
             log.error(err_str)
             exit(1)
 
