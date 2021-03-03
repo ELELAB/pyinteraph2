@@ -204,7 +204,9 @@ graph_analysis -u -r sim.prot.A.pdb -a macro-IIN.dat -ub macro-IIN-hubs.pdb
 graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pdb
 
 # 4) Perform path analysis on any of the obtained graphs. By default path_analysis only loads the
-# graph and displays the node names. 
+# graph and displays the node names. Here we use the hydrogen bonds graph in order to have weighted
+# edges for the calculation of metapath, but the procedure is the same for any graph that
+# PyInteraph generates.
 # In order to perform path analysis between specific residues, the user must use the -p option and
 # specify the source (option -s) and target (option -t) nodes of the path. By default, shortest 
 # paths are calculated. In this example, shortest paths are being calculated between residues 
@@ -217,15 +219,15 @@ graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pd
 # combined into one graph and then the adjacency matrix for that graph is saved in this .dat file. This
 # can be used for plotting wih xPyder.
 
-path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -b average_weight -a hb_shortest
+path_analysis -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -b average_weight -a hb_shortest
 
-# If the user is interested in all simple paths between these two residues, the -l option
+# If the user is interested in all simple paths of arbitrary lengthbetween these two residues, the -l option
 # should be used to specify the maximum length of the paths. Here, all simple paths between residues
 # A4 and A120 with a maximum length of 10 are calculated. Similar to the shortest paths, two output
 # files are produced, the tab separated text file and the .dat matrix. The text file here is optionally
 # sorted according to the length of the paths.
 
-path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -l 10 -b length -a hb_simple
+path_analysis -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -l 10 -b length -a hb_simple
 
 # If the user is interested in finding the metapath for a network, the -m option can be used.
 # In order to find the metapath, nodes and edges below a certain threshold must be filtered out.
@@ -235,12 +237,12 @@ path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -l 
 # In this example, a sequence distance of 5 is used, thus if two residues have less than 5 residues
 # between them, paths between these residues will not be considered during metapath calculation.
 # Optionally, the -d option can be used to set the name of the metapath output file, here metapath_hb
-# is used. This results in a plot of a the metapath known as metapath_hb.pdf and an adjacency matrix
+# is used. This results in a plot of a the metapath named metapath_hb.pdf and an adjacency matrix
 # named metapath_hb.dat
 
-path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -m -g 5 -e 0.1 -n 0.1 -d metapath_hb
+path_analysis -i hb-graph-filtered.dat -r sim.prot.A.pdb -m -g 5 -e 0.1 -n 0.1 -d metapath_hb
 
 # Optionally, the metapath can be normalized (option -w) before edges and nodes are filtered. This
 # has an effect similar to using smaller threshold values. An example is shown below.
 
-path_analysis.py -i hb-graph-filtered.dat -r sim.prot.A.pdb -m -g 5 -e 0.1 -n 0.1 -w -d metapath_norm_hb
+path_analysis -i hb-graph-filtered.dat -r sim.prot.A.pdb -m -g 5 -e 0.1 -n 0.1 -w -d metapath_norm_hb
