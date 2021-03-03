@@ -510,7 +510,7 @@ def main():
             # expected node names
             expected_names = [name for name in centrality_names if name not in edge]
             err_str = f"The node sorting centrality argument (option -b) must " \
-                      f"be one of the following: {expected_names}. Exiting..."
+                      f"be one of the following: {', '.join(expected_names)}. Exiting..."
             log.error(err_str)
             exit(1)
 
@@ -519,7 +519,7 @@ def main():
             # expected edge names
             expected_names = [name for name in centrality_names if name not in node]
             err_str = f"The edge sorting centrality argument (option -d) must " \
-                      f"be one of the following: {expected_names}. Exiting..."
+                      f"be one of the following: {', '.join(expected_names)}. Exiting..."
             log.error(err_str)
             exit(1)
 
