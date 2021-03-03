@@ -7,6 +7,8 @@ import networkx as nx
 import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
 from Bio import PDB
+import graph_analysis as ga
+#import path_analysis as pa
 
 def build_graph(fname, pdb = None):
     """Build a graph from the provided matrix."""
@@ -106,9 +108,9 @@ def get_betweeness_cent(G, **kwargs):
 
     # Need to consider if endpoints should be used or not
     centrality_dict = nxc.betweenness_centrality(G = G,
-                                                 normalized = kwargs['norm'],
-                                                 weight = kwargs['weight_name'],
-                                                 endpoints = kwargs['endpoint'])
+                                                 normalized = kwargs['normalized'],
+                                                 weight = kwargs['weight'],
+                                                 endpoints = kwargs['endpoints'])
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
@@ -116,7 +118,6 @@ def get_closeness_cent(G, **kwargs):
 
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
-
 
 # def get_communicability_betweenness_cent(G, **kwargs):
 #     """Returns a dictionary of communicability betweenness centrality values"""
@@ -126,8 +127,7 @@ def get_closeness_cent(G, **kwargs):
 #     return centrality_dict
 
 def get_dict_with_group_val(G, node_list, value):
-    """
-    Takes in a graph, list of nodes and a group value. Returns a dict
+    """Takes in a graph, list of nodes and a group value. Returns a dict
     containing each node in the graph. If the node is in the list, its
     value is the group value or else it is 0.
     """
@@ -135,14 +135,13 @@ def get_dict_with_group_val(G, node_list, value):
     node_dict = {n : (value if n in node_list else 0) for n in G.nodes()}
     return node_dict
 
-
 def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values."""
 
     centrality_val = nxc.group_betweenness_centrality(G = G,
                                                       C = kwargs['node_list'],
-                                                      normalized = kwargs['norm'],
-                                                      weight = kwargs['weight_name'])
+                                                      normalized = kwargs['normalized'],
+                                                      weight = kwargs['weight'])
     centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
@@ -151,7 +150,7 @@ def get_group_closeness_cent(G, **kwargs):
 
     centrality_val = nxc.group_closeness_centrality(G = G,
                                                     S = kwargs['node_list'],
-                                                    weight = kwargs['weight_name'])
+                                                    weight = kwargs['weight'])
     centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
     return centrality_dict
 
@@ -159,8 +158,8 @@ def get_edge_betweenness_cent(G, **kwargs):
     """Returns a dictionary of edge betweenness centrality values."""
     
     centrality_dict = nxc.edge_betweenness_centrality(G = G,
-                                                      normalized = kwargs['norm'],
-                                                      weight = kwargs['weight_name'])
+                                                      normalized = kwargs['normalized'],
+                                                      weight = kwargs['weight'])
     return centrality_dict
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
@@ -219,30 +218,6 @@ def write_table(fname, centrality_dict, identifiers, sort_by):
             line += "\n"
             f.write(line)
 
-def replace_bfac_column(pdb, vals, pdb_out):
-    """Replace the column containing B-factors in a PDB with
-    custom values. Takes in the reference pdb file name, an array of
-    values and the output pdb file name.
-    """
-
-    # create the PDB parser
-    parser = PDB.PDBParser()
-    # get the protein structure
-    structure = parser.get_structure("protein", pdb)
-    io = PDB.PDBIO()
-    chain_offset = 0
-    for model in structure:
-        for chain in model:
-            for i, residue in enumerate(chain):
-                for atom in residue:
-                    # set the custom value
-                    atom.set_bfactor(float(vals[i+chain_offset]))
-            chain_offset += len(chain)
-    # set the structure for the output
-    io.set_structure(structure)
-    # save the structure to a new PDB file
-    io.save(pdb_out)
-
 def write_pdb_files(centrality_dict, pdb, fname):
     """Save a pdb file for every centrality measure in the input 
     centrality dictionary.
@@ -252,7 +227,7 @@ def write_pdb_files(centrality_dict, pdb, fname):
         # Create input array
         cent_array = np.array([val for val in cent_dict.values()])
         # Replace column and save PDB file
-        replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
+        ga.replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
 
 def write_edge_table(fname, centrality_dict, identifiers, sort_by):
     """Takes in a dictionary of dictionaries and saves a file where each 
@@ -326,8 +301,8 @@ def main():
 
     ######################### ARGUMENT PARSER #########################
 
-    description = "Centrality analysis module for PyInteraph. Allows for " \
-                  "calcution of hubs, node centralities, group centralities " \
+    description = "Centrality analysis module for PyInteraph. It can be used " \
+                  "to calculate hubs, node centralities, group centralities " \
                   "and edge centralities."
     parser = argparse.ArgumentParser(description = description)
 
@@ -369,7 +344,7 @@ def main():
 
     b_choices = node + group
     b_default = "node"
-    b_helpstr = f"Sort node centralities. Use the name of the" \
+    b_helpstr = f"Sort node centralities. Use the name of the " \
                 f"desired measure. The name must match one of the names " \
                 f"used in option -c. (default: {b_default})."
     parser.add_argument("-b", "--sort-node",
@@ -380,7 +355,7 @@ def main():
 
     d_choices = edge
     d_default = "edge"
-    d_helpstr = f"Sort edge centralities. Use the name of the" \
+    d_helpstr = f"Sort edge centralities. Use the name of the " \
                 f"desired measure. The name must match one of the names " \
                 f"used in option -c. (default: {d_default})."
     parser.add_argument("-d", "--sort-edge",
@@ -444,8 +419,8 @@ def main():
 
     p_default = False
     p_helpstr = f"For each centrality measure calculated, create a PDB file " \
-                f"where the bfactor column is replace by the centrality value." \
-                f" (default: {p_default})."
+                f"where the bfactor column is replace by the centrality value. " \
+                f"(default: {p_default})."
     parser.add_argument("-p", "--pdb_output",
                         dest = "save_pdb",
                         action = "store_true",
@@ -455,7 +430,7 @@ def main():
     m_default = False
     m_helpstr = f"For each edge centrality measure calculated, create a .dat " \
                 f"file (matrix) containing the centrality values. " \
-                f" (default: {m_default})."
+                f"(default: {m_default})."
     parser.add_argument("-m", "--matrix_output",
                         dest = "save_mat",
                         action = "store_true",
@@ -560,9 +535,9 @@ def main():
 
         # Create dictionary of optional arguments
         kwargs = {'node_list' : node_list,
-                  'weight_name' : args.weight,
-                  'norm' : args.norm,
-                  'endpoint' : args.endpoint,
+                  'weight' : args.weight,
+                  'normalized' : args.norm,
+                  'endpoints' : args.endpoint,
                   'hub': args.hub}
         
         # Get dictionary of node+group and edge centrality values
