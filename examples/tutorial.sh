@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# These first lines are prepared for a local installation PyInteraph.
-# Please modify them accordingly to your installation.
-
-export PYTHONPATH=$PYTHONPATH:../test/lib/python/
-export PYINTERAPH=../test/pyinteraph/
-export PATH=$PATH:$PYINTERAPH
-
 # The PyInteraph package works through two main front-end scripts: pyinteraph and filter_graph.
 # pyinteraph performs the analysis of structural ensembles for salt-bridges, hydrogen bonds and 
 # hydrophobic interactions. The output files are a text file, which can be plotted on the 3D
