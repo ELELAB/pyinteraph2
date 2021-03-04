@@ -218,10 +218,13 @@ graph_analysis -c -r sim.prot.A.pdb -a macro-IIN.dat -cb macro-IIN-components.pd
 # of the paths. A second output file is also created called hb_shortest.dat. All the paths found are
 # combined into one graph and then the adjacency matrix for that graph is saved in this .dat file. This
 # can be used for plotting wih xPyder.
+# Note: In this example we are using a PDB with a chain ID column as to avoid using the generic chain label 
+# SYSTEM that is assigned. If the chain ID column was not present in the PDB file, in this example this 
+# would correspond to using -s SYSTEM4 and -t SYSTEM120 instead of -s A4 and -t A120, respectively.
 
 path_analysis -i hb-graph-filtered.dat -r sim.prot.A.pdb -s A4 -t A120 -p -b average_weight -a hb_shortest
 
-# If the user is interested in all simple paths of arbitrary lengthbetween these two residues, the -l option
+# If the user is interested in all simple paths of arbitrary length between these two residues, the -l option
 # should be used to specify the maximum length of the paths. Here, all simple paths between residues
 # A4 and A120 with a maximum length of 10 are calculated. Similar to the shortest paths, two output
 # files are produced, the tab separated text file and the .dat matrix. The text file here is optionally
