@@ -15,7 +15,7 @@ from pyinteraph import graph_analysis as ga
 
 @pytest.fixture(scope = "module")
 def ref_dir(request):
-    return os.path.join(request.fspath.dirname, '../examples/tutorial')
+    return os.path.join(request.fspath.dirname, 'data/single_chain')
 
 @pytest.fixture(scope = "module")
 def pdb_fname(ref_dir):

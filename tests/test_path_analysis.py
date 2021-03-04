@@ -9,7 +9,7 @@ from pyinteraph import path_analysis as pa
 # Load files
 @pytest.fixture
 def ref_dir(request):
-    return os.path.join(request.fspath.dirname, '../examples')
+    return os.path.join(request.fspath.dirname, 'data/two_chains')
 
 @pytest.fixture
 def data_files(ref_dir):
