@@ -119,12 +119,37 @@ def get_closeness_cent(G, **kwargs):
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
 
-# def get_communicability_betweenness_cent(G, **kwargs):
-#     """Returns a dictionary of communicability betweenness centrality values"""
+def remove_isolates(G):
+    """Takes in a graph and returns a new graph where all the nodes with 
+    zero edges have been removed.
+    """
 
-#     centrality_dict = nxc.communicability_betweenness_centrality(G = G,
-#                                                                  normalized = kwargs['norm'])
-#     return centrality_dict
+    # create duplicate graph so the original is unaffected
+    H = G.copy()
+    # isolates are nodes with zero edges
+    isolates = nx.isolates(G)
+    # remove from duplicate graph
+    H.remove_nodes_from(list(isolates))
+    return H
+
+def fill_dict_with_isolates(G, cent_dict):
+    """Takes in a graph and a dictionary of centrality values. Returns a
+    new dictionary of centrality values containing each node in the 
+    graph. If the node is not in the given dictionary, it has a value of
+    0 or else if has the value in the given dictionary.
+    """
+
+    return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
+
+def get_communicability_betweenness_cent(G, **kwargs):
+    """Returns a dictionary of communicability betweenness centrality values"""
+
+    G_no_isolates = remove_isolates(G)
+    centrality_dict = nxc.communicability_betweenness_centrality(\
+                                G = G_no_isolates,
+                                normalized = kwargs["normalized"])
+    filled_dict = fill_dict_with_isolates(G, centrality_dict)
+    return filled_dict
 
 def get_dict_with_group_val(G, node_list, value):
     """Takes in a graph, list of nodes and a group value. Returns a dict
@@ -132,8 +157,7 @@ def get_dict_with_group_val(G, node_list, value):
     value is the group value or else it is 0.
     """
 
-    node_dict = {n : (value if n in node_list else 0) for n in G.nodes()}
-    return node_dict
+    return {n : (value if n in node_list else 0) for n in G.nodes()}
 
 def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values."""
@@ -320,7 +344,7 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness"] # add communicability
+    node = ["hubs", "degree", "betweenness", "closeness", "communicability"]
     group = ["group_betweenness", "group_closeness"]
     edge = ["edge_betweenness"]
     all_cent = node + edge
@@ -465,7 +489,7 @@ def main():
                     "degree": get_degree_cent, 
                     "betweenness": get_betweeness_cent,
                     "closeness": get_closeness_cent,
-                    #'communicability' : get_communicability_betweenness_cent,
+                    "communicability" : get_communicability_betweenness_cent,
                     "group_betweenness" : get_group_betweenness_cent,
                     "group_closeness" : get_group_closeness_cent,
                     "edge_betweenness" : get_edge_betweenness_cent}
@@ -579,5 +603,20 @@ def main():
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
 
+        # x = nx.Graph()
+        # a = [('A', 'B'), ('B', 'C'), ('C','D')]
+        # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
+        # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
+        # d = [('A', 'B'), ('B', 'C'), ('C','A')]
+        # e = [('A', 'B'), ('B', 'C'), ('C','D'), ('D', 'A')]
+        # x.add_edges_from(e)
+        # x.add_node('Z')
+        # print(x.degree())
+        # print(x.edges())
+        # print("BC:", nxc.betweenness_centrality(x))
+        # print("BC_e:", nxc.betweenness_centrality(x, endpoints = True))
+        # print("CBC:", nxc.communicability_betweenness_centrality(x))
+        # #print("CFB:", nxc.current_flow_betweenness(x))
+        # print("CFE:", nxc.edge_current_flow_betweenness_centrality(x))
 if __name__ == "__main__":
     main()
