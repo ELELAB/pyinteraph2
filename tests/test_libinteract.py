@@ -29,7 +29,7 @@ def hb_file():
 
 @pytest.fixture
 def ref_dir(request):
-    return os.path.join(request.fspath.dirname, '../examples/tutorial')
+    return os.path.join(request.fspath.dirname, 'data/single_chain')
 
 @pytest.fixture
 def data_files(ref_dir):

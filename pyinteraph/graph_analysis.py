@@ -226,107 +226,6 @@ def write_hubs_pdb(identifiers,
                       pdb_out = hubs_pdb) 
 
 
-def get_paths(G, source, target, maxl, sort_paths_by):
-    """Get all the shortest paths between a source and a target
-    node in the graph."""
-    
-    # both nodes must be in the graph
-    if not source in G.nodes() or not target in G.nodes():
-        errstr = "Source or target residues have been badly specified."
-        log.error(errstr)
-        raise ValueError(errstr)
-    # check if there are any paths
-    try:
-        shortest = nx.algorithms.shortest_path(G = G, \
-                                               source = source, \
-                                               target = target)
-    except nx.NetworkXNoPath:
-        log.warning("No paths exist between selected residues.")
-        # return None since no paths were found
-        return
-    # check if the shortest is within the length cut-off
-    if len(shortest) > maxl:
-        warnstr = \
-            "No paths were found between the given nodes at the " \
-            "given cut-off. Shortest path length between these two " \
-            "nodes is {:d}"
-        log.warning(warnstr.format(len(shortest)))
-        # return None since no path of the desired maximum
-        # length were found
-        return
-
-    # calculate all the paths
-    paths = list(nx.algorithms.simple_paths.all_simple_paths(\
-                    G = G,
-                    source = source,
-                    target = target,
-                    cutoff = maxl))
-    # get the length of each path
-    lengths = [len(p) for p in paths]         
-    # calculate the sum of the each path's weights
-    sum_weights = \
-        [np.sum([G[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)]) \
-         for p in paths]           
-    # calculate the average of each path's weights
-    avg_weights = \
-        [np.average([G[p[i]][p[i+1]]["weight"] for i in range(len(p)-1)]) \
-         for p in paths]
-    # sort the paths
-    full_paths = zip(paths, lengths, sum_weights, avg_weights)
-    # sort by length (ascending, shortest paths first)
-    if sort_paths_by == "length":
-        key = lambda x: x[1]
-        reverse = False
-    # sort by cumulative weight (descending, paths with highest
-    # cumulative weight first)  
-    elif sort_paths_by == "cumulative_weight":
-        key = lambda x: x[2]
-        reverse = True
-    # sort by average weight (descending, paths with highest
-    # average weight first)
-    elif sort_paths_by == "avg_weight":
-        key = lambda x: x[3]
-        reverse = True
-    # return the sortes list of paths
-    return sorted(full_paths, key = key, reverse = reverse)
-
-
-def write_paths(paths, outfile = None):
-    """Write the paths."""
-
-    # write the paths found to the output in a human-readable format
-    if not outfile:
-        sys.stdout.write(\
-            "Path #\tLength\tSum of weights\tAverage weight\tPath\n")
-        pathfmt_str = "{:d}\t{:d}\t{:.1f}\t\t{:.1f}\t\t{:s}\n"
-        for index, path in enumerate(paths):
-            sys.stdout.write(\
-                pathfmt_str.format(\
-                    index+1, path[1], path[2], path[3], \
-                    ",".join(path[0])))
-    else:
-        ### TODO: output to a file, not print
-        raise NotImplementedError
-
-
-def write_paths_matrices(identifiers, G, paths, fmt, where):
-    """For each path, write a matrix with all edges erased apart
-    from those constituting the path."""
-    
-    for index, path in enumerate(paths):
-        # for each path...
-        path_mat = np.zeros(nx.adjacency_matrix(G).shape)
-        for node in range(len(path[0])-1):
-            # for each node in the path...
-            x = identifiers.index(path[0][node])
-            y = identifiers.index(path[0][node+1])
-            path_mat[x,y] = G[path[0][node]][path[0][node+1]]["weight"]
-            path_mat[y,x] = G[path[0][node+1]][path[0][node]]["weight"]
-        # save the matrix
-        mat_file = os.path.join(where, "path{:d}.dat".format(index+1))
-        np.savetxt(mat_file, path_mat, fmt = fmt)
-    
-
 
 def main():
     ######################### ARGUMENT PARSER #########################
@@ -372,46 +271,6 @@ def main():
                         type = int,
                         help = k_helpstr.format(k_default))
 
-    p_helpstr = "Calculate all simple paths between " \
-                "two residues in the graph"
-    parser.add_argument("-p", "--all-paths",
-                        dest = "do_paths",
-                        action = "store_true",
-                        default = False,
-                        help = p_helpstr)
-
-    r1_helpstr = "First residue for paths calculation (see option -p)"
-    parser.add_argument("-r1", "--source",
-                        dest = "source",
-                        default = None,
-                        help = r1_helpstr)
-
-    r2_helpstr = "Last residue for paths calculation (see option -p)"
-    parser.add_argument("-r2", "--target",
-                        dest = "target",
-                        default = None,
-                        help = r2_helpstr)
-
-    l_default = 10
-    l_helpstr = "Maximum path length (see option -p) (default: {:d})"
-    parser.add_argument("-l", "--maximum-path-length", \
-                        dest = "maxl",
-                        default = l_default,
-                        type = int,
-                        help = l_helpstr.format(l_default))
-
-    s_choices = ["length", "cumulative_weight", "avg_weight"]
-    s_default = "lenght"
-    s_helpstr = \
-        "How to sort pathways in output. Possible choices are {:s}" \
-        " (default: {:s})"
-    parser.add_argument("-s", "--sort-paths",
-                        dest = "sort_paths_by",
-                        choices = s_choices,
-                        default = "length",
-                        help = \
-                            s_helpstr.format(", ".join(s_choices), s_default))
-
     cb_helpstr = "Save connected components ID in PDB file"
     parser.add_argument("-cb", "--components-pdb",
                         dest = "components_pdb",
@@ -422,7 +281,7 @@ def main():
     parser.add_argument("-ub", "--hubs-pdb",
                         dest = "hubs_pdb",
                         default = None,
-                        help = cb_helpstr)
+                        help = ub_helpstr)
 
     d_helpstr = "Write the paths found as matrices"
     parser.add_argument("-d", "--write-paths",
@@ -509,40 +368,6 @@ def main():
                     replace_bfac_func = replace_bfac_column)
         else:
             log.warning("No hubs were found")
-
-
-    ############################## PATHS ##############################
-            
-    if args.do_paths:    
-        # source and target must be specified
-        if not args.source or not args.target:
-            log.error(\
-                "You must specify source and target residues. " \
-                "Exiting...")
-            exit(1)
-        try:
-            # calculate paths between a pair of residues
-            paths = get_paths(G = G,
-                              source = args.source,
-                              target = args.target,
-                              maxl = args.maxl,
-                              sort_paths_by = args.sort_paths_by)
-        except ValueError:
-            errstr = "Could not compute paths."
-            log.error(errstr)
-            paths = None
-        # if paths have been found
-        if paths is not None:
-            # write the paths
-            write_paths(paths = paths, outfile = None)
-            # if path matrices have been requested           
-            if args.write_paths:
-                # write paths as matrices
-                write_paths_matrices(identifiers = identifiers,
-                                     G = G,
-                                     paths = paths,
-                                     fmt = "%.1f",
-                                     where = os.getcwd())
 
 if __name__ == "__main__":
     main()
