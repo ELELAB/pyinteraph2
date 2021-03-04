@@ -198,7 +198,13 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
 
     node_dict = {}
     edge_dict = {}
+    sys.stdout.write("Calculating:\n")
     for name in cent_list:
+        # Print which measure is being calculated
+        if name == "hubs":
+            sys.stdout.write(f"{name}\n")
+        else:
+            sys.stdout.write(f"{name} centrality\n")
         # Get dictionary using the function map
         cent_dict = function_map[name](G = graph, **kwargs)
         # Add edge centralities to edge dict
@@ -553,14 +559,6 @@ def main():
         else:
             args.weight = "weight"
 
-        # Print message
-        sys.stdout.write("Calculating:\n")
-        for name in centrality_names:
-            if name == "hubs":
-                sys.stdout.write(f"{name}\n")
-            else:
-                sys.stdout.write(f"{name} centrality\n")
-
         # Create dictionary of optional arguments
         kwargs = {"node_list" : node_list,
                   "weight" : args.weight,
@@ -603,6 +601,7 @@ def main():
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
 
+        # For testing, will delete after all measures implemented
         # x = nx.Graph()
         # a = [('A', 'B'), ('B', 'C'), ('C','D')]
         # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
