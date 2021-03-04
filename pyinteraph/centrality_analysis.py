@@ -52,7 +52,7 @@ def convert_input_to_list(user_input, identifiers):
 
     res_list = []
     # Split by comma and then colon to make list of list
-    split_list = [elem.split(':') for elem in user_input.split(',')]
+    split_list = [elem.split(":") for elem in user_input.split(",")]
     for sub_list in split_list:
         # If list size is one, word is separated by comma
         if len(sub_list) == 1:
@@ -94,7 +94,7 @@ def get_hubs(G, **kwargs):
     """Returns a dictionary of degree values for each node."""
 
     degree_tuple = G.degree()
-    hubs = {n : (d if d >= kwargs['hub'] else 0) for n, d in degree_tuple}
+    hubs = {n : (d if d >= kwargs["hub"] else 0) for n, d in degree_tuple}
     return hubs
 
 def get_degree_cent(G, **kwargs):
@@ -108,9 +108,9 @@ def get_betweeness_cent(G, **kwargs):
 
     # Need to consider if endpoints should be used or not
     centrality_dict = nxc.betweenness_centrality(G = G,
-                                                 normalized = kwargs['normalized'],
-                                                 weight = kwargs['weight'],
-                                                 endpoints = kwargs['endpoints'])
+                                                 normalized = kwargs["normalized"],
+                                                 weight = kwargs["weight"],
+                                                 endpoints = kwargs["endpoints"])
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
@@ -139,27 +139,27 @@ def get_group_betweenness_cent(G, **kwargs):
     """Returns a dictionary of group betweeness centrality values."""
 
     centrality_val = nxc.group_betweenness_centrality(G = G,
-                                                      C = kwargs['node_list'],
-                                                      normalized = kwargs['normalized'],
-                                                      weight = kwargs['weight'])
-    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
+                                                      C = kwargs["node_list"],
+                                                      normalized = kwargs["normalized"],
+                                                      weight = kwargs["weight"])
+    centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
     return centrality_dict
 
 def get_group_closeness_cent(G, **kwargs):
     """Returns a dictionary of group closeness centrality values."""
 
     centrality_val = nxc.group_closeness_centrality(G = G,
-                                                    S = kwargs['node_list'],
-                                                    weight = kwargs['weight'])
-    centrality_dict = get_dict_with_group_val(G, kwargs['node_list'], centrality_val)
+                                                    S = kwargs["node_list"],
+                                                    weight = kwargs["weight"])
+    centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
     return centrality_dict
 
 def get_edge_betweenness_cent(G, **kwargs):
     """Returns a dictionary of edge betweenness centrality values."""
     
     centrality_dict = nxc.edge_betweenness_centrality(G = G,
-                                                      normalized = kwargs['normalized'],
-                                                      weight = kwargs['weight'])
+                                                      normalized = kwargs["normalized"],
+                                                      weight = kwargs["weight"])
     return centrality_dict
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
