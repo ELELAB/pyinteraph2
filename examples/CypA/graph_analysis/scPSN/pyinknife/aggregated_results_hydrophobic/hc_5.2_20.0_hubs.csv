@@ -1,0 +1,5 @@
+k,fulltrj,resampling0,resampling8,resampling4,resampling5,resampling7,resampling3,resampling6,resampling2,resampling1,resampling9,mean_resamplings,median_resamplings,min_resamplings,max_resamplings,std_resamplings,sem_resamplings
+3,33,33,34.0,33,33,34,32,33.0,33,33,34.0,33.2,33.0,32.0,34.0,0.6324555320336759,0.19999999999999998
+4,15,17,15.0,17,17,15,18,19.0,17,17,15.0,16.7,17.0,15.0,19.0,1.3374935098492586,0.42295258468165065
+5,8,8,8.0,8,8,7,7,6.0,8,8,8.0,7.6,8.0,6.0,8.0,0.699205898780101,0.22110831935702663
+6,1,1,,1,1,1,1,,1,1,,1.0,1.0,1.0,1.0,0.0,0.0
