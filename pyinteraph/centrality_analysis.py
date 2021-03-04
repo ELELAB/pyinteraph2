@@ -461,14 +461,14 @@ def main():
     ############################ CENTRALITY ############################
 
     # Function map of all implemented measures
-    function_map = {'hubs' : get_hubs,
-                    'degree': get_degree_cent, 
-                    'betweenness': get_betweeness_cent,
-                    'closeness': get_closeness_cent,
+    function_map = {"hubs" : get_hubs,
+                    "degree": get_degree_cent, 
+                    "betweenness": get_betweeness_cent,
+                    "closeness": get_closeness_cent,
                     #'communicability' : get_communicability_betweenness_cent,
-                    'group_betweenness' : get_group_betweenness_cent,
-                    'group_closeness' : get_group_closeness_cent,
-                    'edge_betweenness' : get_edge_betweenness_cent}
+                    "group_betweenness" : get_group_betweenness_cent,
+                    "group_closeness" : get_group_closeness_cent,
+                    "edge_betweenness" : get_edge_betweenness_cent}
     
     # Get list of all centrality measures
     if args.cent is not None:
@@ -538,11 +538,11 @@ def main():
                 sys.stdout.write(f"{name} centrality\n")
 
         # Create dictionary of optional arguments
-        kwargs = {'node_list' : node_list,
-                  'weight' : args.weight,
-                  'normalized' : args.norm,
-                  'endpoints' : args.endpoint,
-                  'hub': args.hub}
+        kwargs = {"node_list" : node_list,
+                  "weight" : args.weight,
+                  "normalized" : args.norm,
+                  "endpoints" : args.endpoint,
+                  "hub": args.hub}
         
         # Get dictionary of node+group and edge centrality values
         node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
