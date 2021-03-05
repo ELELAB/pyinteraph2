@@ -8,87 +8,7 @@ import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
 from Bio import PDB
 import graph_analysis as ga
-#import path_analysis as pa
-
-def build_graph(fname, pdb = None):
-    """Build a graph from the provided matrix."""
-
-    try:
-        adj_matrix = np.loadtxt(fname)
-    except:
-        errstr = f"Could not load file {fname} or wrong file format."
-        raise ValueError(errstr)
-    # if the user provided a reference structure
-    if pdb is not None:
-        try:
-            # generate a Universe object from the PDB file
-            u = mda.Universe(pdb)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"PDB not found: {pdb}")
-        except:
-            raise Exception(f"Could not parse pdb file: {pdb}")
-        # generate identifiers for the nodes of the graph
-        identifiers = [f"{r.segment.segid}{r.resnum}" for r in u.residues]
-    # if the user did not provide a reference structure
-    else:
-        # generate automatic identifiers going from 1 to the
-        # total number of residues considered
-        identifiers = [f"_{i}" for i in range(1, adj_matrix.shape[0]+1)]
-
-    # generate a graph from the data loaded
-    G = nx.Graph(adj_matrix)
-    # set the names of the graph nodes (in place)
-    node_names = dict(zip(range(adj_matrix.shape[0]), identifiers))
-    nx.relabel_nodes(G, mapping = node_names, copy = False)
-    # return the identifiers and the graph
-    return identifiers, G
-
-def convert_input_to_list(user_input, identifiers):
-    """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
-    and a list of names of all the residues (graph nodes). Replaces the 
-    range indicated by the colon with all residues in that range and 
-    keeps all residues separated by commas. Removes duplicates.
-    """
-
-    res_list = []
-    # Split by comma and then colon to make list of list
-    split_list = [elem.split(":") for elem in user_input.split(",")]
-    for sub_list in split_list:
-        # If list size is one, word is separated by comma
-        if len(sub_list) == 1:
-            try:
-                res = sub_list[0]
-                # Find index
-                identifiers.index(res)
-                # Append to list
-                res_list.append(res)
-            except:
-                raise ValueError(f"Residue not in PDB: {res}")
-        # If list size is 2, word is separated by a single colon
-        elif len(sub_list) == 2:
-            try:
-                # Get indexes for residue in identifiers
-                u_idx, v_idx = [identifiers.index(res) for res in sub_list]
-            except:
-                raise ValueError(f"Residue range not in PDB: {':'.join(sub_list)}")
-            # Check if order of residues is reversed
-            if u_idx >= v_idx:
-                raise ValueError(f"Range not specified correctly: {':'.join(sub_list)}")
-            try:
-                # This block should not cause an error
-                # Create list with all residues in that range
-                res_range = identifiers[u_idx:v_idx + 1]
-                # Concatenate with output list
-                res_list += res_range
-            except Exception as e:
-                raise e
-        # Other list sizes means multiple colons
-        else:
-            err_str = f"Incorrect format, only one ':' allowed: {':'.join(sub_list)}"
-            raise ValueError(err_str)
-    # Remove duplicates
-    res_list = list(set(res_list))
-    return res_list
+import path_analysis as pa
 
 def get_hubs(G, **kwargs):
     """Returns a dictionary of degree values for each node."""
@@ -522,7 +442,7 @@ def main():
         exit(1)
 
     # Load file, build graphs and get identifiers for graph nodes
-    identifiers, graph = build_graph(fname = args.input_matrix,
+    identifiers, graph = pa.build_graph(fname = args.input_matrix,
                                      pdb = args.pdb)
 
     # get graph nodes and edges
@@ -553,7 +473,7 @@ def main():
     if args.cent is not None:
         # Get node list if present
         if args.group is not None:
-            node_list = convert_input_to_list(args.group, identifiers)
+            node_list = pa.convert_input_to_list(args.group, identifiers)
         else:
             node_list = args.group
 
