@@ -192,13 +192,42 @@ def get_group_closeness_cent(G, **kwargs):
     centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
     return centrality_dict
 
+def reorder_edge_names(edge_dict):
+    """Takes in a dictionary where the keys are edge names and returns 
+    a dictionary with where the keys are sorted egde names.
+    """
+
+    # lambda function takes in an edge e.g. ("A99", "A102"), removes all
+    # non numeric characters and converts to an integer
+    node_to_int = lambda node: int(''.join([n for n in node if n.isdigit()]))
+    # sort the edge names by their corresponding node number (99 and 102) 
+    # and convert the sorted edge name to a tuple
+    reordered_dict = {tuple(sorted(edge, key = node_to_int)): value \
+                        for edge, value in edge_dict.items()}
+    return reordered_dict
+
 def get_edge_betweenness_cent(G, **kwargs):
     """Returns a dictionary of edge betweenness centrality values."""
     
     centrality_dict = nxc.edge_betweenness_centrality(G = G,
                                                       normalized = kwargs["normalized"],
                                                       weight = kwargs["weight"])
-    return centrality_dict
+    reordered_dict = reorder_edge_names(centrality_dict)
+    return reordered_dict
+
+def get_edge_current_flow_betweenness_cent(G, **kwargs):
+    """Returns a dictionary of edge current flowbetweenness centrality 
+    values. This is the same as calculating edge betweenness centrality 
+    using random walks instead of shortest paths.
+    """
+    
+    G_no_isolates = remove_isolates(G)
+    centrality_dict = nxc.edge_current_flow_betweenness_centrality(\
+                                    G = G_no_isolates,
+                                    normalized = kwargs["normalized"],
+                                    weight = kwargs["weight"])
+    reordered_dict = reorder_edge_names(centrality_dict)
+    return reordered_dict
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
@@ -368,7 +397,7 @@ def main():
     node = ["hubs", "degree", "betweenness", "closeness", 
             "communicability_betweenness", "current_flow_betweenness"]
     group = ["group_betweenness", "group_closeness"]
-    edge = ["edge_betweenness"]
+    edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
 
     c_choices = all_cent + group + ["all", "node", "edge", "group"]
@@ -507,15 +536,18 @@ def main():
     ############################ CENTRALITY ############################
 
     # Function map of all implemented measures
-    function_map = {"hubs" : get_hubs,
-                    "degree": get_degree_cent, 
-                    "betweenness": get_betweeness_cent,
-                    "closeness": get_closeness_cent,
-                    "communicability_betweenness" : get_communicability_betweenness_cent,
-                    "current_flow_betweenness" : get_current_flow_betweenness_cent,
-                    "group_betweenness" : get_group_betweenness_cent,
-                    "group_closeness" : get_group_closeness_cent,
-                    "edge_betweenness" : get_edge_betweenness_cent}
+    function_map = {
+        "hubs" : get_hubs,
+        "degree" : get_degree_cent, 
+        "betweenness" : get_betweeness_cent,
+        "closeness" : get_closeness_cent,
+        "communicability_betweenness" : get_communicability_betweenness_cent,
+        "current_flow_betweenness" : get_current_flow_betweenness_cent,
+        "group_betweenness" : get_group_betweenness_cent,
+        "group_closeness" : get_group_closeness_cent,
+        "edge_betweenness" : get_edge_betweenness_cent,
+        "edge_current_flow_betweenness" : get_edge_current_flow_betweenness_cent
+        }
     
     # Get list of all centrality measures
     if args.cent is not None:
