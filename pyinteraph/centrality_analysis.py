@@ -4,9 +4,8 @@ import argparse
 import logging as log
 import numpy as np
 import networkx as nx
-import MDAnalysis as mda
 from networkx.algorithms import centrality as nxc
-from Bio import PDB
+import pandas as pd
 import graph_analysis as ga
 import path_analysis as pa
 
