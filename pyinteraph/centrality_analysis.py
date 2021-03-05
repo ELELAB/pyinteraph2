@@ -218,7 +218,8 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
         if name == "hubs":
             sys.stdout.write(f"{name}\n")
         else:
-            sys.stdout.write(f"{name} centrality\n")
+            p_name = name.replace("_", " ")
+            sys.stdout.write(f"{p_name} centrality\n")
         # Get dictionary using the function map
         cent_dict = function_map[name](G = graph, **kwargs)
         # Add edge centralities to edge dict
