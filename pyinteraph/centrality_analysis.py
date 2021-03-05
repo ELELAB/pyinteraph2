@@ -364,8 +364,8 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness", "communicability",
-            "current_flow_betweenness"]
+    node = ["hubs", "degree", "betweenness", "closeness", 
+            "communicability_betweenness", "current_flow_betweenness"]
     group = ["group_betweenness", "group_closeness"]
     edge = ["edge_betweenness"]
     all_cent = node + edge
@@ -510,7 +510,7 @@ def main():
                     "degree": get_degree_cent, 
                     "betweenness": get_betweeness_cent,
                     "closeness": get_closeness_cent,
-                    "communicability" : get_communicability_betweenness_cent,
+                    "communicability_betweenness" : get_communicability_betweenness_cent,
                     "current_flow_betweenness" : get_current_flow_betweenness_cent,
                     "group_betweenness" : get_group_betweenness_cent,
                     "group_closeness" : get_group_closeness_cent,
