@@ -151,6 +151,20 @@ def get_communicability_betweenness_cent(G, **kwargs):
     filled_dict = fill_dict_with_isolates(G, centrality_dict)
     return filled_dict
 
+def get_current_flow_betweenness_cent(G, **kwargs):
+    """Returns a dictionary of current flow betweenness centrality
+    values. This is the same as calculating betweenness centrality using
+    random walks instead of shortest paths.
+    """
+
+    G_no_isolates = remove_isolates(G)
+    centrality_dict = nxc.current_flow_betweenness_centrality(\
+                                G = G_no_isolates, 
+                                normalized = kwargs["normalized"],
+                                weight = kwargs["weight"])
+    filled_dict = fill_dict_with_isolates(G, centrality_dict)
+    return filled_dict
+
 def get_dict_with_group_val(G, node_list, value):
     """Takes in a graph, list of nodes and a group value. Returns a dict
     containing each node in the graph. If the node is in the list, its
@@ -350,7 +364,8 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness", "communicability"]
+    node = ["hubs", "degree", "betweenness", "closeness", "communicability",
+            "current_flow_betweenness"]
     group = ["group_betweenness", "group_closeness"]
     edge = ["edge_betweenness"]
     all_cent = node + edge
@@ -496,6 +511,7 @@ def main():
                     "betweenness": get_betweeness_cent,
                     "closeness": get_closeness_cent,
                     "communicability" : get_communicability_betweenness_cent,
+                    "current_flow_betweenness" : get_current_flow_betweenness_cent,
                     "group_betweenness" : get_group_betweenness_cent,
                     "group_closeness" : get_group_closeness_cent,
                     "edge_betweenness" : get_edge_betweenness_cent}
