@@ -194,13 +194,9 @@ def write_table(fname, centrality_dict, identifiers, sort_by):
     else:
         row_name = "node"
     table = table.rename_axis(row_name)
-    # Choose whether to sort ascending or descending
-    ascending_bool = None
-    if sort_by == "node" or sort_by == "edge":
-        ascending_bool = True
-    else:
-        ascending_bool = False
-    table = table.sort_values(by=[sort_by], ascending = ascending_bool)
+    # Only sort if node/edge is not specified
+    if not(sort_by == "node" or sort_by == "edge"):
+        table = table.sort_values(by=[sort_by], ascending = False)
     # Save file
     table.to_csv(f"{fname}.txt", sep = "\t")
 
