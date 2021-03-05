@@ -185,31 +185,18 @@ def write_table(fname, centrality_dict, identifiers, sort_by):
 
     # Remove any file extensions
     fname = os.path.splitext(fname)[0]
-
-    with open(f"{fname}.txt", "w") as f:
-        # Add first line (header)
-        line = f"node"
-        for key in centrality_dict.keys():
-            # Add name of each centrality
-            line += f"\t{key}"
-        line += "\n"
-        f.write(line)
-        # Choose order of nodes
-        if sort_by == "node":
-            sorted_nodes = identifiers
-        else:
-            sorted_dict = sorted(centrality_dict[sort_by].items(), 
-                                key = lambda tup: tup[1],
-                                reverse = True)
-            sorted_nodes = [n for (n, v) in sorted_dict]
-        # for node in identifiers, add corresponding row:
-        for node in sorted_nodes:
-            line = f"{node}"
-            for c_dict in centrality_dict.values():
-                # Add each centrality value
-                line += f"\t{c_dict[node]}"
-            line += "\n"
-            f.write(line)
+    # Load file and change row names
+    table = pd.DataFrame(centrality_dict).rename_axis("node")
+    # Choose whether to sort ascending or descending
+    ascending_bool = None
+    if sort_by == "node":
+        ascending_bool = True
+    else:
+        ascending_bool = False
+    # Sort
+    table = table.sort_values(by=[sort_by], ascending = ascending_bool)
+    # Save file
+    table.to_csv(f"{fname}.txt", sep = "\t")
 
 def write_pdb_files(centrality_dict, pdb, fname):
     """Save a pdb file for every centrality measure in the input 
