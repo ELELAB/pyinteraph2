@@ -31,11 +31,13 @@ def build_graph(fname, pdb = None):
             raise Exception(f"Could not parse pdb file: {pdb}")
         # generate identifiers for the nodes of the graph
         identifiers = [f"{r.segment.segid}{r.resnum}" for r in u.residues]
+        residue_names = [r.resname for r in u.residues]
     # if the user did not provide a reference structure
     else:
         # generate automatic identifiers going from 1 to the
         # total number of residues considered
         identifiers = [f"_{i}" for i in range(1, adj_matrix.shape[0]+1)]
+        residue_names = None
     
     # generate a graph from the data loaded
     G = nx.Graph(adj_matrix)
@@ -43,7 +45,7 @@ def build_graph(fname, pdb = None):
     node_names = dict(zip(range(adj_matrix.shape[0]), identifiers))
     nx.relabel_nodes(G, mapping = node_names, copy = False)
     # return the idenfiers and the graph
-    return identifiers, G
+    return identifiers, residue_names, G
 
 def convert_input_to_list(user_input, identifiers):
     """Take in a string (e.g. A12:A22,A13... if a PDB file is supplied)
@@ -622,8 +624,8 @@ def main():
         exit(1)
     
     # Load file, build graphs and get identifiers for graph nodes
-    identifiers, graph = build_graph(fname = args.input_matrix,
-                                     pdb = args.pdb)
+    identifiers, residue_names, graph = build_graph(fname = args.input_matrix,
+                                                    pdb = args.pdb)
 
     # get graph nodes and edges
     nodes = graph.nodes()
