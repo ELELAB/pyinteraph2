@@ -148,7 +148,7 @@ def get_edge_current_flow_betweenness_cent(G, **kwargs):
     reordered_dict = reorder_edge_names(centrality_dict)
     return reordered_dict
 
-def get_centrality_dict(cent_list, function_map, graph, **kwargs):
+def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
     name of a node centrality measure and the value is a dictionary of 
     centrality values for each node. (Also includes group centralities)
@@ -160,6 +160,9 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
 
     node_dict = {}
     edge_dict = {}
+    # Add residue names to node_dict if available
+    if res_name is not None:
+        node_dict["name"] = {identifiers[i]: res_name[i] for i in range(len(identifiers))}
     sys.stdout.write("Calculating:\n")
     for name in cent_list:
         # Print which measure is being calculated
@@ -178,7 +181,7 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
             node_dict[name] = cent_dict
     return node_dict, edge_dict
 
-def write_table(fname, centrality_dict, identifiers, sort_by):
+def write_table(fname, centrality_dict, sort_by):
     """Takes in a dictionary of dictionaries and saves a file where each 
     row consists of a node and its corresponding centrality values.
     """
@@ -378,8 +381,8 @@ def main():
         exit(1)
 
     # Load file, build graphs and get identifiers for graph nodes
-    identifiers, graph = pa.build_graph(fname = args.input_matrix,
-                                     pdb = args.pdb)
+    identifiers, residue_names, graph = pa.build_graph(fname = args.input_matrix,
+                                                       pdb = args.pdb)
 
     # get graph nodes and edges
     nodes = graph.nodes()
@@ -387,6 +390,8 @@ def main():
     # print nodes
     info = f"Graph loaded! {len(nodes)} nodes, {len(edges)} edges\n" \
            f"Node list:\n{np.array(identifiers)}\n"
+    if residue_names is not None:
+        info += f"Residue names:\n{np.array(residue_names)}\n"
     sys.stdout.write(info)
 
     ############################ CENTRALITY ############################
@@ -475,14 +480,15 @@ def main():
         node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
                                                    function_map = function_map, 
                                                    graph = graph,
+                                                   identifiers = identifiers,
+                                                   res_name = residue_names,
                                                    **kwargs)
 
         # Dictionary is not empty so node centralities have been requested
         if node_dict:
             # Save dictionary as table
             write_table(fname = args.c_out,
-                        centrality_dict = node_dict, 
-                        identifiers = identifiers,
+                        centrality_dict = node_dict,
                         sort_by = args.sort_node)
 
             # Write PDB files if request (and if reference provided)
@@ -500,7 +506,6 @@ def main():
         if edge_dict:
             write_table(fname = f"{args.c_out}_edge",
                              centrality_dict = edge_dict, 
-                             identifiers =  identifiers,
                              sort_by = args.sort_edge)
             if args.save_mat:
                 save_matrix(centrality_dict = edge_dict, 
