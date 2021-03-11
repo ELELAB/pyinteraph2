@@ -127,7 +127,7 @@ def write_table(fname, centrality_dict, sort_by):
     # Only sort if node/edge is not specified
     if not(sort_by == "node" or sort_by == "edge"):
         table = table.sort_values(by=[sort_by], ascending = False)
-    # Save file
+    # Save file 
     # remove na_rep to have an empty representation
     table.to_csv(f"{fname}.txt", sep = "\t", na_rep= "NA") 
 
@@ -417,24 +417,5 @@ def main():
             if args.save_mat:
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
-
-        # For testing, will delete after all measures implemented
-        # x = nx.Graph()
-        # a = [('A', 'B'), ('B', 'C'), ('C','D')]
-        # # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
-        # # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
-        # # d = [('A', 'B'), ('B', 'C'), ('C','A')]
-        # # e = [('A', 'B'), ('B', 'C'), ('C','D'), ('D', 'A')]
-        # f = [('A', 'B')]
-        # g = [('A', 'B'), ('B', 'C')]
-        # x.add_edges_from(g)
-        # # x.add_node('Z')
-        # # print(x.degree())
-        # # print(x.edges())
-        # # print("BC:", nxc.betweenness_centrality(x))
-        # # print("BC_e:", nxc.betweenness_centrality(x, endpoints = True))
-        # print("CBC:", nxc.communicability_betweenness_centrality(x))
-        # # #print("CFB:", nxc.current_flow_betweenness(x))
-        # # print("CFE:", nxc.edge_current_flow_betweenness_centrality(x))
 if __name__ == "__main__":
     main()
