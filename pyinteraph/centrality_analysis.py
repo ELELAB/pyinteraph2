@@ -151,6 +151,7 @@ def get_edge_current_flow_betweenness_cent(G, **kwargs):
     return reordered_dict
 
 def print_names(name):
+    """Takes in a centrality measure name and prints it."""
     if name == "hubs":
         sys.stdout.write(f"{name}\n")
     else:
@@ -158,6 +159,11 @@ def print_names(name):
         sys.stdout.write(f"{p_name} centrality\n")
 
 def get_components(G, cutoff = 4):
+    """Takes in a graph and a cutoff value. Returns all list containing
+    networkX graphs of all connected components in original graph that 
+    have more nodes than the cutoff.
+    """
+
     subgraphs = []
     components = nx.algorithms.components.connected_components(G)
     for component in components:
@@ -176,8 +182,12 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
     edge, similar to the first dictionary.
     """
 
+    # List of measures that required a connected graph
+    connected_measures = ["communicability_betweenness", "current_flow_betweenness", 
+                          "edge_current_flow_betweenness"]
+    # List of subgraphs for each connected component
     components = get_components(graph)
-    connected_measures = ["communicability_betweenness", "current_flow_betweenness", "edge_current_flow_betweenness"]
+    # Intialize output dictionaries
     node_dict = {}
     edge_dict = {}
     # Add residue names to node_dict if available
@@ -189,22 +199,17 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
         print_names(name)
         # Choose whether to insert to node_dict or edge_dict
         insert_dict = edge_dict if "edge" in name else node_dict
+        # For the measures in the list, calculate values for each subgrapg
         if name in connected_measures:
             for n, subgraph in enumerate(components):
+                # Get dictionary using the function map
                 cent_dict = function_map[name](G = subgraph, **kwargs)
+                # Add to dictionary with a name corresponding to the subgraph
                 insert_dict[f"{name}_c{n}"] = cent_dict
         else:
-        # Get dictionary using the function map
+            # Calculate and add the measures that do not require connected graphs
             cent_dict = function_map[name](G = graph, **kwargs)
             insert_dict[name] = cent_dict
-        # Add edge centralities to edge dict
-        
-        #dict_1[name] =  cent_dict
-        # if "edge" in name:
-        #     edge_dict[name] = cent_dict
-        # # Add node centralities to node dict
-        # else:
-        #     node_dict[name] = cent_dict
     return node_dict, edge_dict
 
 def write_table(fname, centrality_dict, sort_by):
