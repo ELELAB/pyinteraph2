@@ -49,6 +49,8 @@ def remove_isolates(G):
     isolates = nx.isolates(G)
     # remove from duplicate graph
     H.remove_nodes_from(list(isolates))
+    d_1 = {"G" : G.nodes, "G_deg" : [deg for node, deg in G.degree]}
+    d_2 = {"H" : H.nodes, "H_deg" : [deg for node, deg in H.degree]}
     return H
 
 def fill_dict_with_isolates(G, cent_dict):
@@ -148,6 +150,22 @@ def get_edge_current_flow_betweenness_cent(G, **kwargs):
     reordered_dict = reorder_edge_names(centrality_dict)
     return reordered_dict
 
+def print_names(name):
+    if name == "hubs":
+        sys.stdout.write(f"{name}\n")
+    else:
+        p_name = name.replace("_", " ")
+        sys.stdout.write(f"{p_name} centrality\n")
+
+def get_components(G, cutoff = 4):
+    subgraphs = []
+    components = nx.algorithms.components.connected_components(G)
+    for component in components:
+        if len(component) >= cutoff:
+            subgraph = G.subgraph(component).copy()
+            subgraphs.append(subgraph)
+    return subgraphs
+
 def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
     name of a node centrality measure and the value is a dictionary of 
@@ -158,6 +176,8 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
     edge, similar to the first dictionary.
     """
 
+    components = get_components(graph)
+    connected_measures = ["communicability_betweenness", "current_flow_betweenness", "edge_current_flow_betweenness"]
     node_dict = {}
     edge_dict = {}
     # Add residue names to node_dict if available
@@ -166,19 +186,25 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
     sys.stdout.write("Calculating:\n")
     for name in cent_list:
         # Print which measure is being calculated
-        if name == "hubs":
-            sys.stdout.write(f"{name}\n")
+        print_names(name)
+        # Choose whether to insert to node_dict or edge_dict
+        insert_dict = edge_dict if "edge" in name else node_dict
+        if name in connected_measures:
+            for n, subgraph in enumerate(components):
+                cent_dict = function_map[name](G = subgraph, **kwargs)
+                insert_dict[f"{name}_c{n}"] = cent_dict
         else:
-            p_name = name.replace("_", " ")
-            sys.stdout.write(f"{p_name} centrality\n")
         # Get dictionary using the function map
-        cent_dict = function_map[name](G = graph, **kwargs)
+            cent_dict = function_map[name](G = graph, **kwargs)
+            insert_dict[name] = cent_dict
         # Add edge centralities to edge dict
-        if "edge" in name:
-            edge_dict[name] = cent_dict
-        # Add node centralities to node dict
-        else:
-            node_dict[name] = cent_dict
+        
+        #dict_1[name] =  cent_dict
+        # if "edge" in name:
+        #     edge_dict[name] = cent_dict
+        # # Add node centralities to node dict
+        # else:
+        #     node_dict[name] = cent_dict
     return node_dict, edge_dict
 
 def write_table(fname, centrality_dict, sort_by):
@@ -201,7 +227,8 @@ def write_table(fname, centrality_dict, sort_by):
     if not(sort_by == "node" or sort_by == "edge"):
         table = table.sort_values(by=[sort_by], ascending = False)
     # Save file
-    table.to_csv(f"{fname}.txt", sep = "\t")
+    # remove na_rep to have an empty representation
+    table.to_csv(f"{fname}.txt", sep = "\t", na_rep= "NA") 
 
 def write_pdb_files(centrality_dict, pdb, fname):
     """Save a pdb file for every centrality measure in the input 
@@ -514,18 +541,20 @@ def main():
         # For testing, will delete after all measures implemented
         # x = nx.Graph()
         # a = [('A', 'B'), ('B', 'C'), ('C','D')]
-        # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
-        # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
-        # d = [('A', 'B'), ('B', 'C'), ('C','A')]
-        # e = [('A', 'B'), ('B', 'C'), ('C','D'), ('D', 'A')]
-        # x.add_edges_from(e)
-        # x.add_node('Z')
-        # print(x.degree())
-        # print(x.edges())
-        # print("BC:", nxc.betweenness_centrality(x))
-        # print("BC_e:", nxc.betweenness_centrality(x, endpoints = True))
+        # # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
+        # # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
+        # # d = [('A', 'B'), ('B', 'C'), ('C','A')]
+        # # e = [('A', 'B'), ('B', 'C'), ('C','D'), ('D', 'A')]
+        # f = [('A', 'B')]
+        # g = [('A', 'B'), ('B', 'C')]
+        # x.add_edges_from(g)
+        # # x.add_node('Z')
+        # # print(x.degree())
+        # # print(x.edges())
+        # # print("BC:", nxc.betweenness_centrality(x))
+        # # print("BC_e:", nxc.betweenness_centrality(x, endpoints = True))
         # print("CBC:", nxc.communicability_betweenness_centrality(x))
-        # #print("CFB:", nxc.current_flow_betweenness(x))
-        # print("CFE:", nxc.edge_current_flow_betweenness_centrality(x))
+        # # #print("CFB:", nxc.current_flow_betweenness(x))
+        # # print("CFE:", nxc.edge_current_flow_betweenness_centrality(x))
 if __name__ == "__main__":
     main()
