@@ -150,14 +150,6 @@ def get_edge_current_flow_betweenness_cent(G, **kwargs):
     reordered_dict = reorder_edge_names(centrality_dict)
     return reordered_dict
 
-def print_names(name):
-    """Takes in a centrality measure name and prints it."""
-    if name == "hubs":
-        sys.stdout.write(f"{name}\n")
-    else:
-        p_name = name.replace("_", " ")
-        sys.stdout.write(f"{p_name} centrality\n")
-
 def get_components(G, cutoff = 4):
     """Takes in a graph and a cutoff value. Returns all list containing
     networkX graphs of all connected components in original graph that 
@@ -196,7 +188,8 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
     sys.stdout.write("Calculating:\n")
     for name in cent_list:
         # Print which measure is being calculated
-        print_names(name)
+        p_name = name.replace("_", " ")
+        sys.stdout.write(f"{p_name}\n")
         # Choose whether to insert to node_dict or edge_dict
         insert_dict = edge_dict if "edge" in name else node_dict
         # For the measures in the list, calculate values for each subgrapg
@@ -221,12 +214,8 @@ def write_table(fname, centrality_dict, sort_by):
     fname = os.path.splitext(fname)[0]
     # Transform dict to df
     table = pd.DataFrame(centrality_dict)
-    # Check row type and change row names
-    row_name = None
-    if "," in table.index[0]:
-        row_name = "edge"
-    else:
-        row_name = "node"
+    # Find if row name should be node or edge
+    row_name = "edge" if "," in table.index[0] else "node"
     table = table.rename_axis(row_name)
     # Only sort if node/edge is not specified
     if not(sort_by == "node" or sort_by == "edge"):
@@ -496,10 +485,7 @@ def main():
             exit(1)
 
         # Change weight boolean to weight name or None
-        if args.weight is False:
-            args.weight = None
-        else:
-            args.weight = "weight"
+        args.weight = None if args.weight is False else "weight"
 
         # Create dictionary of optional arguments
         kwargs = {"node_list" : node_list,
