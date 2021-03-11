@@ -38,39 +38,39 @@ def get_closeness_cent(G, **kwargs):
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
 
-def remove_isolates(G):
-    """Takes in a graph and returns a new graph where all the nodes with 
-    zero edges have been removed.
-    """
+# def remove_isolates(G):
+#     """Takes in a graph and returns a new graph where all the nodes with 
+#     zero edges have been removed.
+#     """
 
-    # create duplicate graph so the original is unaffected
-    H = G.copy()
-    # isolates are nodes with zero edges
-    isolates = nx.isolates(G)
-    # remove from duplicate graph
-    H.remove_nodes_from(list(isolates))
-    d_1 = {"G" : G.nodes, "G_deg" : [deg for node, deg in G.degree]}
-    d_2 = {"H" : H.nodes, "H_deg" : [deg for node, deg in H.degree]}
-    return H
+#     # create duplicate graph so the original is unaffected
+#     H = G.copy()
+#     # isolates are nodes with zero edges
+#     isolates = nx.isolates(G)
+#     # remove from duplicate graph
+#     H.remove_nodes_from(list(isolates))
+#     d_1 = {"G" : G.nodes, "G_deg" : [deg for node, deg in G.degree]}
+#     d_2 = {"H" : H.nodes, "H_deg" : [deg for node, deg in H.degree]}
+#     return H
 
-def fill_dict_with_isolates(G, cent_dict):
-    """Takes in a graph and a dictionary of centrality values. Returns a
-    new dictionary of centrality values containing each node in the 
-    graph. If the node is not in the given dictionary, it has a value of
-    0 or else if has the value in the given dictionary.
-    """
+# def fill_dict_with_isolates(G, cent_dict):
+#     """Takes in a graph and a dictionary of centrality values. Returns a
+#     new dictionary of centrality values containing each node in the 
+#     graph. If the node is not in the given dictionary, it has a value of
+#     0 or else if has the value in the given dictionary.
+#     """
 
-    return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
+#     return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
 
 def get_communicability_betweenness_cent(G, **kwargs):
     """Returns a dictionary of communicability betweenness centrality values"""
 
-    G_no_isolates = remove_isolates(G)
+    #G_no_isolates = remove_isolates(G)
     centrality_dict = nxc.communicability_betweenness_centrality(\
-                                G = G_no_isolates,
+                                G = G,
                                 normalized = kwargs["normalized"])
-    filled_dict = fill_dict_with_isolates(G, centrality_dict)
-    return filled_dict
+    #filled_dict = fill_dict_with_isolates(G, centrality_dict)
+    return centrality_dict
 
 def get_current_flow_betweenness_cent(G, **kwargs):
     """Returns a dictionary of current flow betweenness centrality
@@ -78,13 +78,13 @@ def get_current_flow_betweenness_cent(G, **kwargs):
     random walks instead of shortest paths.
     """
 
-    G_no_isolates = remove_isolates(G)
+    #G_no_isolates = remove_isolates(G)
     centrality_dict = nxc.current_flow_betweenness_centrality(\
-                                G = G_no_isolates, 
+                                G = G, 
                                 normalized = kwargs["normalized"],
                                 weight = kwargs["weight"])
-    filled_dict = fill_dict_with_isolates(G, centrality_dict)
-    return filled_dict
+    #filled_dict = fill_dict_with_isolates(G, centrality_dict)
+    return centrality_dict
 
 def get_dict_with_group_val(G, node_list, value):
     """Takes in a graph, list of nodes and a group value. Returns a dict
@@ -115,7 +115,7 @@ def get_group_closeness_cent(G, **kwargs):
 
 def reorder_edge_names(edge_dict):
     """Takes in a dictionary where the keys are edge names and returns 
-    a dictionary with where the keys are sorted egde names.
+    a dictionary with where the keys are sorted edge names.
     """
 
     # lambda function takes in an edge e.g. ("A99", "A102"), removes all
@@ -142,9 +142,9 @@ def get_edge_current_flow_betweenness_cent(G, **kwargs):
     using random walks instead of shortest paths.
     """
     
-    G_no_isolates = remove_isolates(G)
+    #G_no_isolates = remove_isolates(G)
     centrality_dict = nxc.edge_current_flow_betweenness_centrality(\
-                                    G = G_no_isolates,
+                                    G = G,
                                     normalized = kwargs["normalized"],
                                     weight = kwargs["weight"])
     reordered_dict = reorder_edge_names(centrality_dict)
