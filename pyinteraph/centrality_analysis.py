@@ -38,35 +38,6 @@ def get_closeness_cent(G, **kwargs):
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
 
-
-
-def get_dict_with_group_val(G, node_list, value):
-    """Takes in a graph, list of nodes and a group value. Returns a dict
-    containing each node in the graph. If the node is in the list, its
-    value is the group value or else it is 0.
-    """
-
-    return {n : (value if n in node_list else 0) for n in G.nodes()}
-
-def get_group_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of group betweeness centrality values."""
-
-    centrality_val = nxc.group_betweenness_centrality(G = G,
-                                                      C = kwargs["node_list"],
-                                                      normalized = kwargs["normalized"],
-                                                      weight = kwargs["weight"])
-    centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
-    return centrality_dict
-
-def get_group_closeness_cent(G, **kwargs):
-    """Returns a dictionary of group closeness centrality values."""
-
-    centrality_val = nxc.group_closeness_centrality(G = G,
-                                                    S = kwargs["node_list"],
-                                                    weight = kwargs["weight"])
-    centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
-    return centrality_dict
-
 def reorder_edge_names(edge_dict):
     """Takes in a dictionary where the keys are edge names and returns 
     a dictionary with where the keys are sorted edge names.
@@ -114,11 +85,7 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
     edge, similar to the first dictionary.
     """
 
-    # List of measures that required a connected graph
-    connected_measures = ["communicability_betweenness", "current_flow_betweenness", 
-                          "edge_current_flow_betweenness"]
-    # List of subgraphs for each connected component
-    components = get_components(graph)
+    connected_measures = []
     # Intialize output dictionaries
     node_dict = {}
     edge_dict = {}
@@ -215,11 +182,11 @@ def main():
 
     # Centrality types
     node = ["hubs", "degree", "betweenness", "closeness"]
-    group = ["group_betweenness", "group_closeness"]
+    group = []
     edge = ["edge_betweenness"]
     all_cent = node + edge
 
-    c_choices = all_cent + group + ["all", "node", "edge", "group"]
+    c_choices = all_cent + ["all", "node", "edge"]
     c_default = None
     c_helpstr = f"Select which centrality measures to calculate: {c_choices} " \
                 f"(default: {c_default}). Selecting 'node' will calculate the "\
@@ -362,8 +329,6 @@ def main():
         "degree" : get_degree_cent, 
         "betweenness" : get_betweeness_cent,
         "closeness" : get_closeness_cent,
-        "group_betweenness" : get_group_betweenness_cent,
-        "group_closeness" : get_group_closeness_cent,
         "edge_betweenness" : get_edge_betweenness_cent
         }
     
@@ -382,18 +347,6 @@ def main():
         # Find all node centralities
         elif "node" in args.cent:
             centrality_names = node
-        # Find all group centralities if node list specified
-        elif "group" in args.cent and args.group is not None:
-            centrality_names = group
-        # Throw error if group is requested but node list is not specified
-        elif ("group" in args.cent or \
-            # One of the group centralities is requested
-            len([cent for cent in args.cent if cent in group]) > 0) \
-            and args.group is None:
-            error_str = "A group of residues must be specified to calculate " \
-                        "group centrality (see option -g). Exiting..."
-            log.error(error_str)
-            exit(1)
         # Find all edge centralities
         elif "edge" in args.cent:
             centrality_names = edge
