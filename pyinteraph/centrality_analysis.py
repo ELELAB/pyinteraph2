@@ -38,53 +38,7 @@ def get_closeness_cent(G, **kwargs):
     centrality_dict = nxc.closeness_centrality(G = G)
     return centrality_dict
 
-# def remove_isolates(G):
-#     """Takes in a graph and returns a new graph where all the nodes with 
-#     zero edges have been removed.
-#     """
 
-#     # create duplicate graph so the original is unaffected
-#     H = G.copy()
-#     # isolates are nodes with zero edges
-#     isolates = nx.isolates(G)
-#     # remove from duplicate graph
-#     H.remove_nodes_from(list(isolates))
-#     d_1 = {"G" : G.nodes, "G_deg" : [deg for node, deg in G.degree]}
-#     d_2 = {"H" : H.nodes, "H_deg" : [deg for node, deg in H.degree]}
-#     return H
-
-# def fill_dict_with_isolates(G, cent_dict):
-#     """Takes in a graph and a dictionary of centrality values. Returns a
-#     new dictionary of centrality values containing each node in the 
-#     graph. If the node is not in the given dictionary, it has a value of
-#     0 or else if has the value in the given dictionary.
-#     """
-
-#     return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
-
-def get_communicability_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of communicability betweenness centrality values"""
-
-    #G_no_isolates = remove_isolates(G)
-    centrality_dict = nxc.communicability_betweenness_centrality(\
-                                G = G,
-                                normalized = kwargs["normalized"])
-    #filled_dict = fill_dict_with_isolates(G, centrality_dict)
-    return centrality_dict
-
-def get_current_flow_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of current flow betweenness centrality
-    values. This is the same as calculating betweenness centrality using
-    random walks instead of shortest paths.
-    """
-
-    #G_no_isolates = remove_isolates(G)
-    centrality_dict = nxc.current_flow_betweenness_centrality(\
-                                G = G, 
-                                normalized = kwargs["normalized"],
-                                weight = kwargs["weight"])
-    #filled_dict = fill_dict_with_isolates(G, centrality_dict)
-    return centrality_dict
 
 def get_dict_with_group_val(G, node_list, value):
     """Takes in a graph, list of nodes and a group value. Returns a dict
@@ -133,20 +87,6 @@ def get_edge_betweenness_cent(G, **kwargs):
     centrality_dict = nxc.edge_betweenness_centrality(G = G,
                                                       normalized = kwargs["normalized"],
                                                       weight = kwargs["weight"])
-    reordered_dict = reorder_edge_names(centrality_dict)
-    return reordered_dict
-
-def get_edge_current_flow_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of edge current flowbetweenness centrality 
-    values. This is the same as calculating edge betweenness centrality 
-    using random walks instead of shortest paths.
-    """
-    
-    #G_no_isolates = remove_isolates(G)
-    centrality_dict = nxc.edge_current_flow_betweenness_centrality(\
-                                    G = G,
-                                    normalized = kwargs["normalized"],
-                                    weight = kwargs["weight"])
     reordered_dict = reorder_edge_names(centrality_dict)
     return reordered_dict
 
@@ -274,10 +214,9 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness", 
-            "communicability_betweenness", "current_flow_betweenness"]
+    node = ["hubs", "degree", "betweenness", "closeness"]
     group = ["group_betweenness", "group_closeness"]
-    edge = ["edge_betweenness", "edge_current_flow_betweenness"]
+    edge = ["edge_betweenness"]
     all_cent = node + edge
 
     c_choices = all_cent + group + ["all", "node", "edge", "group"]
@@ -423,12 +362,9 @@ def main():
         "degree" : get_degree_cent, 
         "betweenness" : get_betweeness_cent,
         "closeness" : get_closeness_cent,
-        "communicability_betweenness" : get_communicability_betweenness_cent,
-        "current_flow_betweenness" : get_current_flow_betweenness_cent,
         "group_betweenness" : get_group_betweenness_cent,
         "group_closeness" : get_group_closeness_cent,
-        "edge_betweenness" : get_edge_betweenness_cent,
-        "edge_current_flow_betweenness" : get_edge_current_flow_betweenness_cent
+        "edge_betweenness" : get_edge_betweenness_cent
         }
     
     # Get list of all centrality measures
