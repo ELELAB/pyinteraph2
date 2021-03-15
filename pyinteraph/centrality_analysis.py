@@ -137,10 +137,12 @@ def write_pdb_files(centrality_dict, pdb, fname):
     """
 
     for cent_name, cent_dict in centrality_dict.items():
-        # Create input array
-        cent_array = np.array([val for val in cent_dict.values()])
-        # Replace column and save PDB file
-        ga.replace_bfac_column(pdb, cent_array, f"{cent_name}_{fname}.pdb")
+        # Ignore residue name column
+        if cent_name != "name":
+            # Create input array
+            cent_array = np.array([val for val in cent_dict.values()])
+            # Replace column and save PDB file
+            ga.replace_bfac_column(pdb, cent_array, f"{fname}_{cent_name}.pdb")
 
 def save_matrix(centrality_dict, identifiers):
     """Takes in a dictionary of dictionary and saves a matrix file for
