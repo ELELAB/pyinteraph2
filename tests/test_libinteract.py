@@ -32,6 +32,10 @@ def ref_dir(request):
     return os.path.join(request.fspath.dirname, '../examples')
 
 @pytest.fixture
+def ref_dir_twochains(request):
+    return os.path.join(request.fspath.dirname, 'data/two_chains')
+
+@pytest.fixture
 def data_files(ref_dir):
     return { 
              'gro' : os.path.join(ref_dir, 'sim.prot.gro'),
@@ -40,11 +44,11 @@ def data_files(ref_dir):
            }
 
 @pytest.fixture
-def data_twochains_files(ref_dir):
+def data_twochains_files(ref_dir_twochains):
     return {
-             'gro' : os.path.join(ref_dir, 'sim.prot.twochains.gro'),
-             'xtc' : os.path.join(ref_dir, 'traj.twochains.xtc'),
-             'pdb' : os.path.join(ref_dir, 'sim.prot.twochains.pdb')
+             'gro' : os.path.join(ref_dir_twochains, 'sim.prot.twochains.gro'),
+             'xtc' : os.path.join(ref_dir_twochains, 'traj.twochains.xtc'),
+             'pdb' : os.path.join(ref_dir_twochains, 'sim.prot.twochains.pdb')
            }
 
 # table file names
@@ -75,38 +79,38 @@ def ref_hc_graph_file(ref_dir):
 
 # two chain table file names
 @pytest.fixture
-def ref_sb_twochains_file(ref_dir):
-    return '{0}/salt-bridges_twochains_all.csv'.format(ref_dir)
+def ref_sb_twochains_file(ref_dir_twochains):
+    return '{0}/salt-bridges_twochains_all.csv'.format(ref_dir_twochains)
 
 @pytest.fixture
-def ref_hb_twochains_file(ref_dir):
-    return '{0}/hydrogen-bonds_twochains_all.csv'.format(ref_dir)
+def ref_hb_twochains_file(ref_dir_twochains):
+    return '{0}/hydrogen-bonds_twochains_all.csv'.format(ref_dir_twochains)
 
 @pytest.fixture
-def ref_hc_twochains_file(ref_dir):
-    return '{0}/hydrophobic-clusters_twochains_all.csv'.format(ref_dir)
+def ref_hc_twochains_file(ref_dir_twochains):
+    return '{0}/hydrophobic-clusters_twochains_all.csv'.format(ref_dir_twochains)
 
 # intra chain table file names
 @pytest.fixture
-def ref_sb_chains_file(ref_dir):
+def ref_sb_chains_file(ref_dir_twochains):
     return {
-            'intra_A' : '{0}/salt-bridges_twochains_intra_A.csv'.format(ref_dir),
-            'inter' : '{0}/salt-bridges_twochains_inter_A-B.csv'.format(ref_dir)
+            'intra_A' : '{0}/salt-bridges_twochains_intra_A.csv'.format(ref_dir_twochains),
+            'inter' : '{0}/salt-bridges_twochains_inter_A-B.csv'.format(ref_dir_twochains)
            }
 
 @pytest.fixture
-def ref_hc_chains_file(ref_dir):
+def ref_hc_chains_file(ref_dir_twochains):
     return {
-            'intra_A' : '{0}/hydrophobic-clusters_twochains_intra_A.csv'.format(ref_dir),
-            'inter' : '{0}/hydrophobic-clusters_twochains_inter_A-B.csv'.format(ref_dir)
+            'intra_A' : '{0}/hydrophobic-clusters_twochains_intra_A.csv'.format(ref_dir_twochains),
+            'inter' : '{0}/hydrophobic-clusters_twochains_inter_A-B.csv'.format(ref_dir_twochains)
            }
 
 @pytest.fixture
-def ref_hb_chains_file(ref_dir):
+def ref_hb_chains_file(ref_dir_twochains):
     return {
-            'intra_A' : '{0}/hydrogen-bonds_twochains_intra_A.csv'.format(ref_dir),
-            'intra_B' : '{0}/hydrogen-bonds_twochains_intra_B.csv'.format(ref_dir),
-            'inter' : '{0}/hydrogen-bonds_twochains_inter_A-B.csv'.format(ref_dir)
+            'intra_A' : '{0}/hydrogen-bonds_twochains_intra_A.csv'.format(ref_dir_twochains),
+            'intra_B' : '{0}/hydrogen-bonds_twochains_intra_B.csv'.format(ref_dir_twochains),
+            'inter' : '{0}/hydrogen-bonds_twochains_inter_A-B.csv'.format(ref_dir_twochains)
            }
 
 # two chain matrix file names
@@ -124,25 +128,25 @@ def ref_hc_graph_twochains_file(ref_dir):
 
 #inter chain matrix file names
 @pytest.fixture
-def ref_sb_graph_chains_file(ref_dir):
+def ref_sb_graph_chains_file(ref_dir_twochains):
     return {
-            'intra_A' : '{0}/sb-graph_twochains_intra_A.dat'.format(ref_dir),
-            'inter' : '{0}/sb-graph_twochains_inter_A-B.dat'.format(ref_dir)
+            'intra_A' : '{0}/sb-graph_twochains_intra_A.dat'.format(ref_dir_twochains),
+            'inter' : '{0}/sb-graph_twochains_inter_A-B.dat'.format(ref_dir_twochains)
            }
 
 @pytest.fixture
-def ref_hc_graph_chains_file(ref_dir):
+def ref_hc_graph_chains_file(ref_dir_twochains):
     return {
-            'intra_A' : '{0}/hc-graph_twochains_intra_A.dat'.format(ref_dir),
-            'inter' : '{0}/hc-graph_twochains_inter_A-B.dat'.format(ref_dir)
+            'intra_A' : '{0}/hc-graph_twochains_intra_A.dat'.format(ref_dir_twochains),
+            'inter' : '{0}/hc-graph_twochains_inter_A-B.dat'.format(ref_dir_twochains)
            }
 
 @pytest.fixture
-def ref_hb_graph_chains_file(ref_dir):
+def ref_hb_graph_chains_file(ref_dir_twochains):
     return {
-            'intra_A' : '{0}/hb-graph_twochains_intra_A.dat'.format(ref_dir),
-            'intra_B' : '{0}/hb-graph_twochains_intra_B.dat'.format(ref_dir),
-            'inter' : '{0}/hb-graph_twochains_inter_A-B.dat'.format(ref_dir)
+            'intra_A' : '{0}/hb-graph_twochains_intra_A.dat'.format(ref_dir_twochains),
+            'intra_B' : '{0}/hb-graph_twochains_intra_B.dat'.format(ref_dir_twochains),
+            'inter' : '{0}/hb-graph_twochains_inter_A-B.dat'.format(ref_dir_twochains)
            }
 
 # tables files
