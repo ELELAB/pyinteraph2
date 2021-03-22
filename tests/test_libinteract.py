@@ -462,7 +462,6 @@ def test_generate_sc_identifiers(simulation, hc_residues_list):
 def test_parse_cg_files(cg_file):
     data = li.parse_cgs_file(cg_file)
 
-
 # check do interact functions
 def test_do_interact_sb(simulation, charged_groups, ref_sb_graph, ref_sb):
     table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
@@ -562,7 +561,6 @@ def test_create_table_dict_hc(do_interact_hc, ref_hc_twochains, ref_hc_chains):
    split_tables = np.sort(np.vstack(split_dict(table_dict)), axis = 0)
    assert(np.array_equal(first_table, split_tables) == True)
 
-
 def test_create_matrix_dict_hc(do_interact_hc, 
                                create_table_dict_hc, 
                                simulation_twochains, 
@@ -617,5 +615,3 @@ def test_create_matrix_dict_hb(do_interact_hb,
     for i in range(len(split_matrix) - 1):
         common = np.logical_and(split_matrix[i] > 0, split_matrix[i+1] > 0)
         assert(common.sum() == 0)
-
-
