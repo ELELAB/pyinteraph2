@@ -115,16 +115,16 @@ def ref_hb_chains_file(ref_dir_twochains):
 
 # two chain matrix file names
 @pytest.fixture
-def ref_sb_graph_twochains_file(ref_dir):
-    return '{0}/sb-graph_twochains_all.dat'.format(ref_dir)
+def ref_sb_graph_twochains_file(ref_dir_twochains):
+    return '{0}/sb-graph_twochains_all.dat'.format(ref_dir_twochains)
 
 @pytest.fixture
-def ref_hb_graph_twochains_file(ref_dir):
-    return '{0}/hb-graph_twochains_all.dat'.format(ref_dir)
+def ref_hb_graph_twochains_file(ref_dir_twochains):
+    return '{0}/hb-graph_twochains_all.dat'.format(ref_dir_twochains)
 
 @pytest.fixture
-def ref_hc_graph_twochains_file(ref_dir):
-    return '{0}/hc-graph_twochains_all.dat'.format(ref_dir)
+def ref_hc_graph_twochains_file(ref_dir_twochains):
+    return '{0}/hc-graph_twochains_all.dat'.format(ref_dir_twochains)
 
 #inter chain matrix file names
 @pytest.fixture
