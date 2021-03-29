@@ -543,7 +543,7 @@ def main():
                                                    **kwargs)
 
         # Dictionary is not empty so node centralities have been requested
-        if node_dict:
+        if len(node_dict) > 1:
             # Save dictionary as table
             write_table(fname = args.c_out,
                         centrality_dict = node_dict,
