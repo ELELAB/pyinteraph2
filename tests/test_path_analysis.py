@@ -72,20 +72,20 @@ def shortest_path(example_metapath):
 
 @pytest.fixture
 def all_path(data, source, target):
-    return pa.get_all_simple_paths(graph = data[1],
+    return pa.get_all_simple_paths(graph = data[2],
                                    source = source,
                                    target = target,
                                    maxl = 3)
 
 @pytest.fixture
 def all_path_graph(data, all_path):
-    return pa.get_persistence_graph(graph = data[1], 
+    return pa.get_persistence_graph(graph = data[2], 
                                     paths = all_path, 
                                     identifiers = data[0])
 
 @pytest.fixture
 def all_table(data, all_path):
-    return pa.sort_paths(graph = data[1],
+    return pa.sort_paths(graph = data[2],
                          paths = all_path,
                          sort_by = "path")
 
@@ -124,7 +124,7 @@ def metapath(example_metapath, id):
 
 @pytest.fixture
 def reordered_graph(data):
-    graph = pa.get_metapath(graph = data[1],
+    graph = pa.get_metapath(graph = data[2],
                                res_id = data[0],
                                res_space = 3,
                                node_threshold = 0.1,
