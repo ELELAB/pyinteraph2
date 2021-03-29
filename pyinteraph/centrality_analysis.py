@@ -210,8 +210,9 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
             for n, subgraph in enumerate(components):
                 # Get dictionary using the function map
                 cent_dict = function_map[name](G = subgraph, **kwargs)
-                # Fill in missing nodes with 0
-                cent_dict = fill_dict(graph, cent_dict)
+                # Fill in missing nodes with 0 for node dicts
+                if "edge" not in name:
+                    cent_dict = fill_dict(graph, cent_dict)
                 # Add to dictionary with a name corresponding to the subgraph
                 insert_dict[f"{name}_c{n}"] = cent_dict
         else:
