@@ -85,7 +85,7 @@ def all_path_graph(data, all_path):
 
 @pytest.fixture
 def all_table(data, all_path):
-    return pa.sort_paths(graph = 2],
+    return pa.sort_paths(graph = data[2],
                          paths = all_path,
                          sort_by = "path")
 
