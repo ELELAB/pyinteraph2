@@ -45,21 +45,6 @@ def get_eigenvector_cent(G, **kwargs):
                                                        weight = kwargs["weight"])
     return centrality_dict
 
-# def remove_isolates(G):
-#     """Takes in a graph and returns a new graph where all the nodes with 
-#     zero edges have been removed.
-#     """
-
-#     # create duplicate graph so the original is unaffected
-#     H = G.copy()
-#     # isolates are nodes with zero edges
-#     isolates = nx.isolates(G)
-#     # remove from duplicate graph
-#     H.remove_nodes_from(list(isolates))
-#     d_1 = {"G" : G.nodes, "G_deg" : [deg for node, deg in G.degree]}
-#     d_2 = {"H" : H.nodes, "H_deg" : [deg for node, deg in H.degree]}
-#     return H
-
 def get_current_flow_betweenness_cent(G, **kwargs):
     """Returns a dictionary of current flow betweenness centrality
     values. This is the same as calculating betweenness centrality using
@@ -531,24 +516,5 @@ def main():
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
 
-        # For testing, will delete after all measures implemented
-        # x = nx.Graph()
-        # a = [('A', 'B'), ('B', 'C'), ('C','D')]
-        # # # b = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E')]
-        # # # c = [('A', 'B'), ('B', 'C'), ('C','D'), ('B', 'E'), ('C', 'E')]
-        # # # d = [('A', 'B'), ('B', 'C'), ('C','A')]
-        # # # e = [('A', 'B'), ('B', 'C'), ('C','D'), ('D', 'A')]
-        # # f = [('A', 'B')]
-        # g = [('A', 'B'), ('B', 'C')]
-        # x.add_edges_from(g)
-        # #x.add_node('Z')
-        # # print(x.degree())
-        # # print(x.edges())
-        # print("BC:", nxc.betweenness_centrality(x))
-        # # # print("BC_e:", nxc.betweenness_centrality(x, endpoints = True))
-        # # print("CBC:", nxc.communicability_betweenness_centrality(x))
-        # #print("CFB:", nxc.current_flow_betweenness_centrality(x))
-        # print("CFC:", nxc.current_flow_closeness_centrality(x))
-        # # # print("CFE:", nxc.edge_current_flow_betweenness_centrality(x))
 if __name__ == "__main__":
     main()
