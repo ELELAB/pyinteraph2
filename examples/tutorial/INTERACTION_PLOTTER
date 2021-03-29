@@ -1,0 +1,77 @@
+The Interaction Plotter PyMOL Plugin
+====================================
+
+Interaction Plotter is a PyMOL plugin designed to plot the interactions
+identified by pyinteraph on the 3D structure of proteins. 
+It is able to read dat files containing the interaction pairs and show them on the structure,
+such as the hydrogen-bonds.dat, hydrophobic-clusters.dat and salt-bridges.dat files. For the IIN graph files
+you should use the xPyder plugin instead (see the README for more information).
+
+Insallation
+-----------
+
+After installing the PyInteraph package, the interaction_plotter.py file is available under the
+pyinteraph directory, also containing scripts and configuration files. Use PyMOL's plugin handling
+interface to install the plugin.
+Please notice that the PYINTERAPH system variable (as detailed in the INSTALL documentation file)
+should be set when running the plugin, as it requires the charged_groups.ini configuration file to be present.
+If this variable is not set, the file location can be specified manually in the Charged groups file entry field.
+If the specified file is not readable or invalid, the program will fall back to a hard-coded set of representative atoms.
+
+Description and use
+-------------------
+
+The Interaction Plotter plugin plots the interactions defined in an input dat file, coming from a PyInteraph
+interactions analysis, on protein(s) 3D structure(s) already loaded in PyMOL. 
+The reference structure used when calculating the interactions is ideal to work with the plugin. 
+Each interaction is shown on the 3D structure as thin cylinders connecting one atom per residue involved 
+in the interactions. More in detail,
+
+- For salt-bridges, it uses one representative atom per charged group
+- For hydrophobic interactions, it uses the alpha carbons
+- For hydrogen bonds, it uses donor and acceptor atoms 
+
+The width of the cylinders is proportional to the persistence value in the input file. The color of the
+cylinders also changes with the persistence value (more details about this in the next section).
+A typical use case of the plugin is as follows:
+
+1) install pyinteraph and set the PYINTERAPH system variable. Obtain the output files.
+2) open PyMOL and load the reference PDB structure
+3) specify an input file, as described in the introduction
+3b) (optional) tweak the plotting customization options
+4) click on the Plot button
+
+the coloured cylinders should appear on the 3D structure.
+
+Interface and customization options
+-----------------------------------
+
+Plotting customization options are available on the plugin's user interface, as follows.
+
+Charged groups file: specify (if necessary) where the charged_groups.ini configuration file is located.
+The default configuration file can be found in the pyinteraph installation directory.
+
+Input file: specify the input file. These should contain lists of interaction pairs with their associated persistence, not graph files.
+
+Reference object: if you have one or more PyMOL object or selections in your PyMOL session,
+you can specify here the one that will be used for plotting. The default value is "all", meaning
+"all the loaded objects".
+
+Min (number): minimum value to be considered for plotting. All the interactions having persistence < MIN will be scaled up to MIN.
+
+Max (number): minimum value to be considered for plotting. All the interactions having persistence > MAX will be scaled down to MAX.
+
+Min (color) and Max (color): color for the minimum and maximum values, respectively. All the values falling within this range will be
+plotted using a linear color gradient between the Min and Max color. Click on the Min and Max buttons to change them.
+
+Min radius: Cylinder radius for the MIN value.
+
+Max radius: Cylinder radius for the MAX value.
+
+Plot object: name of the PyMOL object which will hold the plotted cylinders.
+
+
+
+
+
+
