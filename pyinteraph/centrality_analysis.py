@@ -60,14 +60,6 @@ def get_eigenvector_cent(G, **kwargs):
 #     d_2 = {"H" : H.nodes, "H_deg" : [deg for node, deg in H.degree]}
 #     return H
 
-def get_communicability_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of communicability betweenness centrality values"""
-
-    centrality_dict = nxc.communicability_betweenness_centrality(\
-                                G = G,
-                                normalized = kwargs["normalized"])
-    return centrality_dict
-
 def get_current_flow_betweenness_cent(G, **kwargs):
     """Returns a dictionary of current flow betweenness centrality
     values. This is the same as calculating betweenness centrality using
@@ -266,8 +258,7 @@ def main():
 
     # Centrality types
     node = ["hubs", "degree", "betweenness", "closeness", "eigenvector",
-            "communicability_betweenness", "current_flow_betweenness",
-            "current_flow_closeness"]
+            "current_flow_betweenness", "current_flow_closeness"]
     group = []
     edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
@@ -434,7 +425,6 @@ def main():
         "betweenness" : get_betweeness_cent,
         "closeness" : get_closeness_cent,
         "eigenvector" : get_eigenvector_cent,
-        "communicability_betweenness" : get_communicability_betweenness_cent,
         "current_flow_betweenness" : get_current_flow_betweenness_cent,
         "current_flow_closeness" : get_current_flow_closeness_cent,
         "edge_betweenness" : get_edge_betweenness_cent,
