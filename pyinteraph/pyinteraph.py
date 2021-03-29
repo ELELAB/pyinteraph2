@@ -483,12 +483,14 @@ def main():
                                              mindist = False,
                                              reslist = hc_reslist)
 
-        # Save .dat
-        with open(hc_dat, "w") as out:
-            out.write(str_out)
-        # Save .mat (if available)
+        # Save .csv
+        table_dict = li.create_table_dict(table_out)
+        li.save_output_dict(table_dict, hc_dat)
+
+        # Save .dat (if available)
         if hc_mat_out is not None:
-            np.savetxt(hc_graph, hc_mat_out, fmt = "%.1f")
+            mat_dict = li.create_matrix_dict(hc_mat_out, table_dict, pdb)
+            li.save_output_dict(mat_dict, hc_graph)
 
 
     ############################ SALT BRIDGES #############################
@@ -526,12 +528,14 @@ def main():
                                              mindist_mode = sb_mode,
                                              cgs = cgs)
 
-        # Save .dat
-        with open(sb_dat, "w") as out:
-            out.write(str_out)
-        # Save .mat (if available)
+        # Save .csv
+        table_dict = li.create_table_dict(table_out)
+        li.save_output_dict(table_dict, sb_dat)
+
+        # Save .dat (if available)
         if sb_mat_out is not None:
-            np.savetxt(sb_graph, sb_mat_out, fmt = "%.1f")
+            mat_dict = li.create_matrix_dict(sb_mat_out, table_dict, pdb)
+            li.save_output_dict(mat_dict, sb_graph)
 
 
     ########################### HYDROGEN BONDS ############################
@@ -613,12 +617,14 @@ def main():
                                            other_hbs = hbs, \
                                            perresidue = perresidue)                                    
 
-        # Save .dat
-        with open(hb_dat, "w") as out:
-            out.write(str_out)
-        # Save .mat (if available)
+        # Save .csv
+        table_dict = li.create_table_dict(table_out)
+        li.save_output_dict(table_dict, hb_dat)
+
+        # Save .dat (if available)
         if hb_mat_out is not None:
-            np.savetxt(hb_graph, hb_mat_out, fmt = "%.1f")
+            mat_dict = li.create_matrix_dict(hb_mat_out, table_dict, pdb)
+            li.save_output_dict(mat_dict, hb_graph)
 
 
     ######################## STATISTICAL POTENTIAL ########################

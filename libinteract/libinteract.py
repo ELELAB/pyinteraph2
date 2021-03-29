@@ -30,7 +30,8 @@ import json
 import struct
 import numpy as np
 import MDAnalysis as mda
-
+import re
+import os
 from libinteract import innerloops as il
 
 
@@ -867,6 +868,149 @@ def calc_cg_fullmatrix(identifiers, idxs, percmat, perco):
     return fullmatrix
 
 
+def filter_by_chain(chain1, chain2, table):
+    """Takes in a table, two chain names and the column number of the 
+    second chain. Filters the table to only keep rows where the first 
+    column contains chain1 and the second column contains chain2. 
+    Returns filtered table.
+    """
+
+    # Get the rows and columns from the table
+    rows = table
+    cols = table.T
+    # If the chains are the same, find all rows where both columns match
+    # the chain
+    if chain1 == chain2:
+        logical_vector = np.logical_and(chain1 == cols[0],
+                                        chain2 == cols[4])
+    else:
+        #If the chains are different, check bith directions
+        # Check forward direction (e.g. (A, B))
+        logical_vector1 = np.logical_and(chain1 == cols[0],
+                                         chain2 == cols[4])
+        # Check backward direction (e.g. (B, A))
+        logical_vector2 = np.logical_and(chain2 == cols[0],
+                                         chain1 == cols[4])
+        # Combine the vectors
+        logical_vector = np.logical_or(logical_vector1, logical_vector2)
+    # Filter rows
+    filtered_rows = rows[logical_vector]
+    # Warn if no contacts found and return None
+    if filtered_rows.shape[0] == 0:
+        if chain1 == chain2:
+            log.warning(f"No intrachain contacts found in chain {chain1}")
+        else:
+            warnstr = f"No interchain contacts found between chains " \
+                      f"{chain1} and {chain2}"
+            log.warning(warnstr)
+        return None
+    else:
+        return filtered_rows
+
+
+def create_table_dict(table):
+    """Takes in a single table (list of tuples) and returns a dictionary
+    of tables (arrays). Each key in this dictionary represent whether the 
+    table contains all/intrachain/interchain contacts.
+    """
+
+    # Convert to array and keep transpose for selection
+    table_rows = np.array(table)
+    table_cols = table_rows.T
+    # Initialize output dictionary of tables
+    table_dict = {"all": table_rows}
+    # Find unique chains in the table
+    chains = np.unique(np.concatenate((table_cols[0], table_cols[4])))
+    # If multiple chains are present, split the contacts by chain
+    if len(chains) > 1:
+	# For each chain, add the nodes that are only in contact with the same chain
+        for chain in chains:
+            filtered_rows_intra = filter_by_chain(chain, chain,
+                                                  table_rows)
+            # Check rows exist
+            if filtered_rows_intra is not None:
+                table_dict[chain] = filtered_rows_intra
+        # Create vector of all nodes that are in contact with different chains
+        logical_vector = table_cols[0] != table_cols[4]
+        # Warn if no interchain contacts
+        if logical_vector.sum() == 0:
+            log.warning("No interchain contacts found")
+        else:
+            # For all combinations of different chains, find nodes that are in
+            # contact with different chains
+            for chain1, chain2 in itertools.combinations(chains, 2):
+                filtered_rows_inter = filter_by_chain(chain1, chain2, table_rows)
+                # Check rows exist
+                if filtered_rows_inter is not None:
+                    name = tuple(sorted([chain1, chain2]))
+                    table_dict[name] = filtered_rows_inter
+    return table_dict
+
+def create_matrix_dict(fullmatrix, table_dict, pdb):
+    """Takes in the full matrix of persistence values and a dictionary of 
+    tables where each key represents all/intrachain/interchain contacts 
+    and returns a dictionary of matrices for each key.
+    """
+
+    # Initialize output dictionary of matrices
+    mat_dict = {"all": fullmatrix}
+    # Get chain id
+    res_chain = pdb.residues.segids
+    # Get res number
+    res_num = pdb.residues.resids
+    # Map res id (e.g. A4) to matrix index
+    res_dict = {res_chain[i]+str(res_num[i]):i for i in range(fullmatrix.shape[0])}
+    # Create a matrix for each table and store it with the same key
+    for key, element in table_dict.items():
+        # Exclude the all chains table
+        if key != "all":
+            # Create empty matrix
+            matrix = np.zeros(fullmatrix.shape)
+            # Get list of indexes for the matrix
+            table_cols = element.T
+            # Combine table cols to get dict key and check dict for index
+            mat_i = [res_dict[res] for res in np.char.add(table_cols[0], 
+                                                          table_cols[1])]
+            mat_j = [res_dict[res] for res in np.char.add(table_cols[4], 
+                                                          table_cols[5])]
+            # Fill the matrix with appropriate values
+            matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
+            matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
+            # Insert matrix into dictionary
+            mat_dict[key] = matrix
+    return mat_dict
+
+
+def save_output_dict(out_dict, filename):
+    """Save each value in a dictionary as a separate file. Must specify
+    if the dictionary is a csv or matrix. Saves csv by default.
+    """
+
+    # Remove extension from filename if present
+    filename = os.path.splitext(filename)[0]
+    # Check if the table or the matrix is being saved and change the parameters
+    if out_dict["all"].dtype == float:
+        ext = ".dat"
+        delim = ' '
+        format = "%.1f"
+    else:
+        ext = ".csv"
+        delim = ','
+        format = '%s'
+    # For each key, change the filename and save the dict value
+    for key in out_dict:
+        if key == "all":
+            fname = f"{filename}_all{ext}"
+        # Check if only one chain is present (intrachain)
+        elif len(key) == 1:
+            fname = f"{filename}_intra_{key}{ext}"
+        # Check if interchain
+        elif len(key) == 2:
+            fname = f"{filename}_inter_{key[0]}-{key[1]}{ext}"
+        # Save file
+        np.savetxt(fname, out_dict[key], delimiter = delim, fmt = format)
+
+
 ############################ INTERACTIONS #############################
 
 def do_interact(identfunc, \
@@ -903,11 +1047,10 @@ def do_interact(identfunc, \
                                mindist = mindist, \
                                mindist_mode = mindist_mode)
     # get shortened indexes and identifiers
-    short_idxs = [i[0:3] for i in idxs]
-    short_ids = [i[0:3] for i in identifiers]
-    # set output string and output string format
-    outstr = ""
-    outstr_fmt = "{:s}-{:d}{:s}_{:s}:{:s}-{:d}{:s}_{:s}\t{:3.1f}\n"
+    #short_idxs = [i[0:3] for i in idxs]
+    #short_ids = [i[0:3] for i in identifiers]
+    # create empty list for output
+    table = []
     # get where in the lower triangle of the matrix (it is symmeric)
     # the value is greater than the persistence cut-off
     where_gt_perco = np.argwhere(np.tril(percmat>perco))
@@ -916,11 +1059,10 @@ def do_interact(identfunc, \
         #print("IDXSi", short_idxs[i])
         #print("IDXSj", short_idxs[j])
 
-        segid1, resid1, resname1 = short_ids[short_ids.index(short_idxs[i])]
-        segid2, resid2, resname2 = short_ids[short_ids.index(short_idxs[j])]
-        outstr += outstr_fmt.format(segid1, resid1, resname1, idxs[i][3], \
-                                    segid2, resid2, resname2, idxs[j][3], \
-                                    percmat[i,j])
+        res1 = idxs[i]
+        res2 = idxs[j]
+        persistence = (percmat[i,j],)
+        table.append(res1 + res2 + persistence)
     # set the full matrix to None
     fullmatrix = None
     # compute the full matrix if requestes
@@ -930,8 +1072,8 @@ def do_interact(identfunc, \
                                     percmat = percmat, \
                                     perco = perco)
     
-    # return output string and fullmatrix
-    return (outstr, fullmatrix)
+    # return output list and fullmatrix
+    return table, fullmatrix
 
 ############################### HBONDS ################################
 
@@ -1019,8 +1161,8 @@ def do_hbonds(sel1, \
     # create the full matrix if requested
     if do_fullmatrix:
         fullmatrix = np.zeros((len(identifiers),len(identifiers)))
-    # set the empty output string
-    outstr = ""
+    # create empty list for output
+    table_out = []
     if perresidue or do_fullmatrix:
         # get the number of frames in the trajectory
         numframes = len(uni.trajectory)
@@ -1096,24 +1238,18 @@ def do_hbonds(sel1, \
             # get the hydrogen bond persistence
             hb_pers = table[i][-1]*100
             # get donor heavy atom and acceptor atom
-            donor_heavy_atom = table[i][4]
-            acceptor_atom = table[i][8]
+            donor_heavy_atom = (table[i][4],)
+            acceptor_atom = (table[i][8],)
             # consider only those hydrogen bonds whose persistence
             # is greater than the cut-off
 
             if hb_pers > perco:
+                # Remove the res_tag columns
+                res1 = identifiers[uni_id2ix[hbidentifier[0]]][0:3]
+                res2 = identifiers[uni_id2ix[hbidentifier[1]]][0:3]
+                persistence = (hb_pers,)
+                row = res1 + donor_heavy_atom + res2 + acceptor_atom + persistence
+                table_out.append(row)
 
-                res1_segid, res1_resid, res1_resname, res1_tag = \
-                    identifiers[uni_id2ix[hbidentifier[0]]]
-
-                res2_segid, res2_resid, res2_resname, res2_tag = \
-                    identifiers[uni_id2ix[hbidentifier[1]]]
-                
-                outstr += outstr_fmt.format(\
-                            res1_segid, res1_resid, res1_resname,
-                            donor_heavy_atom,
-                            res2_segid, res2_resid, res2_resname,
-                            acceptor_atom, hb_pers)
-
-    # return output string and full matrix
-    return (outstr, fullmatrix)
+    # return contact list  and full matrix
+    return table_out, fullmatrix
