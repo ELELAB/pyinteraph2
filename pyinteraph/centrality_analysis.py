@@ -90,33 +90,6 @@ def get_current_flow_closeness_cent(G, **kwargs):
                                 weight = kwargs["weight"])
     return centrality_dict
 
-def get_dict_with_group_val(G, node_list, value):
-    """Takes in a graph, list of nodes and a group value. Returns a dict
-    containing each node in the graph. If the node is in the list, its
-    value is the group value or else it is 0.
-    """
-
-    return {n : (value if n in node_list else 0) for n in G.nodes()}
-
-def get_group_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of group betweeness centrality values."""
-
-    centrality_val = nxc.group_betweenness_centrality(G = G,
-                                                      C = kwargs["node_list"],
-                                                      normalized = kwargs["normalized"],
-                                                      weight = kwargs["weight"])
-    centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
-    return centrality_dict
-
-def get_group_closeness_cent(G, **kwargs):
-    """Returns a dictionary of group closeness centrality values."""
-
-    centrality_val = nxc.group_closeness_centrality(G = G,
-                                                    S = kwargs["node_list"],
-                                                    weight = kwargs["weight"])
-    centrality_dict = get_dict_with_group_val(G, kwargs["node_list"], centrality_val)
-    return centrality_dict
-
 def reorder_edge_names(edge_dict):
     """Takes in a dictionary where the keys are edge names and returns 
     a dictionary with where the keys are sorted edge names.
@@ -295,7 +268,7 @@ def main():
     node = ["hubs", "degree", "betweenness", "closeness", "eigenvector",
             "communicability_betweenness", "current_flow_betweenness",
             "current_flow_closeness"]
-    group = ["group_betweenness", "group_closeness"]
+    group = []
     edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
 
@@ -464,8 +437,6 @@ def main():
         "communicability_betweenness" : get_communicability_betweenness_cent,
         "current_flow_betweenness" : get_current_flow_betweenness_cent,
         "current_flow_closeness" : get_current_flow_closeness_cent,
-        "group_betweenness" : get_group_betweenness_cent,
-        "group_closeness" : get_group_closeness_cent,
         "edge_betweenness" : get_edge_betweenness_cent,
         "edge_current_flow_betweenness" : get_edge_current_flow_betweenness_cent
         }
