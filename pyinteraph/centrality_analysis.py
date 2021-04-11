@@ -16,6 +16,20 @@ def get_hubs(G, **kwargs):
     hubs = {n : (d if d >= kwargs["hub"] else 0) for n, d in degree_tuple}
     return hubs
 
+def get_connected_components(G, **kwargs):
+    """Returns a dictionary of connected component index for each node.
+    The index is sorted in descending order of size of the component.
+    """
+    components = nx.algorithms.components.connected_components(G)
+    # reverse sort components by size
+    components = sorted(components, key = lambda x: len(x), reverse = True)
+    # get dict of component indexes
+    component_dict = {node : i + 1 for i, component in enumerate(components) \
+                                        for node in component}
+    # sort dictionary by node
+    sorted_dict = {node : component_dict[node] for node in G.nodes()}
+    return sorted_dict
+
 def get_degree_cent(G, **kwargs):
     """Returns a dictionary of degree centrality values for each node."""
 
@@ -244,8 +258,8 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness", "eigenvector",
-            "current_flow_betweenness", "current_flow_closeness"]
+    node = ["hubs", "component", "degree", "betweenness", "closeness", 
+            "eigenvector", "current_flow_betweenness", "current_flow_closeness"]
     group = []
     edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
@@ -382,7 +396,6 @@ def main():
 
     args = parser.parse_args()
 
-
     # Check user input
     if not args.input_matrix:
         # exit if the adjacency matrix was not speficied
@@ -408,6 +421,7 @@ def main():
     # Function map of all implemented measures
     function_map = {
         "hubs" : get_hubs,
+        "component" : get_connected_components,
         "degree" : get_degree_cent, 
         "betweenness" : get_betweeness_cent,
         "closeness" : get_closeness_cent,
