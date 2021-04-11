@@ -112,6 +112,8 @@ def get_components(G, cutoff = 4):
 
     subgraphs = []
     components = nx.algorithms.components.connected_components(G)
+    # reverse sort components by size
+    components = sorted(components, key = lambda x: len(x), reverse = True)
     for component in components:
         if len(component) >= cutoff:
             subgraph = G.subgraph(component).copy()
@@ -164,7 +166,7 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
                 if "edge" not in name:
                     cent_dict = fill_dict(graph, cent_dict)
                 # Add to dictionary with a name corresponding to the subgraph
-                insert_dict[f"{name}_c{n}"] = cent_dict
+                insert_dict[f"{name}_{n+1}"] = cent_dict
         else:
             # Calculate and add the measures that do not require connected graphs
             cent_dict = function_map[name](G = graph, **kwargs)
