@@ -369,7 +369,7 @@ def do_potential(kbp_atomlist,
                     [sel.positions for sel in atom_selections]), \
             dtype = np.float64)
 
-        inner_loop = il.LoopDistances(coords, coords, None)
+        inner_loop = il.LoopDistances(coords, coords, None, corrections=None)
         # compute distances
         distances = \
             inner_loop.run_potential_distances(len(atom_selections), 4, 1)
@@ -1051,9 +1051,12 @@ def do_interact(identfunc, \
                 fullmatrixfunc = None, \
                 mindist = False, \
                 mindist_mode = None, \
-                correction_func = "null", \
+                correction_func = None, \
                 **identargs):
     
+    if correction_func is None:
+        correction_func = null_correction
+
     # get identifiers, indexes and atom selections
     identifiers, idxs, chosenselections = identfunc(pdb, uni, **identargs)
 
