@@ -49,7 +49,7 @@ def get_betweeness_cent(G, **kwargs):
 def get_closeness_cent(G, **kwargs):
     """Returns a dictionary of closeness centrality values for each node."""
 
-    centrality_dict = nxc.closeness_centrality(G = G)
+    centrality_dict = nxc.closeness_centrality(G = G, distance = kwargs["weight"])
     return centrality_dict
 
 def get_eigenvector_cent(G, **kwargs):
