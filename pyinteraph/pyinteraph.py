@@ -497,7 +497,7 @@ def main():
         elif hc_cf == 'rg':
             selected_func = li.rg_correction
 
-        str_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
+        table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                              pdb = pdb,
                                              uni = uni,
                                              co = hc_co,
@@ -542,7 +542,7 @@ def main():
             sb_mode = "both"
 
         fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
-        str_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
+        table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
                                              pdb = pdb,
                                              uni = uni,
                                              co = sb_co, 
@@ -631,15 +631,15 @@ def main():
 
         do_fullmatrix = True if hb_graph else False
         perresidue = False    
-        str_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1, \
-                                           sel2 = hb_group2, \
-                                           pdb = pdb, \
-                                           uni = uni, \
-                                           distance = hb_co, \
-                                           angle = hb_angle, \
-                                           perco = hb_perco, \
-                                           do_fullmatrix = do_fullmatrix, \
-                                           other_hbs = hbs, \
+        table_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1,
+                                           sel2 = hb_group2,
+                                           pdb = pdb,
+                                           uni = uni,
+                                           distance = hb_co,
+                                           angle = hb_angle,
+                                           perco = hb_perco,
+                                           do_fullmatrix = do_fullmatrix,
+                                           other_hbs = hbs,
                                            perresidue = perresidue)                                    
 
         # Save .csv
