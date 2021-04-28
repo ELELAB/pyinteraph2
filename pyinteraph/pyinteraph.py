@@ -146,6 +146,16 @@ def main():
                         default = None, \
                         help = hcgraph_helpstr)
 
+    hc_correction_func_helpstr = \
+        "Function for deriving correction factors to " \
+        "persistence matrix"
+    parser.add_argument("--hc-cf", "--hc-correction-func", \
+                        type = str, \
+                        dest = "hc_cf", \
+                        default = None, \
+                        choices = ["null", "rg"], \
+                        help = hc_correction_func_helpstr)
+
     #---------------------------- Salt bridges ---------------------------#
 
     sbco_default = 4.5
@@ -306,6 +316,7 @@ def main():
                         default = None, \
                         help = hbcustom2_helpstr)
 
+
     #----------------------------- Potential -----------------------------#
 
     kbpff_default = pkg_resources.resource_filename('pyinteraph', "ff.S050.bin64")
@@ -417,6 +428,7 @@ def main():
     hc_co = args.hc_co
     hc_perco = args.hc_perco
     hc_dat = args.hc_dat
+    hc_cf = args.hc_cf
     # salt bridges
     do_sb = args.do_sb
     cgs_file = args.cgs_file
@@ -468,20 +480,33 @@ def main():
         log.error(logstr)
         exit(1)
 
+    # Warn user if correction is specified but --hc is not used
+    if hc_cf is not None and not do_hc:
+        log.warn('Correction function (--hc-cf) is specified but hydrophobic network (--hc) is not used. Correction function will be ignored.')
+
 
     ######################## HYDROPHOBIC CONTACTS #########################
 
+
     if do_hc:
         fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
+
+        # Select appropriate correction function
+        if hc_cf is None or hc_cf =='null':
+            selected_func = li.null_correction
+        elif hc_cf == 'rg':
+            selected_func = li.rg_correction
+
         table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
                                              pdb = pdb,
                                              uni = uni,
-                                             co = hc_co, 
+                                             co = hc_co,
                                              perco = hc_perco,
-                                             ffmasses = ffmasses, 
+                                             ffmasses = ffmasses,
                                              fullmatrixfunc = fmfunc,
                                              mindist = False,
-                                             reslist = hc_reslist)
+                                             reslist = hc_reslist,
+                                             correction_func = selected_func)
 
         # Save .csv
         table_dict = li.create_table_dict(table_out)

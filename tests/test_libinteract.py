@@ -77,6 +77,10 @@ def ref_hb_graph_file(ref_dir):
 def ref_hc_graph_file(ref_dir):
     return '{0}/hc-graph.dat'.format(ref_dir)
 
+@pytest.fixture
+def ref_hc_rg_graph_file(ref_dir):
+    return '{0}/hc_graph_rg_corrected_all.dat'.format(ref_dir)
+
 # two chain table file names
 @pytest.fixture
 def ref_sb_twochains_file(ref_dir_twochains):
@@ -149,6 +153,10 @@ def ref_hb_graph_chains_file(ref_dir_twochains):
             'inter' : '{0}/hb-graph_twochains_inter_A-B.dat'.format(ref_dir_twochains)
            }
 
+@pytest.fixture
+def ref_hc_rg_file(ref_dir):
+    return '{0}/hydrophobic_clusters_rg_corrected_all.csv'.format(ref_dir)
+
 # tables files
 @pytest.fixture
 def ref_sb(ref_sb_file):
@@ -163,6 +171,11 @@ def ref_hb(ref_hb_file):
 @pytest.fixture
 def ref_hc(ref_hc_file):
     with open(ref_hc_file) as fh:
+        return fh.readlines()
+
+@pytest.fixture
+def ref_hc_rg(ref_hc_rg_file):
+    with open(ref_hc_rg_file) as fh:
         return fh.readlines()
 
 # inter chain table files
@@ -230,6 +243,10 @@ def ref_hb_graph(ref_hb_graph_file):
 @pytest.fixture
 def ref_hc_graph(ref_hc_graph_file):
     return np.loadtxt(ref_hc_graph_file)
+
+@pytest.fixture
+def ref_hc_rg_graph(ref_hc_rg_graph_file):
+    return np.loadtxt(ref_hc_rg_graph_file)
 
 # two chains files
 @pytest.fixture
@@ -488,11 +505,30 @@ def test_do_interact_hc(simulation, hc_residues_list, ref_hc_graph, ref_hc):
                                            ffmasses = 'charmm27', 
                                            fullmatrixfunc = li.calc_sc_fullmatrix, 
                                            reslist = hc_residues_list,
-                                           mindist = False)
+                                           mindist = False,
+                                           correction_function = li.null_correction)
     assert_almost_equal(hc_mat_out, ref_hc_graph, decimal=1)
 
     for i, t in enumerate(table_out):
         assert(','.join(str(x) for x in t) == ref_hc[i].strip())
+
+def test_do_interact_hc_rg(simulation, sc_residues_list, ref_hc_rg_graph, ref_hc_rg):
+    table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
+                                           pdb = simulation['pdb'],
+                                           uni = simulation['uni'],
+                                           co = 5.0,
+                                           perco = 0.0,
+                                           ffmasses = 'charmm27',
+                                           fullmatrixfunc = li.calc_sc_fullmatrix,
+                                           reslist = sc_residues_list,
+                                           mindist = False,
+                                           correction_func = li.rg_correction)
+    assert_almost_equal(hc_mat_out, ref_hc_rg_graph, decimal=1)
+
+    for i, t in enumerate(table_out):
+        assert(','.join(str(x) for x in t) == ref_hc_rg[i].strip())
+
+
 
 def test_parse_hb_file(hb_file):
     li.parse_hbs_file(hb_file)
