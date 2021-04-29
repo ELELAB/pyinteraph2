@@ -18,7 +18,8 @@ setup(name = 'pyinteraph',
                          "graph_analysis = pyinteraph.graph_analysis:main",
                          "filter_graph = pyinteraph.filter_graph:main",
                          "parse_masses = pyinteraph.parse_masses:main",
-                         "path_analysis = pyinteraph.path_analysis:main"]
+                         "path_analysis = pyinteraph.path_analysis:main",
+                         "centrality_analysis = pyinteraph.centrality_analysis:main"]
                    },
       install_requires=["biopython",
                         "MDAnalysis==1.0.0",
