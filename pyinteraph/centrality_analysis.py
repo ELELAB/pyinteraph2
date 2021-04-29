@@ -303,14 +303,14 @@ def main():
                         default = d_default,
                         help = d_helpstr)
 
-    w_default = False
-    w_helpstr = f"Use edge weights to calculate centrality measures. " \
-                f"(default: {w_default})."
-    parser.add_argument("-w", "--use_weights",
-                        dest = "weight",
-                        action = "store_true",
-                        default = w_default,
-                        help = w_helpstr)
+    # w_default = False
+    # w_helpstr = f"Use edge weights to calculate centrality measures. " \
+    #             f"(default: {w_default})."
+    # parser.add_argument("-w", "--use_weights",
+    #                     dest = "weight",
+    #                     action = "store_true",
+    #                     default = w_default,
+    #                     help = w_helpstr)
 
     n_default = True
     n_helpstr = f"Normalize centrality measures. " \
@@ -490,7 +490,7 @@ def main():
 
         # Create dictionary of optional arguments
         kwargs = {"node_list" : node_list,
-                  "weight" : args.weight,
+                  "weight" : None,
                   "normalized" : args.normalized,
                   "endpoints" : args.endpoints,
                   "max_iter" : args.max_iter,
