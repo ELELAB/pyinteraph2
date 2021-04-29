@@ -486,7 +486,8 @@ def main():
             exit(1)
 
         # Change weight boolean to weight name or None
-        args.weight = None if args.weight is False else "weight"
+        # Only use if weights are implemented
+        #args.weight = None if args.weight is False else "weight"
 
         # Create dictionary of optional arguments
         kwargs = {"node_list" : node_list,
