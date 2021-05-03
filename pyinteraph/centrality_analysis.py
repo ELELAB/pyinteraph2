@@ -260,20 +260,16 @@ def main():
     # Centrality types
     node = ["hubs", "component", "degree", "betweenness", "closeness", 
             "eigenvector", "current_flow_betweenness", "current_flow_closeness"]
-    group = []
     edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
 
-    c_choices = all_cent + group + ["all", "node", "edge", "group"]
+    c_choices = all_cent + ["all", "node", "edge"]
     c_default = None
     c_helpstr = f"Select which centrality measures to calculate: {c_choices} " \
                 f"(default: {c_default}). Selecting 'node' will calculate the "\
                 f"following centralities: {node}. Selecting 'edge' will " \
                 f"calculate the following centralities: {edge}. Selecting " \
-                f"'group' will calculate the following centralities: {group}. " \
-                f"Note: Group centralities will only be calculated if a list of " \
-                f"nodes is provided (see option -g). Selecting 'all' will " \
-                f"calculate all non-group centralities."
+                f"'all' will calculate all node and edge centralities."
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
                         nargs = "+",
@@ -281,7 +277,7 @@ def main():
                         default = c_default,
                         help =  c_helpstr)
 
-    b_choices = node + group
+    b_choices = node
     b_default = "node"
     b_helpstr = f"Sort node centralities. Use the name of the " \
                 f"desired measure. The name must match one of the names " \
@@ -357,15 +353,6 @@ def main():
                         type = int,
                         help = k_helpstr)
 
-    g_helpstr = f"List of residues used for group centrality calculations. " \
-                f"e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
-                f"reference PDB file provided. e.g. _42,_57."
-    parser.add_argument("-g", "--group",
-                        dest = "group",
-                        default = None,
-                        type = str,
-                        help = g_helpstr)
-
     o_default = "centrality"
     o_helpstr = f"Output file name for centrality measures " \
                 f"(default: {o_default}.txt)."
@@ -434,31 +421,12 @@ def main():
     
     # Get list of all centrality measures
     if args.cent is not None:
-        # Get node list if present
-        if args.group is not None:
-            node_list = pa.convert_input_to_list(args.group, identifiers)
-        else:
-            node_list = args.group
-
-        # Find group names based on user request
-        # Find all non group centralities
+        # Find all centralities
         if "all" in args.cent:
             centrality_names = all_cent
         # Find all node centralities
         elif "node" in args.cent:
             centrality_names = node
-        # Find all group centralities if node list specified
-        elif "group" in args.cent and args.group is not None:
-            centrality_names = group
-        # Throw error if group is requested but node list is not specified
-        elif ("group" in args.cent or \
-            # One of the group centralities is requested
-            len([cent for cent in args.cent if cent in group]) > 0) \
-            and args.group is None:
-            error_str = "A group of residues must be specified to calculate " \
-                        "group centrality (see option -g). Exiting..."
-            log.error(error_str)
-            exit(1)
         # Find all edge centralities
         elif "edge" in args.cent:
             centrality_names = edge
@@ -490,8 +458,7 @@ def main():
         #args.weight = None if args.weight is False else "weight"
 
         # Create dictionary of optional arguments
-        kwargs = {"node_list" : node_list,
-                  "weight" : None,
+        kwargs = {"weight" : None,
                   "normalized" : args.normalized,
                   "endpoints" : args.endpoints,
                   "max_iter" : args.max_iter,
