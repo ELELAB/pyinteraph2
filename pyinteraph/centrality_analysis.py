@@ -330,7 +330,7 @@ def main():
                         default = e_default,
                         help = e_helpstr)
 
-    x_default = 50
+    x_default = 100
     x_helpstr = f"The maximum number of iterations when calculating " \
                 f"eigenvector centrality (default: {x_default})."
     parser.add_argument("-x", "--max-iter",
@@ -339,7 +339,7 @@ def main():
                         type = int,
                         help = x_helpstr)
 
-    t_default = 0.0
+    t_default = 1e-06
     t_helpstr = f"The tolerance when calculating eigenvector centrality. " \
                 f"(default: {t_default})."
     parser.add_argument("-t", "--tolerance",
