@@ -36,20 +36,47 @@ def get_degree_cent(G, **kwargs):
     centrality_dict = nxc.degree_centrality(G)
     return centrality_dict
 
+def get_graph_without_glycine(G, identifiers, residue_names):
+    """Takes in a graph, a list of nodes for the graph and a list of
+    residues corresponding to each node. Returns a graph without any 
+    nodes corresponding to Glycine.
+    """
+    # get dictionary of node:res
+    node_dict = dict(zip(identifiers, residue_names))
+    # get all nodes which correspond to glycine
+    glycine_nodes = [node for node, res in node_dict.items() if res == "GLY"]
+    # create new graph with glycines
+    H = G.copy()
+    H.remove_nodes_from(glycine_nodes)
+    return H
+
+def fill_dict(G, cent_dict):
+    """Takes in a graph and a dictionary of centrality values. Returns a
+    new dictionary of centrality values containing each node in the 
+    graph. If the node is not in the given dictionary, it has a value of
+    0 or else if has the value in the given dictionary.
+    """
+
+    return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
+
 def get_betweeness_cent(G, **kwargs):
     """Returns a dictionary of betweeness centrality values for each node."""
 
     # Need to consider if endpoints should be used or not
-    centrality_dict = nxc.betweenness_centrality(G = G,
+    H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
+    centrality_dict = nxc.betweenness_centrality(G = H,
                                                  normalized = kwargs["normalized"],
                                                  weight = kwargs["weight"],
                                                  endpoints = kwargs["endpoints"])
+    centrality_dict = fill_dict(G, centrality_dict)
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
     """Returns a dictionary of closeness centrality values for each node."""
 
+    H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
     centrality_dict = nxc.closeness_centrality(G = G, distance = kwargs["weight"])
+    centrality_dict = fill_dict(G, centrality_dict)
     return centrality_dict
 
 def get_eigenvector_cent(G, **kwargs):
@@ -134,16 +161,7 @@ def get_components(G, cutoff = 4):
             subgraphs.append(subgraph)
     return subgraphs
 
-def fill_dict(G, cent_dict):
-    """Takes in a graph and a dictionary of centrality values. Returns a
-    new dictionary of centrality values containing each node in the 
-    graph. If the node is not in the given dictionary, it has a value of
-    0 or else if has the value in the given dictionary.
-    """
-
-    return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
-
-def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, **kwargs):
+def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
     name of a node centrality measure and the value is a dictionary of 
     centrality values for each node. (Also includes group centralities)
@@ -161,6 +179,8 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
     # Intialize output dictionaries
     node_dict = {}
     edge_dict = {}
+    identifiers = kwargs["identifiers"]
+    res_name = kwargs["residue_names"]
     # Add residue names to node_dict if available
     if res_name is not None:
         node_dict["name"] = {identifiers[i]: res_name[i] for i in range(len(identifiers))}
@@ -463,14 +483,14 @@ def main():
                   "endpoints" : args.endpoints,
                   "max_iter" : args.max_iter,
                   "tol" : args.tol,
-                  "hub" : args.hub}
+                  "hub" : args.hub,
+                  "identifiers" : identifiers,
+                  "residue_names" : residue_names}
         
         # Get dictionary of node+group and edge centrality values
         node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
                                                    function_map = function_map, 
                                                    graph = graph,
-                                                   identifiers = identifiers,
-                                                   res_name = residue_names,
                                                    **kwargs)
 
         # Dictionary is not empty so node centralities have been requested
