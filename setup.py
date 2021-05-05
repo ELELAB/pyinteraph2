@@ -1,5 +1,25 @@
 from setuptools import setup, Extension
-import numpy as np
+from setuptools.command.build_ext import build_ext as _build_ext
+
+# this is to avoid import numpy as first thing in the install script, which
+# fails if numpy isn't installed already. Same thing that root_numpy does
+# and similar to other sources
+# https://github.com/scikit-hep/root_numpy
+
+class build_ext(_build_ext):
+    def finalize_options(self):
+        _build_ext.finalize_options(self)
+
+        # prevent numpy from thinking it is still in its setup process:
+        try:
+            del builtins.__NUMPY_SETUP__
+        except AttributeError:
+            pass
+
+        import numpy
+        self.include_dirs.append(numpy.get_include())
+
+cmdclass={'build_ext': _build_ext},
 
 libinteract = Extension('libinteract.innerloops', ['libinteract/innerloops.pyx', 'libinteract/clibinteract.c'])
 
@@ -20,7 +40,8 @@ setup(name = 'pyinteraph',
                          "parse_masses = pyinteraph.parse_masses:main",
                          "path_analysis = pyinteraph.path_analysis:main"]
                    },
-      install_requires=["biopython",
+      install_requires=["cython",
+                        "biopython",
                         "MDAnalysis==1.0.0",
                         "numpy",
                         "matplotlib",
@@ -30,5 +51,5 @@ setup(name = 'pyinteraph',
                         "pytest"],
       setup_requires=["numpy",
                       "cython"],
-      include_dirs=[np.get_include()]
+      cmd_class={'build_ext' : build_ext}
       )
