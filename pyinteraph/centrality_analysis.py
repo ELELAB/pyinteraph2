@@ -16,20 +16,6 @@ def get_hubs(G, **kwargs):
     hubs = {n : (d if d >= kwargs["hub"] else 0) for n, d in degree_tuple}
     return hubs
 
-def get_connected_components(G, **kwargs):
-    """Returns a dictionary of connected component index for each node.
-    The index is sorted in descending order of size of the component.
-    """
-    components = nx.algorithms.components.connected_components(G)
-    # reverse sort components by size
-    components = sorted(components, key = lambda x: len(x), reverse = True)
-    # get dict of component indexes
-    component_dict = {node : i + 1 for i, component in enumerate(components) \
-                                        for node in component}
-    # sort dictionary by node
-    sorted_dict = {node : component_dict[node] for node in G.nodes()}
-    return sorted_dict
-
 def get_degree_cent(G, **kwargs):
     """Returns a dictionary of degree centrality values for each node."""
 
@@ -45,7 +31,7 @@ def get_graph_without_glycine(G, identifiers, residue_names):
     node_dict = dict(zip(identifiers, residue_names))
     # get all nodes which correspond to glycine
     glycine_nodes = [node for node, res in node_dict.items() if res == "GLY"]
-    # create new graph with glycines
+    # create new graph without glycines
     H = G.copy()
     H.remove_nodes_from(glycine_nodes)
     return H
@@ -137,29 +123,12 @@ def get_edge_current_flow_betweenness_cent(G, **kwargs):
     using random walks instead of shortest paths.
     """
     
-    #G_no_isolates = remove_isolates(G)
     centrality_dict = nxc.edge_current_flow_betweenness_centrality(\
                                     G = G,
                                     normalized = kwargs["normalized"],
                                     weight = kwargs["weight"])
     reordered_dict = reorder_edge_names(centrality_dict)
     return reordered_dict
-
-def get_components(G, cutoff = 4):
-    """Takes in a graph and a cutoff value. Returns all list containing
-    networkX graphs of all connected components in original graph that 
-    have more nodes than the cutoff.
-    """
-
-    subgraphs = []
-    components = nx.algorithms.components.connected_components(G)
-    # reverse sort components by size
-    components = sorted(components, key = lambda x: len(x), reverse = True)
-    for component in components:
-        if len(component) >= cutoff:
-            subgraph = G.subgraph(component).copy()
-            subgraphs.append(subgraph)
-    return subgraphs
 
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
@@ -173,8 +142,13 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     # List of measures that require a connected graph
     connected_measures = ["current_flow_betweenness", "current_flow_closeness", 
                           "edge_current_flow_betweenness"]
-    # List of subgraphs for each connected component
-    components = get_components(graph)
+    # Get all components
+    components = nx.algorithms.components.connected_components(graph)
+    # reverse sort components by size
+    components = sorted(components, key = lambda x: len(x), reverse = True)
+    # List of subgraphs for each connected component with 3 nodes or more
+    subgraphs = [graph.subgraph(component).copy() for component in components 
+                 if len(component) > 2]
     # Intialize output dictionaries
     node_dict = {}
     edge_dict = {}
@@ -192,7 +166,7 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
         insert_dict = edge_dict if "edge" in name else node_dict
         # For the measures in the list, calculate values for each subgrapg
         if name in connected_measures:
-            for n, subgraph in enumerate(components):
+            for n, subgraph in enumerate(subgraphs):
                 # Get dictionary using the function map
                 cent_dict = function_map[name](G = subgraph, **kwargs)
                 # Fill in missing nodes with 0 for node dicts
@@ -318,15 +292,6 @@ def main():
                         default = d_default,
                         help = d_helpstr)
 
-    # w_default = False
-    # w_helpstr = f"Use edge weights to calculate centrality measures. " \
-    #             f"(default: {w_default})."
-    # parser.add_argument("-w", "--use_weights",
-    #                     dest = "weight",
-    #                     action = "store_true",
-    #                     default = w_default,
-    #                     help = w_helpstr)
-
     n_default = True
     n_helpstr = f"Normalize centrality measures. " \
                 f"(default: {n_default})."
@@ -427,7 +392,6 @@ def main():
     # Function map of all implemented measures
     function_map = {
         "hubs" : get_hubs,
-        "component" : get_connected_components,
         "degree" : get_degree_cent, 
         "betweenness" : get_betweeness_cent,
         "closeness" : get_closeness_cent,
@@ -471,10 +435,6 @@ def main():
                       f"be one of the following: {', '.join(expected_names)}. Exiting..."
             log.error(err_str)
             exit(1)
-
-        # Change weight boolean to weight name or None
-        # Only use if weights are implemented
-        #args.weight = None if args.weight is False else "weight"
 
         # Create dictionary of optional arguments
         kwargs = {"weight" : None,
