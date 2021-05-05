@@ -10,7 +10,7 @@ import graph_analysis as ga
 import path_analysis as pa
 
 def get_hubs(G, **kwargs):
-    """Returns a dictionary of degree values for each node."""
+    """Returns a dictionary of degree values for all node."""
 
     degree_tuple = G.degree()
     hubs = {n : (d if d >= kwargs["hub"] else 0) for n, d in degree_tuple}
@@ -54,13 +54,13 @@ def fill_dict(G, cent_dict):
     """Takes in a graph and a dictionary of centrality values. Returns a
     new dictionary of centrality values containing each node in the 
     graph. If the node is not in the given dictionary, it has a value of
-    0 or else if has the value in the given dictionary.
+    0 or else it has the value in the given dictionary.
     """
 
     return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
 
 def get_betweeness_cent(G, **kwargs):
-    """Returns a dictionary of betweeness centrality values for each node."""
+    """Returns a dictionary of betweenness centrality values for all node."""
 
     # Need to consider if endpoints should be used or not
     H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
@@ -72,7 +72,7 @@ def get_betweeness_cent(G, **kwargs):
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
-    """Returns a dictionary of closeness centrality values for each node."""
+    """Returns a dictionary of closeness centrality values for all node."""
 
     H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
     centrality_dict = nxc.closeness_centrality(G = G, distance = kwargs["weight"])
@@ -80,7 +80,7 @@ def get_closeness_cent(G, **kwargs):
     return centrality_dict
 
 def get_eigenvector_cent(G, **kwargs):
-    """Returns a dictionary of eigenvector centrality values for each node."""
+    """Returns a dictionary of eigenvector centrality values for all node."""
 
     centrality_dict = nxc.eigenvector_centrality_numpy(G = G, 
                                                        weight = kwargs["weight"])
@@ -132,7 +132,7 @@ def get_edge_betweenness_cent(G, **kwargs):
     return reordered_dict
 
 def get_edge_current_flow_betweenness_cent(G, **kwargs):
-    """Returns a dictionary of edge current flowbetweenness centrality 
+    """Returns a dictionary of edge current flow betweenness centrality 
     values. This is the same as calculating edge betweenness centrality 
     using random walks instead of shortest paths.
     """
@@ -164,16 +164,15 @@ def get_components(G, cutoff = 4):
 def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
     name of a node centrality measure and the value is a dictionary of 
-    centrality values for each node. (Also includes group centralities)
-    e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}, ...}
-    For the second dictionary, the key is the name of an edge centrality
-    measure and the value is a dictionary of centrality values for each
-    edge, similar to the first dictionary.
+    centrality values for each node e.g. {degree: {A: 0.1, B:0.7, ...}, 
+    betweenness: {...}, ...}. For the second dictionary, the key is the 
+    name of an edge centrality measure and the value is a dictionary of 
+    centrality values for each edge, similar to the first dictionary.
     """
 
-    # List of measures that required a connected graph
-    connected_measures = ["communicability_betweenness", "current_flow_betweenness", 
-                          "current_flow_closeness", "edge_current_flow_betweenness"]
+    # List of measures that require a connected graph
+    connected_measures = ["current_flow_betweenness", "current_flow_closeness", 
+                          "edge_current_flow_betweenness"]
     # List of subgraphs for each connected component
     components = get_components(graph)
     # Intialize output dictionaries
@@ -278,8 +277,8 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "component", "degree", "betweenness", "closeness", 
-            "eigenvector", "current_flow_betweenness", "current_flow_closeness"]
+    node = ["hubs", "degree", "betweenness", "closeness", "eigenvector", 
+            "current_flow_betweenness", "current_flow_closeness"]
     edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
 
