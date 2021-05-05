@@ -3,53 +3,85 @@ Installing PyInteraph
 =====================
 
 PyInteraph is composed of a Python and C package (libinteract) and some front-end scripts.
-The C library is wrapped for Python using a Cython wrapper. The latter has already been pre-compiled to C, 
-so you shouldn't need to recompile it. However, the Cython (pxd and pyx) files are also included in the 
-src directory in case of need or for customization purposes.
-
+The C library is wrapped for Python using a Cython wrapper. 
 In order to build PyInteraph from source you will need
 
-- Python 3.6 or higher with setuptools
+- Python 3.6 or higher with setuptools (i.e. having pip available)
 - a C/C++ compiler (e.g. GNU gcc)
-- the Python header files (e.g. package python-dev in Debian-based Linux distributions)
+- the Python header files (e.g. package python-dev in Debian-based
+Linux distributions)
 - several open-source Python packages, including numpy and Cython
 
-Please see the setup.py file for the complete list of requirements.
+most of these requirements are available by default in any Linux system, and
+the Python packages will be installed automatically during the installation
+process. Please see the requirements.txt file for the complete list of
+Python package requirements.
 
 Installation instructions
 =========================
 
-0) These installation instructions guide you to install PyInteraph in a new Python environment.
-They require that you have the virtualenv package installed system-wide. On Debian-based systems
- (such as Debian or Ubuntu) this boils down to installing the python-virtualenv package:
+Here we provide instructions for installing PyInteraph in a simple Python
+environment or in a conda environment.
+
+Installing with pip and setuptools
+----------------------------------
+
+This is a simple installation procedure that requires a Python >=3.6 distribution
+to be available on your system. It guides you installing the PyInteraph package
+in a virtual environment, meaning an instance of Python isolated from the rest
+of your system. This is not strictly necessary however and PyInteraph may be
+installed system-wide pretty much in the same fashion, following steps 4 to 6.
+
+1) Check if the virtualenv Python package is installed in your system. If the
+ "virtualenv" command is available to you, it is installed and you can skip this step.
+
+If instead it is not available and you need to install it, it is usually 
+available as a package in your distribution. For instance, on Debian-based
+systems (such as Debian or Ubuntu) this boils down to installing the
+python-virtualenv package:
 
     sudo apt install python-virtualenv
 
-1) create your Python 3.7 virtual environment, in a directory of your choice:
+if this is not possible for you, you might still install the virtualenv package
+for just your local user, using pip:
+
+    pip install --user virtualenv
+
+if the installation is successfull, the virtualenv command will be available
+
+2) create your Python 3.7 virtual environment, in a directory of your choice:
+(in this case, it will be ./pyinteraph-env)
 
     virtualenv -p /usr/bin/python3.7 pyinteraph-env
 
-2) activate it:
+you might need to replace the argument of option -p according to the location
+of your Python installation in the system. Nonetheless the one in the
+aforamentioned command line covers the most common case.
 
-    . pyinteraph-env/bin/activate
+3) activate it:
 
-3) download the PyInteraph source code and unzip it. Enter the uncompressed directory.
+    source pyinteraph-env/bin/activate
+
+4) clone the PyInteraph source code from its GitHub repository. Enter the uncompressed directory.
  
-    wget https://github.com/ELELAB/pyinteraph2/archive/feature_py3.zip
-    unzip pyinteraph2-feature_py3.zip
-    cd pyinteraph2-feature_py3
+    git clone https://github.com/ELELAB/pyinteraph2.git
+    cd pyinteraph2
 
-4) install the numpy and cython packages. These are requirements to install PyInteraph.
+if git is not available to you, you can download the repository content as a zip
+file from the PyInteraph2 GitHub repository web page
 
-    pip install numpy cython
+5) install all the required Python packages as specified in the requirements.txt file
 
-5) install PyInteraph. This will also install all the required Python packages in your environment.
+    pip install -r requirements.txt
+
+6) install PyInteraph.
 
     python setup.py install
 
-That's it! The pyinteraph, graph_analysis and filter_graph scripts should now be available.
+That's it! The main PyInteraph executables (such as for instance "pyinteraph") 
+should now be available.
 
-Every time you need to run pyinteraph, just run step 2 beforehand.
+Every time you need to run pyinteraph after opening a new shell, just run step 2 beforehand.
        
 Testing
 =======
