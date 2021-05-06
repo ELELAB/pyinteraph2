@@ -2,55 +2,148 @@
 Installing PyInteraph
 =====================
 
-PyInteraph is composed of a Python and C package (libinteract) and some front-end scripts.
-The C library is wrapped for Python using a Cython wrapper. The latter has already been pre-compiled to C, 
-so you shouldn't need to recompile it. However, the Cython (pxd and pyx) files are also included in the 
-src directory in case of need or for customization purposes.
+PyInteraph is made of a Python packages with Cython and C extensions.
 
-In order to build PyInteraph from source you will need
+In order to install PyInteraph you will need
 
-- Python 3.6 or higher with setuptools
-- a C/C++ compiler (e.g. GNU gcc)
-- the Python header files (e.g. package python-dev in Debian-based Linux distributions)
+- Python 3.6 or higher 
+- a C compiler (e.g. GNU gcc)
+- the Python header files (e.g. package python-dev in Debian-based
+Linux distributions)
 - several open-source Python packages, including numpy and Cython
 
-Please see the setup.py file for the complete list of requirements.
+most of these requirements are available by default in any Linux installation, 
+except for the Python packages, that will be installed automatically during 
+the installation process. Please see the requirements.txt file for the 
+complete list of Python package requirements.
 
+If you are unsure whether your system already satisfies such requirements, we
+recommend installing PyInteraph in a conda enviornment (see below) that also
+supports installation of non-Python requirements.
+
+=========================
 Installation instructions
 =========================
 
-0) These installation instructions guide you to install PyInteraph in a new Python environment.
-They require that you have the virtualenv package installed system-wide. On Debian-based systems
- (such as Debian or Ubuntu) this boils down to installing the python-virtualenv package:
+Here we provide instructions for installing PyInteraph in a simple Python
+environment or in a conda environment.
+
+----------------------------------
+Installing with pip and setuptools
+----------------------------------
+
+This is a simple installation procedure that requires a Python >=3.6 distribution
+to be available. It guides you in the installation of the PyInteraph package
+in a virtual environment, meaning an instance of Python isolated from the rest
+of your system. This is not strictly necessary however and PyInteraph may be
+installed system-wide pretty much in the same fashion, following steps 4 to 6.
+
+1) Check if the virtualenv Python package is installed in your system. If the
+ "virtualenv" command is available to you, it is installed and you can skip this step.
+
+If instead it is not available and you need to install it, it is usually 
+available as a package in your distribution. For instance, on Debian-based
+systems (such as Debian or Ubuntu) this boils down to installing the
+python-virtualenv package:
 
     sudo apt install python-virtualenv
 
-1) create your Python 3.7 virtual environment, in a directory of your choice:
+if this is not possible for you, you might still install the virtualenv package
+for just your local user, using pip:
+
+    pip install --user virtualenv
+
+if the installation is successfull, the virtualenv command will be available
+
+2) create your Python 3.7 virtual environment, in a directory of your choice:
+(in this case, it will be ./pyinteraph-env)
 
     virtualenv -p /usr/bin/python3.7 pyinteraph-env
 
-2) activate it:
+you might need to replace the argument of option -p according to the location
+of your Python installation in the system. Nonetheless the one in the
+aforamentioned command line covers the most common case.
 
-    . pyinteraph-env/bin/activate
+3) activate it:
 
-3) download the PyInteraph source code and unzip it. Enter the uncompressed directory.
+    source pyinteraph-env/bin/activate
+
+4) clone the PyInteraph source code from its GitHub repository. Enter the local 
+copy of the repository.
  
-    wget https://github.com/ELELAB/pyinteraph2/archive/feature_py3.zip
-    unzip pyinteraph2-feature_py3.zip
-    cd pyinteraph2-feature_py3
+    git clone https://github.com/ELELAB/pyinteraph2.git
+    cd pyinteraph2
 
-4) install the numpy and cython packages. These are requirements to install PyInteraph.
+if git is not available to you, you can download the repository content as a zip
+file from the PyInteraph2 GitHub repository web page
 
-    pip install numpy cython
+5) install all the required Python packages as specified in the requirements.txt file
 
-5) install PyInteraph. This will also install all the required Python packages in your environment.
+    pip install -r requirements.txt
+
+6) install PyInteraph.
 
     python setup.py install
 
-That's it! The pyinteraph, graph_analysis and filter_graph scripts should now be available.
+That's it! The main PyInteraph executables (such as for instance "pyinteraph") 
+should now be available.
 
-Every time you need to run pyinteraph, just run step 2 beforehand.
-       
+Every time you need to run pyinteraph after opening a new shell, just run step 2 beforehand.
+ 
+---------------------
+Installing with conda
+---------------------
+
+We have provided an environment.yml file that can be used together with conda to automatically
+install an environment contaning all of PyInteraph's requirement. In order to use it you need
+to have conda installed in your system. Please visit https://docs.conda.io/en/latest/miniconda.html
+for further instructions. Installing miniconda rather than full anaconda is advised.
+ 
+Once conda is installed on your system, you can use it to create a virtual 
+environment similarly to what you would do using the virtualenv package, as
+previously detailed.
+
+1) create your conda environment starting from the provided environment file:
+
+    conda env create --file environment.yaml --prefix ./pyinteraph-env
+
+in this case we are asking conda to create the environment locally (--prefix). This is not
+strictly necessary.
+
+Note that if your home directory is size-constrained the installation might fail for lack of
+space. In that case you need to select another directory with more available free space
+in which conda will download packages. This is done by running
+
+    conda config --add pkgs_dirs /my/other/directory/conda/pkgs
+
+just change the directory name to one of your choice
+
+2) activate the conda environment, just by running the command line that conda suggests for
+this purpose at the end of the previous step. It's usually something like
+
+    conda activate ./pyinteraph-env
+
+3) clone the PyInteraph source code from its GitHub repository. Enter the local
+copy of the repository.
+
+    git clone https://github.com/ELELAB/pyinteraph2.git
+    cd pyinteraph2
+
+if git is not available to you, you can download the repository content as a zip
+file from the PyInteraph2 GitHub repository web page
+
+4) install PyInteraph.
+
+    python setup.py install
+
+That's it! The main PyInteraph executables (such as for instance "pyinteraph")
+should now be available.
+
+Every time you need to run pyinteraph after opening a new shell, just run
+step 2 beforehand.
+
+
+=======
 Testing
 =======
 
