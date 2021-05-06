@@ -125,7 +125,7 @@ def main():
                         default = 0.0, \
                         help = hcperco_helpstr.format(hcperco_default))
 
-    hcdat_default = "hydrophobic-clusters.dat"
+    hcdat_default = "hydrophobic-clusters.csv"
     hcdat_helpstr = \
         "Name of the file where to store the list of " \
         "hydrophobic contacts found (default: {:s})"
@@ -178,7 +178,7 @@ def main():
                         default = sbperco_default, \
                         help = sbperco_helpstr.format(sbperco_default))
 
-    sbdat_default = "salt-bridges.dat"
+    sbdat_default = "salt-bridges.csv"
     sbdat_helpstr = \
         "Name of the file where to store the list of " \
         "salt bridges found (default: {:s})"
@@ -243,7 +243,7 @@ def main():
                         default = hbang_default, \
                         help = hbang_helpstr.format(hbang_default))
 
-    hbdat_default = "hydrogen-bonds.dat"
+    hbdat_default = "hydrogen-bonds.csv"
     hbdat_helpstr = \
         "Name of the file where to store the list of " \
         "hydrogen bonds found (default: {:s})"
