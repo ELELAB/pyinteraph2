@@ -6,8 +6,8 @@ import numpy as np
 import networkx as nx
 from networkx.algorithms import centrality as nxc
 import pandas as pd
-import graph_analysis as ga
-import path_analysis as pa
+from pyinteraph import graph_analysis as ga
+from pyinteraph import path_analysis as pa
 
 def get_hubs(G, **kwargs):
     """Returns a dictionary of degree values for all node."""
@@ -228,6 +228,19 @@ def save_matrix(centrality_dict, identifiers):
         matrix = nx.to_numpy_matrix(G)
         np.savetxt(f"{name}.dat", matrix)
 
+# Function map of all implemented measures
+function_map = {
+        "hubs" : get_hubs,
+        "degree" : get_degree_cent, 
+        "betweenness" : get_betweeness_cent,
+        "closeness" : get_closeness_cent,
+        "eigenvector" : get_eigenvector_cent,
+        "current_flow_betweenness" : get_current_flow_betweenness_cent,
+        "current_flow_closeness" : get_current_flow_closeness_cent,
+        "edge_betweenness" : get_edge_betweenness_cent,
+        "edge_current_flow_betweenness" : get_edge_current_flow_betweenness_cent
+        }
+
 def main():
 
     ######################### ARGUMENT PARSER #########################
@@ -388,19 +401,6 @@ def main():
     sys.stdout.write(info)
 
     ############################ CENTRALITY ############################
-
-    # Function map of all implemented measures
-    function_map = {
-        "hubs" : get_hubs,
-        "degree" : get_degree_cent, 
-        "betweenness" : get_betweeness_cent,
-        "closeness" : get_closeness_cent,
-        "eigenvector" : get_eigenvector_cent,
-        "current_flow_betweenness" : get_current_flow_betweenness_cent,
-        "current_flow_closeness" : get_current_flow_closeness_cent,
-        "edge_betweenness" : get_edge_betweenness_cent,
-        "edge_current_flow_betweenness" : get_edge_current_flow_betweenness_cent
-        }
     
     # Get list of all centrality measures
     if args.cent is not None:
