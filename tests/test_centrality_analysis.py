@@ -1,10 +1,10 @@
 import os
 import pytest
 import networkx as nx
-from pyinteraph import centrality_analysis as ca
-from pyinteraph import path_analysis as pa
 import pandas as pd
 from numpy.testing import assert_almost_equal, assert_equal
+from pyinteraph import centrality_analysis as ca
+from pyinteraph import path_analysis as pa
 
 # load files
 @pytest.fixture
