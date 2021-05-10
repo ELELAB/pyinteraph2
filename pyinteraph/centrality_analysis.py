@@ -6,10 +6,8 @@ import numpy as np
 import networkx as nx
 from networkx.algorithms import centrality as nxc
 import pandas as pd
-import graph_analysis as ga
-import path_analysis as pa
-#from pyinteraph import graph_analysis as ga
-#from pyinteraph import path_analysis as pa
+from pyinteraph import graph_analysis as ga
+from pyinteraph import path_analysis as pa
 
 def get_hubs(G, **kwargs):
     """Returns a dictionary of degree values for all node."""
