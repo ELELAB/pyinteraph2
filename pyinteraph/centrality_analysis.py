@@ -144,7 +144,7 @@ def get_centrality_dict(cent_list, function_map, graph, **kwargs):
                           "edge_current_flow_betweenness"]
     # Get all components
     components = nx.algorithms.components.connected_components(graph)
-    # reverse sort components by size
+    # Reverse sort components by size
     components = sorted(components, key = lambda x: len(x), reverse = True)
     # List of subgraphs for each connected component with 3 nodes or more
     subgraphs = [graph.subgraph(component).copy() for component in components 
