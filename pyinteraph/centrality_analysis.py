@@ -10,32 +10,88 @@ from pyinteraph import graph_analysis as ga
 from pyinteraph import path_analysis as pa
 
 def get_hubs(G, **kwargs):
-    """Returns a dictionary of degree values for each node."""
+    """Returns a dictionary of degree values for all nodes."""
 
     degree_tuple = G.degree()
     hubs = {n : (d if d >= kwargs["hub"] else 0) for n, d in degree_tuple}
     return hubs
 
 def get_degree_cent(G, **kwargs):
-    """Returns a dictionary of degree centrality values for each node."""
+    """Returns a dictionary of degree centrality values for all nodes."""
 
     centrality_dict = nxc.degree_centrality(G)
     return centrality_dict
 
+def get_graph_without_glycine(G, identifiers, residue_names):
+    """Takes in a graph, a list of nodes for the graph and a list of
+    residues corresponding to each node. Returns a graph without any 
+    nodes corresponding to Glycine.
+    """
+    # get dictionary of node:res
+    node_dict = dict(zip(identifiers, residue_names))
+    # get all nodes which correspond to glycine
+    glycine_nodes = [node for node, res in node_dict.items() if res == "GLY"]
+    # create new graph without glycines
+    H = G.copy()
+    H.remove_nodes_from(glycine_nodes)
+    return H
+
+def fill_dict(G, cent_dict):
+    """Takes in a graph and a dictionary of centrality values. Returns a
+    new dictionary of centrality values containing each node in the 
+    graph. If the node is not in the given dictionary, it has a value of
+    0 or else it has the value in the given dictionary.
+    """
+
+    return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
+
 def get_betweeness_cent(G, **kwargs):
-    """Returns a dictionary of betweeness centrality values for each node."""
+    """Returns a dictionary of betweenness centrality values for all nodes."""
 
     # Need to consider if endpoints should be used or not
-    centrality_dict = nxc.betweenness_centrality(G = G,
+    H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
+    centrality_dict = nxc.betweenness_centrality(G = H,
                                                  normalized = kwargs["normalized"],
                                                  weight = kwargs["weight"],
                                                  endpoints = kwargs["endpoints"])
+    centrality_dict = fill_dict(G, centrality_dict)
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
-    """Returns a dictionary of closeness centrality values for each node."""
+    """Returns a dictionary of closeness centrality values for all nodes."""
 
-    centrality_dict = nxc.closeness_centrality(G = G)
+    H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
+    centrality_dict = nxc.closeness_centrality(G = G, distance = kwargs["weight"])
+    centrality_dict = fill_dict(G, centrality_dict)
+    return centrality_dict
+
+def get_eigenvector_cent(G, **kwargs):
+    """Returns a dictionary of eigenvector centrality values for all nodes."""
+
+    centrality_dict = nxc.eigenvector_centrality_numpy(G = G, 
+                                                       weight = kwargs["weight"])
+    return centrality_dict
+
+def get_current_flow_betweenness_cent(G, **kwargs):
+    """Returns a dictionary of current flow betweenness centrality
+    values. This is the same as calculating betweenness centrality using
+    random walks instead of shortest paths.
+    """
+
+    centrality_dict = nxc.current_flow_betweenness_centrality(\
+                                G = G, 
+                                normalized = kwargs["normalized"],
+                                weight = kwargs["weight"])
+    return centrality_dict
+
+def get_current_flow_closeness_cent(G, **kwargs):
+    """Returns a dictionary of current flow closeness centrality
+    values.
+    """
+
+    centrality_dict = nxc.current_flow_closeness_centrality(\
+                                G = G,
+                                weight = kwargs["weight"])
     return centrality_dict
 
 def reorder_edge_names(edge_dict):
@@ -61,34 +117,43 @@ def get_edge_betweenness_cent(G, **kwargs):
     reordered_dict = reorder_edge_names(centrality_dict)
     return reordered_dict
 
-def get_components(G, cutoff = 4):
-    """Takes in a graph and a cutoff value. Returns all list containing
-    networkX graphs of all connected components in original graph that 
-    have more nodes than the cutoff.
+def get_edge_current_flow_betweenness_cent(G, **kwargs):
+    """Returns a dictionary of edge current flow betweenness centrality 
+    values. This is the same as calculating edge betweenness centrality 
+    using random walks instead of shortest paths.
     """
+    
+    centrality_dict = nxc.edge_current_flow_betweenness_centrality(\
+                                    G = G,
+                                    normalized = kwargs["normalized"],
+                                    weight = kwargs["weight"])
+    reordered_dict = reorder_edge_names(centrality_dict)
+    return reordered_dict
 
-    subgraphs = []
-    components = nx.algorithms.components.connected_components(G)
-    for component in components:
-        if len(component) >= cutoff:
-            subgraph = G.subgraph(component).copy()
-            subgraphs.append(subgraph)
-    return subgraphs
-
-def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, **kwargs):
+def get_centrality_dict(cent_list, function_map, graph, **kwargs):
     """Returns two dictionaries. For the first dictionary, the key is the 
     name of a node centrality measure and the value is a dictionary of 
-    centrality values for each node. (Also includes group centralities)
-    e.g. {degree: {A: 0.1, B:0.7, ...}, betweenness: {...}, ...}
-    For the second dictionary, the key is the name of an edge centrality
-    measure and the value is a dictionary of centrality values for each
-    edge, similar to the first dictionary.
+    centrality values for each node e.g. {degree: {A: 0.1, B:0.7, ...}, 
+    betweenness: {...}, ...}. For the second dictionary, the key is the 
+    name of an edge centrality measure and the value is a dictionary of 
+    centrality values for each edge, similar to the first dictionary.
     """
 
-    connected_measures = []
+    # List of measures that require a connected graph
+    connected_measures = ["current_flow_betweenness", "current_flow_closeness", 
+                          "edge_current_flow_betweenness"]
+    # Get all components
+    components = nx.algorithms.components.connected_components(graph)
+    # Reverse sort components by size
+    components = sorted(components, key = lambda x: len(x), reverse = True)
+    # List of subgraphs for each connected component with 3 nodes or more
+    subgraphs = [graph.subgraph(component).copy() for component in components 
+                 if len(component) > 2]
     # Intialize output dictionaries
     node_dict = {}
     edge_dict = {}
+    identifiers = kwargs["identifiers"]
+    res_name = kwargs["residue_names"]
     # Add residue names to node_dict if available
     if res_name is not None:
         node_dict["name"] = {identifiers[i]: res_name[i] for i in range(len(identifiers))}
@@ -101,11 +166,14 @@ def get_centrality_dict(cent_list, function_map, graph, identifiers, res_name, *
         insert_dict = edge_dict if "edge" in name else node_dict
         # For the measures in the list, calculate values for each subgrapg
         if name in connected_measures:
-            for n, subgraph in enumerate(components):
+            for n, subgraph in enumerate(subgraphs):
                 # Get dictionary using the function map
                 cent_dict = function_map[name](G = subgraph, **kwargs)
+                # Fill in missing nodes with 0 for node dicts
+                if "edge" not in name:
+                    cent_dict = fill_dict(graph, cent_dict)
                 # Add to dictionary with a name corresponding to the subgraph
-                insert_dict[f"{name}_c{n}"] = cent_dict
+                insert_dict[f"{name}_{n+1}"] = cent_dict
         else:
             # Calculate and add the measures that do not require connected graphs
             cent_dict = function_map[name](G = graph, **kwargs)
@@ -127,7 +195,7 @@ def write_table(fname, centrality_dict, sort_by):
     # Only sort if node/edge is not specified
     if not(sort_by == "node" or sort_by == "edge"):
         table = table.sort_values(by=[sort_by], ascending = False)
-    # Save file 
+    # Save file
     # remove na_rep to have an empty representation
     table.to_csv(f"{fname}.txt", sep = "\t", na_rep= "NA") 
 
@@ -160,6 +228,19 @@ def save_matrix(centrality_dict, identifiers):
         matrix = nx.to_numpy_matrix(G)
         np.savetxt(f"{name}.dat", matrix)
 
+# Function map of all implemented measures
+function_map = {
+        "hubs" : get_hubs,
+        "degree" : get_degree_cent, 
+        "betweenness" : get_betweeness_cent,
+        "closeness" : get_closeness_cent,
+        "eigenvector" : get_eigenvector_cent,
+        "current_flow_betweenness" : get_current_flow_betweenness_cent,
+        "current_flow_closeness" : get_current_flow_closeness_cent,
+        "edge_betweenness" : get_edge_betweenness_cent,
+        "edge_current_flow_betweenness" : get_edge_current_flow_betweenness_cent
+        }
+
 def main():
 
     ######################### ARGUMENT PARSER #########################
@@ -183,9 +264,9 @@ def main():
                         type = str)
 
     # Centrality types
-    node = ["hubs", "degree", "betweenness", "closeness"]
-    group = []
-    edge = ["edge_betweenness"]
+    node = ["hubs", "degree", "betweenness", "closeness", "eigenvector", 
+            "current_flow_betweenness", "current_flow_closeness"]
+    edge = ["edge_betweenness", "edge_current_flow_betweenness"]
     all_cent = node + edge
 
     c_choices = all_cent + ["all", "node", "edge"]
@@ -194,10 +275,7 @@ def main():
                 f"(default: {c_default}). Selecting 'node' will calculate the "\
                 f"following centralities: {node}. Selecting 'edge' will " \
                 f"calculate the following centralities: {edge}. Selecting " \
-                f"'group' will calculate the following centralities: {group}. " \
-                f"Note: Group centralities will only be calculated if a list of " \
-                f"nodes is provided (see option -g). Selecting 'all' will " \
-                f"calculate all non-group centralities."
+                f"'all' will calculate all node and edge centralities."
     parser.add_argument("-c", "--centrality",
                         dest = "cent",
                         nargs = "+",
@@ -205,7 +283,7 @@ def main():
                         default = c_default,
                         help =  c_helpstr)
 
-    b_choices = node + group
+    b_choices = node
     b_default = "node"
     b_helpstr = f"Sort node centralities. Use the name of the " \
                 f"desired measure. The name must match one of the names " \
@@ -227,20 +305,11 @@ def main():
                         default = d_default,
                         help = d_helpstr)
 
-    w_default = False
-    w_helpstr = f"Use edge weights to calculate centrality measures. " \
-                f"(default: {w_default})."
-    parser.add_argument("-w", "--use_weights",
-                        dest = "weight",
-                        action = "store_true",
-                        default = w_default,
-                        help = w_helpstr)
-
     n_default = True
     n_helpstr = f"Normalize centrality measures. " \
                 f"(default: {n_default})."
     parser.add_argument("-n", "--normalize",
-                        dest = "norm",
+                        dest = "normalized",
                         action = "store_true",
                         default = n_default,
                         help = n_helpstr)
@@ -249,28 +318,37 @@ def main():
     e_helpstr = f"Use endpoints when calculating centrality measures. " \
                 f"(default: {e_default})."
     parser.add_argument("-e", "--use_endpoints",
-                        dest = "endpoint",
+                        dest = "endpoints",
                         action = "store_true",
                         default = e_default,
                         help = e_helpstr)
 
+    x_default = 100
+    x_helpstr = f"The maximum number of iterations when calculating " \
+                f"eigenvector centrality (default: {x_default})."
+    parser.add_argument("-x", "--max-iter",
+                        dest = "max_iter",
+                        default = x_default,
+                        type = int,
+                        help = x_helpstr)
+
+    t_default = 1e-06
+    t_helpstr = f"The tolerance when calculating eigenvector centrality. " \
+                f"(default: {t_default})."
+    parser.add_argument("-t", "--tolerance",
+                        dest = "tol",
+                        default = t_default,
+                        type = float,
+                        help = t_helpstr)
+
     k_default = 3
     k_helpstr = f"The minimum cutoff for a node to be considered a hub. " \
-                f"(default: {c_default})."
+                f"(default: {k_default})."
     parser.add_argument("-k", "--hub-cutoff",
                         dest = "hub",
                         default = k_default,
                         type = int,
                         help = k_helpstr)
-
-    g_helpstr = f"List of residues used for group centrality calculations. " \
-                f"e.g. A32,A35,A37:A40. Replace chain name with '_' if no " \
-                f"reference PDB file provided. e.g. _42,_57."
-    parser.add_argument("-g", "--group",
-                        dest = "group",
-                        default = None,
-                        type = str,
-                        help = g_helpstr)
 
     o_default = "centrality"
     o_helpstr = f"Output file name for centrality measures " \
@@ -302,7 +380,6 @@ def main():
 
     args = parser.parse_args()
 
-
     # Check user input
     if not args.input_matrix:
         # exit if the adjacency matrix was not speficied
@@ -324,26 +401,10 @@ def main():
     sys.stdout.write(info)
 
     ############################ CENTRALITY ############################
-
-    # Function map of all implemented measures
-    function_map = {
-        "hubs" : get_hubs,
-        "degree" : get_degree_cent, 
-        "betweenness" : get_betweeness_cent,
-        "closeness" : get_closeness_cent,
-        "edge_betweenness" : get_edge_betweenness_cent
-        }
     
     # Get list of all centrality measures
     if args.cent is not None:
-        # Get node list if present
-        if args.group is not None:
-            node_list = pa.convert_input_to_list(args.group, identifiers)
-        else:
-            node_list = args.group
-
-        # Find group names based on user request
-        # Find all non group centralities
+        # Find all centralities
         if "all" in args.cent:
             centrality_names = all_cent
         # Find all node centralities
@@ -375,26 +436,24 @@ def main():
             log.error(err_str)
             exit(1)
 
-        # Change weight boolean to weight name or None
-        args.weight = None if args.weight is False else "weight"
-
         # Create dictionary of optional arguments
-        kwargs = {"node_list" : node_list,
-                  "weight" : args.weight,
-                  "normalized" : args.norm,
-                  "endpoints" : args.endpoint,
-                  "hub": args.hub}
+        kwargs = {"weight" : None,
+                  "normalized" : args.normalized,
+                  "endpoints" : args.endpoints,
+                  "max_iter" : args.max_iter,
+                  "tol" : args.tol,
+                  "hub" : args.hub,
+                  "identifiers" : identifiers,
+                  "residue_names" : residue_names}
         
         # Get dictionary of node+group and edge centrality values
         node_dict, edge_dict = get_centrality_dict(cent_list = centrality_names,
                                                    function_map = function_map, 
                                                    graph = graph,
-                                                   identifiers = identifiers,
-                                                   res_name = residue_names,
                                                    **kwargs)
 
         # Dictionary is not empty so node centralities have been requested
-        if node_dict:
+        if len(node_dict) > 1:
             # Save dictionary as table
             write_table(fname = args.c_out,
                         centrality_dict = node_dict,
@@ -419,5 +478,6 @@ def main():
             if args.save_mat:
                 save_matrix(centrality_dict = edge_dict, 
                             identifiers = identifiers)
+
 if __name__ == "__main__":
     main()
