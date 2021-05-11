@@ -10,14 +10,14 @@ from pyinteraph import graph_analysis as ga
 from pyinteraph import path_analysis as pa
 
 def get_hubs(G, **kwargs):
-    """Returns a dictionary of degree values for all node."""
+    """Returns a dictionary of degree values for all nodes."""
 
     degree_tuple = G.degree()
     hubs = {n : (d if d >= kwargs["hub"] else 0) for n, d in degree_tuple}
     return hubs
 
 def get_degree_cent(G, **kwargs):
-    """Returns a dictionary of degree centrality values for each node."""
+    """Returns a dictionary of degree centrality values for all nodes."""
 
     centrality_dict = nxc.degree_centrality(G)
     return centrality_dict
@@ -46,7 +46,7 @@ def fill_dict(G, cent_dict):
     return {n : (cent_dict[n] if n in cent_dict else 0) for n in G.nodes()}
 
 def get_betweeness_cent(G, **kwargs):
-    """Returns a dictionary of betweenness centrality values for all node."""
+    """Returns a dictionary of betweenness centrality values for all nodes."""
 
     # Need to consider if endpoints should be used or not
     H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
@@ -58,7 +58,7 @@ def get_betweeness_cent(G, **kwargs):
     return centrality_dict
 
 def get_closeness_cent(G, **kwargs):
-    """Returns a dictionary of closeness centrality values for all node."""
+    """Returns a dictionary of closeness centrality values for all nodes."""
 
     H = get_graph_without_glycine(G, kwargs["identifiers"], kwargs["residue_names"])
     centrality_dict = nxc.closeness_centrality(G = G, distance = kwargs["weight"])
@@ -66,7 +66,7 @@ def get_closeness_cent(G, **kwargs):
     return centrality_dict
 
 def get_eigenvector_cent(G, **kwargs):
-    """Returns a dictionary of eigenvector centrality values for all node."""
+    """Returns a dictionary of eigenvector centrality values for all nodes."""
 
     centrality_dict = nxc.eigenvector_centrality_numpy(G = G, 
                                                        weight = kwargs["weight"])
