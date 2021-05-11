@@ -81,7 +81,6 @@ def test_get_betweeness_cent(G, kwargs):
                   '7': 0.10714285714285714, '8': 0.017857142857142856, 
                   '9': 0.10714285714285714}
     val_dict = ca.get_betweeness_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
@@ -92,7 +91,6 @@ def test_get_closeness_cent(G, kwargs):
                   '7': 0.36363636363636365, '8': 0.2962962962962963, 
                   '9': 0.36363636363636365}
     val_dict = ca.get_closeness_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
@@ -103,7 +101,6 @@ def test_get_eigenvector_centt(G, kwargs):
                   '7': 0.30075047750377376, '8': 0.2628655560595674, 
                   '9': 0.30075047750377376}
     val_dict = ca.get_eigenvector_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
@@ -112,7 +109,6 @@ def test_get_current_flow_betweenness_cent(G, kwargs):
                   '3': 0.16964285714285715, '5': 0.5714285714285714, '6': 0.5714285714285715, 
                   '7': 0.16964285714285715, '8': 0.12500000000000025, '9': 0.169642857142857}
     val_dict = ca.get_current_flow_betweenness_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
@@ -123,7 +119,6 @@ def test_get_current_flow_closeness_cent(G, kwargs):
                   '7': 0.05633802816901411, '8': 0.05263157894736844, 
                   '9': 0.05633802816901407}
     val_dict = ca.get_current_flow_closeness_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
@@ -133,17 +128,16 @@ def test_get_edge_betweenness_cent(G, kwargs):
                   '5,6': 0.5555555555555556, '6,7': 0.2638888888888889, 
                   '6,9': 0.2638888888888889, '7,8': 0.125, '8,9': 0.125}
     val_dict = ca.get_edge_betweenness_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
-def get_edge_current_flow_betweenness_cent(G, kwargs):
-    ref_values = {'1,2': 0.125, '1,3': 0.125, '2,4': 0.2638888888888889, 
-                  '3,4': 0.2638888888888889, '4,5': 0.5555555555555556, 
-                  '5,6': 0.5555555555555556, '6,7': 0.2638888888888889, 
-                  '6,9': 0.2638888888888889, '7,8': 0.125, '8,9': 0.125}
+def test_get_edge_current_flow_betweenness_cent(G, kwargs):
+    ref_values = {'1,2': 0.13392857142857142, '1,3': 0.13392857142857142, 
+                  '2,4': 0.17857142857142858, '3,4': 0.17857142857142858, 
+                  '4,5': 0.35714285714285715, '5,6': 0.35714285714285715, 
+                  '6,7': 0.17857142857142863, '6,9': 0.17857142857142858, 
+                  '7,8': 0.13392857142857145, '8,9': 0.13392857142857145}
     val_dict = ca.get_edge_current_flow_betweenness_cent(G, **kwargs)
-    print(val_dict)
     for node, value in val_dict.items():
         assert_almost_equal(value, ref_values[node])
 
