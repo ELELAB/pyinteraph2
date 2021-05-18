@@ -74,17 +74,17 @@ def main():
     #---------------------------- Analyses ---------------------------#
 
 
-    f_helpstr = "Analyze hydrophobic clusters"
-    parser.add_argument("-f", "--hydrophobic",
-                        action = "store_true",
-                        dest = "do_hc",
-                        help = f_helpstr)
-
     m_helpstr = "Analyze side-chain centers-of-mass contacts (cmPSN)"
     parser.add_argument("-m", "--cmpsn",
                         action = "store_true",
                         dest = "do_cmpsn",
                         help = m_helpstr)
+
+    f_helpstr = "Analyze hydrophobic clusters"
+    parser.add_argument("-f", "--hydrophobic",
+                        action = "store_true",
+                        dest = "do_hc",
+                        help = f_helpstr)
 
     b_helpstr = "Analyze salt bridges"
     parser.add_argument("-b", "--salt-bridges",
@@ -104,65 +104,6 @@ def main():
                         action = "store_true",
                         dest = "do_kbp",
                         help = p_helpstr)
-
-
-    #---------------------- Hydrophobic contacts ---------------------#
-
-
-    hc_reslist = \
-        ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
-    hcres_helpstr = \
-        f"Comma-separated list of hydrophobic residues (default: " \
-        f"{', '.join(hc_reslist)})"
-    parser.add_argument("--hc-residues",
-                        action = "store",
-                        type = str,
-                        dest = "hc_reslist",
-                        default = hc_reslist,
-                        help = hcres_helpstr)
-
-    hcco_default = 5.0
-    hcco_helpstr = \
-        f"Distance cut-off for hydrophobic contacts (default: " \
-        f"{hcco_default})"
-    parser.add_argument("--hc-co", "--hc-cutoff",
-                        action = "store",
-                        dest = "hc_co",
-                        type = float,
-                        default = hcco_default,
-                        help = hcco_helpstr)
-
-    hcperco_default = 0.0
-    hcperco_helpstr = \
-        f"Minimum persistence for hydrophobic contacts (default: " \
-        f"{hcperco_default})"
-    parser.add_argument("--hc-perco", "--hc-persistence-cutoff",
-                        action = "store",
-                        type = float,
-                        dest = "hc_perco",
-                        default = 0.0,
-                        help = hcperco_helpstr)
-
-    hccsv_default = "hydrophobic-clusters.csv"
-    hccsv_helpstr = \
-        f"Name of the CSV file where to store the list of " \
-        f"hydrophobic contacts found (default: {hccsv_default})"
-    parser.add_argument("--hc-csv",
-                        action = "store",
-                        type = str,
-                        dest = "hc_csv",
-                        default = hccsv_default,
-                        help = hccsv_helpstr)
-
-    hcgraph_helpstr = \
-        "File where to store the adjacency matrix for the " \
-        "interaction graph (hydrophobic contacts)"
-    parser.add_argument("--hc-graph",
-                        action = "store",
-                        dest = "hc_graph",
-                        type = str,
-                        default = None,
-                        help = hcgraph_helpstr)
 
 
     #----------------------------- cmPSN -----------------------------#
@@ -200,7 +141,7 @@ def main():
                         action = "store",
                         type = float,
                         dest = "cmpsn_perco",
-                        default = 0.0,
+                        default = cmpsnperco_default,
                         help = cmpsnperco_helpstr)
 
     cmpsncsv_default = "cmpsn.csv"
@@ -236,6 +177,65 @@ def main():
                         choices = cmpsn_correction_choices, 
                         default = cmpsn_correction_default,
                         help = cmpsn_correction_helpstr)
+
+
+    #---------------------- Hydrophobic contacts ---------------------#
+
+
+    hc_reslist = \
+        ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
+    hcres_helpstr = \
+        f"Comma-separated list of hydrophobic residues (default: " \
+        f"{', '.join(hc_reslist)})"
+    parser.add_argument("--hc-residues",
+                        action = "store",
+                        type = str,
+                        dest = "hc_reslist",
+                        default = hc_reslist,
+                        help = hcres_helpstr)
+
+    hcco_default = 5.0
+    hcco_helpstr = \
+        f"Distance cut-off for hydrophobic contacts (default: " \
+        f"{hcco_default})"
+    parser.add_argument("--hc-co", "--hc-cutoff",
+                        action = "store",
+                        dest = "hc_co",
+                        type = float,
+                        default = hcco_default,
+                        help = hcco_helpstr)
+
+    hcperco_default = 0.0
+    hcperco_helpstr = \
+        f"Minimum persistence for hydrophobic contacts (default: " \
+        f"{hcperco_default})"
+    parser.add_argument("--hc-perco", "--hc-persistence-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "hc_perco",
+                        default = hcperco_default,
+                        help = hcperco_helpstr)
+
+    hccsv_default = "hydrophobic-clusters.csv"
+    hccsv_helpstr = \
+        f"Name of the CSV file where to store the list of " \
+        f"hydrophobic contacts found (default: {hccsv_default})"
+    parser.add_argument("--hc-csv",
+                        action = "store",
+                        type = str,
+                        dest = "hc_csv",
+                        default = hccsv_default,
+                        help = hccsv_helpstr)
+
+    hcgraph_helpstr = \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (hydrophobic contacts)"
+    parser.add_argument("--hc-graph",
+                        action = "store",
+                        dest = "hc_graph",
+                        type = str,
+                        default = None,
+                        help = hcgraph_helpstr)
 
 
     #-------------------------- Salt bridges -------------------------#
@@ -484,8 +484,8 @@ def main():
     parser.add_argument("--ff-masses",
                         action = "store",
                         type = str,
-                        choices = ffmasses_choices, 
                         dest = "ffmasses",
+                        choices = ffmasses_choices, 
                         default = ffmasses_default,
                         help = ffmasses_helpstr)
 
@@ -518,17 +518,6 @@ def main():
     top = args.top
     trj = args.trj
     ref = args.ref
-    
-    # Hydrophobic contacts
-    do_hc = args.do_hc
-    if type(args.hc_reslist) is str:
-        hc_reslist = [l.strip() for l in args.hc_reslist.split(",")]
-    else:
-        hc_reslist = args.hc_reslist
-    hc_graph = args.hc_graph
-    hc_co = args.hc_co
-    hc_perco = args.hc_perco
-    hc_csv = args.hc_csv
 
     # cmPSN
     do_cmpsn = args.do_cmpsn
@@ -541,6 +530,17 @@ def main():
     cmpsn_perco = args.cmpsn_perco
     cmpsn_csv = args.cmpsn_csv
     cmpsn_correction = args.cmpsn_correction
+    
+    # Hydrophobic contacts
+    do_hc = args.do_hc
+    if type(args.hc_reslist) is str:
+        hc_reslist = [l.strip() for l in args.hc_reslist.split(",")]
+    else:
+        hc_reslist = args.hc_reslist
+    hc_graph = args.hc_graph
+    hc_co = args.hc_co
+    hc_perco = args.hc_perco
+    hc_csv = args.hc_csv
     
     # Salt bridges
     do_sb = args.do_sb
