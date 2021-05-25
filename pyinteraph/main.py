@@ -730,7 +730,7 @@ def main():
     ########################### HYDROGEN BONDS ############################
 
 
-    if args.do_hb:
+    if do_hb:
         
         # Atom selection for main chain hydrogen bonds
         mc_sel = "backbone or name H or name H1 or name H2 " \
