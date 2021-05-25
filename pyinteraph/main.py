@@ -35,375 +35,475 @@ from libinteract import libinteract as li
 
 def main():
 
-    ########################### ARGUMENT PARSER ###########################
+
+    ######################### ARGUMENT PARSER #########################
+
 
     description = "Interaction calculator"
     parser = argparse.ArgumentParser(description = description)
 
-    #------------------------------ Top/traj -----------------------------#
+
+    #---------------------------- Top/traj ---------------------------#
+
 
     s_helpstr = "Topology file"
-    parser.add_argument("-s", "--top", \
-                        action = "store", \
-                        type = str, \
-                        dest = "top", \
-                        default = None, \
+    parser.add_argument("-s", "--top",
+                        action = "store",
+                        type = str,
+                        dest = "top",
+                        default = None,
                         help = s_helpstr)
 
     t_helpstr = "Trajectory file"
-    parser.add_argument("-t", "--trj", \
-                        action = "store", \
-                        type = str, \
-                        dest = "trj", \
-                        default = None, \
+    parser.add_argument("-t", "--trj",
+                        action = "store",
+                        type = str,
+                        dest = "trj",
+                        default = None,
                         help = t_helpstr)
 
     r_helpstr = "Reference structure"
-    parser.add_argument("-r", "--ref", \
-                        action = "store", \
-                        type = str, \
-                        dest = "ref", \
-                        default = None, \
+    parser.add_argument("-r", "--ref",
+                        action = "store",
+                        type = str,
+                        dest = "ref",
+                        default = None,
                         help = r_helpstr)
 
-    #------------------------------ Analyses -----------------------------#
 
-    b_helpstr = "Analyze salt-bridges"
-    parser.add_argument("-b", "--salt-bridges", \
-                        action = "store_true", \
-                        dest = "do_sb", \
-                        help = b_helpstr)
+    #---------------------------- Analyses ---------------------------#
+
+
+    m_helpstr = "Analyze side-chain centers-of-mass contacts (cmPSN)"
+    parser.add_argument("-m", "--cmpsn",
+                        action = "store_true",
+                        dest = "do_cmpsn",
+                        help = m_helpstr)
 
     f_helpstr = "Analyze hydrophobic clusters"
-    parser.add_argument("-f","--hydrophobic", \
-                        action = "store_true", \
-                        dest = "do_hc", \
+    parser.add_argument("-f", "--hydrophobic",
+                        action = "store_true",
+                        dest = "do_hc",
                         help = f_helpstr)
 
+    b_helpstr = "Analyze salt bridges"
+    parser.add_argument("-b", "--salt-bridges",
+                        action = "store_true",
+                        dest = "do_sb",
+                        help = b_helpstr)
+
     y_helpstr = "Analyze hydrogen bonds"
-    parser.add_argument("-y","--hydrogen-bonds", \
-                        action = "store_true", \
-                        dest = "do_hb", \
+    parser.add_argument("-y","--hydrogen-bonds",
+                        action = "store_true",
+                        dest = "do_hb",
                         help = y_helpstr)
 
     p_helpstr = \
         "Analyze interactions using the knowledge-based potential"
-    parser.add_argument("-p","--potential", \
-                        action = "store_true", \
-                        dest = "do_kbp", \
+    parser.add_argument("-p","--potential",
+                        action = "store_true",
+                        dest = "do_kbp",
                         help = p_helpstr)
 
-    #------------------------ Hydrophobic contacts -----------------------#
 
-    hc_reslist = ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
+    #----------------------------- cmPSN -----------------------------#
+
+
+    cmpsn_reslist = \
+        ["ALA", "CYS", "ASP", "GLU", "PHE", "HIS", "ILE", "LYS", "LEU",
+         "MET", "ASN", "PRO", "GLN", "ARG", "SER", "THR", "VAL", "TRP",
+         "TYR"]
+    cmpsnres_helpstr = \
+        f"Comma-separated list of residues to be used when " \
+        f"calculating the cmPSN (default: {', '.join(cmpsn_reslist)})"
+    parser.add_argument("--cmpsn-residues",
+                        action = "store",
+                        type = str,
+                        dest = "cmpsn_reslist",
+                        default = cmpsn_reslist,
+                        help = cmpsnres_helpstr)
+
+    cmpsnco_default = 5.0
+    cmpsnco_helpstr = \
+        f"Distance cut-off for the cmPSN (default: {cmpsnco_default})"
+    parser.add_argument("--cmpsn-co", "--cmpsn-cutoff",
+                        action = "store",
+                        dest = "cmpsn_co",
+                        type = float,
+                        default = cmpsnco_default,
+                        help = cmpsnco_helpstr)
+
+    cmpsnperco_default = 0.0
+    cmpsnperco_helpstr = \
+        f"Minimum persistence for the cmPSN (default: " \
+        f"{cmpsnperco_default})"
+    parser.add_argument("--cmpsn-perco", "--cmpsn-persistence-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "cmpsn_perco",
+                        default = cmpsnperco_default,
+                        help = cmpsnperco_helpstr)
+
+    cmpsncsv_default = "cmpsn.csv"
+    cmpsncsv_helpstr = \
+        f"Name of the CSV file where to store the list of contacts " \
+        f"found in the cmPSN (default: {cmpsncsv_default})"
+    parser.add_argument("--cmpsn-csv",
+                        action = "store",
+                        type = str,
+                        dest = "cmpsn_csv",
+                        default = cmpsncsv_default,
+                        help = cmpsncsv_helpstr)
+
+    cmpsngraph_helpstr = \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (cmPSN)"
+    parser.add_argument("--cmpsn-graph",
+                        action = "store",
+                        dest = "cmpsn_graph",
+                        type = str,
+                        default = None,
+                        help = cmpsngraph_helpstr)
+
+    cmpsn_correction_choices = ["null", "rg"]
+    cmpsn_correction_default = "null"
+    cmpsn_correction_helpstr = \
+        f"Correction to be applied to the cmPSN (default: " \
+        f"{cmpsn_correction_default}"
+    parser.add_argument("--cmpsn-correction",
+                        action = "store",
+                        dest = "cmpsn_correction",
+                        type = str,
+                        choices = cmpsn_correction_choices, 
+                        default = cmpsn_correction_default,
+                        help = cmpsn_correction_helpstr)
+
+
+    #---------------------- Hydrophobic contacts ---------------------#
+
+
+    hc_reslist = \
+        ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
     hcres_helpstr = \
-        "comma-separated list of hydrophobic residues (default: {:s})"
-    parser.add_argument("--hc-residues", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hc_reslist", \
-                        default = hc_reslist, \
-                        help = hcres_helpstr.format(\
-                                ", ".join(hc_reslist)))
+        f"Comma-separated list of hydrophobic residues (default: " \
+        f"{', '.join(hc_reslist)})"
+    parser.add_argument("--hc-residues",
+                        action = "store",
+                        type = str,
+                        dest = "hc_reslist",
+                        default = hc_reslist,
+                        help = hcres_helpstr)
 
     hcco_default = 5.0
     hcco_helpstr = \
-        "Distance cut-off for side-chain interaction (default: {:f})"
-    parser.add_argument("--hc-co", "--hc-cutoff", \
-                        action = "store", \
-                        dest = "hc_co", \
-                        type = float, \
-                        default = hcco_default, \
-                        help = hcco_helpstr.format(hcco_default))
+        f"Distance cut-off for hydrophobic contacts (default: " \
+        f"{hcco_default})"
+    parser.add_argument("--hc-co", "--hc-cutoff",
+                        action = "store",
+                        dest = "hc_co",
+                        type = float,
+                        default = hcco_default,
+                        help = hcco_helpstr)
 
     hcperco_default = 0.0
-    hcperco_helpstr = "Minimum persistence for interactions (default: {:f})"
-    parser.add_argument("--hc-perco", "--hc-persistence-cutoff", \
-                        action = "store", \
-                        type = float, \
-                        dest = "hc_perco", \
-                        default = 0.0, \
-                        help = hcperco_helpstr.format(hcperco_default))
+    hcperco_helpstr = \
+        f"Minimum persistence for hydrophobic contacts (default: " \
+        f"{hcperco_default})"
+    parser.add_argument("--hc-perco", "--hc-persistence-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "hc_perco",
+                        default = hcperco_default,
+                        help = hcperco_helpstr)
 
-    hcdat_default = "hydrophobic-clusters.csv"
-    hcdat_helpstr = \
-        "Name of the file where to store the list of " \
-        "hydrophobic contacts found (default: {:s})"
-    parser.add_argument("--hc-dat", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hc_dat", \
-                        default = hcdat_default, \
-                        help = hcdat_helpstr.format(hcdat_default))
+    hccsv_default = "hydrophobic-clusters.csv"
+    hccsv_helpstr = \
+        f"Name of the CSV file where to store the list of " \
+        f"hydrophobic contacts found (default: {hccsv_default})"
+    parser.add_argument("--hc-csv",
+                        action = "store",
+                        type = str,
+                        dest = "hc_csv",
+                        default = hccsv_default,
+                        help = hccsv_helpstr)
 
     hcgraph_helpstr = \
-        "Name of the file where to store adjacency matrix " \
-        "for interaction graph (hydrophobic contacts)"
-    parser.add_argument("--hc-graph", \
-                        action = "store", \
-                        dest = "hc_graph", \
-                        type = str, \
-                        default = None, \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (hydrophobic contacts)"
+    parser.add_argument("--hc-graph",
+                        action = "store",
+                        dest = "hc_graph",
+                        type = str,
+                        default = None,
                         help = hcgraph_helpstr)
 
-    hc_correction_func_helpstr = \
-        "Function for deriving correction factors to " \
-        "persistence matrix"
-    parser.add_argument("--hc-cf", "--hc-correction-func", \
-                        type = str, \
-                        dest = "hc_cf", \
-                        default = None, \
-                        choices = ["null", "rg"], \
-                        help = hc_correction_func_helpstr)
 
-    #---------------------------- Salt bridges ---------------------------#
+    #-------------------------- Salt bridges -------------------------#
+
 
     sbco_default = 4.5
     sbco_helpstr = \
-        "Distance cut-off for side-chain interaction (default: {:f})"
-    parser.add_argument("--sb-co", "--sb-cutoff", \
-                        action = "store", \
-                        type = float, \
-                        dest = "sb_co", \
-                        default = sbco_default, \
-                        help = sbco_helpstr.format(sbco_default))
+        f"Distance cut-off for salt bridges (default: {sbco_default})"
+    parser.add_argument("--sb-co", "--sb-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "sb_co",
+                        default = sbco_default,
+                        help = sbco_helpstr)
 
     sbperco_default = 0.0
     sbperco_helpstr = \
-        "Minimum persistence for interactions (default: {:f})"
-    parser.add_argument("--sb-perco", "--sb-persistence-cutoff", \
-                        action = "store", \
-                        type = float, \
-                        dest = "sb_perco", \
-                        default = sbperco_default, \
-                        help = sbperco_helpstr.format(sbperco_default))
+        f"Minimum persistence for salt bridges (default: " \
+        f"{sbperco_default})"
+    parser.add_argument("--sb-perco", "--sb-persistence-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "sb_perco",
+                        default = sbperco_default,
+                        help = sbperco_helpstr)
 
-    sbdat_default = "salt-bridges.csv"
-    sbdat_helpstr = \
-        "Name of the file where to store the list of " \
-        "salt bridges found (default: {:s})"
-    parser.add_argument("--sb-dat", \
-                        action = "store", \
-                        type = str, \
-                        dest = "sb_dat", \
-                        default = sbdat_default, \
-                        help = sbdat_helpstr.format(sbdat_default))
+    sbcsv_default = "salt-bridges.csv"
+    sbcsv_helpstr = \
+        f"Name of the CSV file where to store the list of " \
+        f"salt bridges found (default: {sbcsv_default})"
+    parser.add_argument("--sb-csv",
+                        action = "store",
+                        type = str,
+                        dest = "sb_csv",
+                        default = sbcsv_default,
+                        help = sbcsv_helpstr)
 
     sbgraph_helpstr = \
-        "Name of the file where to store adjacency matrix " \
-        "for interaction graph (salt bridges)"
-    parser.add_argument("--sb-graph", \
-                        action = "store", \
-                        type = str, \
-                        dest = "sb_graph", \
-                        default = None, \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (salt bridges)"
+    parser.add_argument("--sb-graph",
+                        action = "store",
+                        type = str,
+                        dest = "sb_graph",
+                        default = None,
                         help = sbgraph_helpstr)
 
-    sbcgfile_default = pkg_resources.resource_filename('pyinteraph', "charged_groups.ini")
-    sbcgfile_helpstr = "Default charged groups file (default: {:s})"
-    parser.add_argument("--sb-cg-file", \
-                        action = "store", \
-                        type = str, \
-                        dest = "cgs_file", \
-                        default = sbcgfile_default, \
-                        help = sbcgfile_helpstr.format(sbcgfile_default))
+    sbcgfile_default = \
+        pkg_resources.resource_filename("pyinteraph",
+                                        "charged_groups.ini")
+    sbcgfile_helpstr = \
+        f"File with charged groups to be used to find " \
+        f"salt bridges (default: {sbcgfile_default})"
+    parser.add_argument("--sb-cg-file",
+                        action = "store",
+                        type = str,
+                        dest = "cgs_file",
+                        default = sbcgfile_default,
+                        help = sbcgfile_helpstr)
 
     sbmode_choices = ["different_charge", "same_charge", "all"]
     sbmode_default = "different_charge"
     sbmode_helpstr = \
-        "Electrostatic interactions mode. Accepted modes are {:s} " \
-        "(default: {:s})"
-    parser.add_argument("--sb-mode", \
-                        action = "store", \
-                        type = str, \
-                        dest = "sb_mode", \
-                        choices = sbmode_choices, \
-                        default = sbmode_default, \
-                        help = sbmode_helpstr.format(\
-                                    ", ".join(sbmode_choices), \
-                                    sbmode_default))
+        f"Electrostatic interactions mode (default: {sbmode_default})"
+    parser.add_argument("--sb-mode",
+                        action = "store",
+                        type = str,
+                        dest = "sb_mode",
+                        choices = sbmode_choices,
+                        default = sbmode_default,
+                        help = sbmode_helpstr)
 
-    #--------------------------- Hydrogen bonds --------------------------#
+
+    #------------------------- Hydrogen bonds ------------------------#
+
 
     hbco_default = 3.5
-    hbco_helpstr = "Donor-acceptor distance cut-off (default: {:f})"
-    parser.add_argument("--hb-co", "--hb-cutoff", \
-                        action = "store", \
-                        type = float, \
-                        dest = "hb_co", \
-                        default = hbco_default, \
-                        help = hbco_helpstr.format(hbco_default))
+    hbco_helpstr = \
+        f"Donor-acceptor distance cut-off for hydrogen bonds " \
+        f"(default: {hbco_default})"
+    parser.add_argument("--hb-co", "--hb-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "hb_co",
+                        default = hbco_default,
+                        help = hbco_helpstr)
 
     hbang_default = 120.0
-    hbang_helpstr = "Donor-acceptor angle cut-off (default: {:f})"
-    parser.add_argument("--hb-ang", "--hb-angle", \
-                        action = "store", \
-                        type = float, \
-                        dest = "hb_angle", \
-                        default = hbang_default, \
-                        help = hbang_helpstr.format(hbang_default))
+    hbang_helpstr = \
+        f"Donor-acceptor angle cut-off for hydrogen bonds " \
+        f"(default: {hbang_default})"
+    parser.add_argument("--hb-ang", "--hb-angle",
+                        action = "store",
+                        type = float,
+                        dest = "hb_angle",
+                        default = hbang_default,
+                        help = hbang_helpstr)
 
-    hbdat_default = "hydrogen-bonds.csv"
-    hbdat_helpstr = \
-        "Name of the file where to store the list of " \
-        "hydrogen bonds found (default: {:s})"
-    parser.add_argument("--hb-dat", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hb_dat", \
-                        default = hbdat_default, \
-                        help = hbdat_helpstr.format(hbdat_default))
+    hbcsv_default = "hydrogen-bonds.csv"
+    hbcsv_helpstr = \
+        f"Name of the CSV file where to store the list of hydrogen " \
+        f"bonds found (default: {hbcsv_default})"
+    parser.add_argument("--hb-csv",
+                        action = "store",
+                        type = str,
+                        dest = "hb_csv",
+                        default = hbcsv_default,
+                        help = hbcsv_helpstr)
 
     hbgraph_helpstr = \
-        "Name of the file where to store adjacency matrix " \
-        "for interaction graph (hydrogen bonds)"
-    parser.add_argument("--hb-graph", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hb_graph", \
-                        default = None, \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (hydrogen bonds)"
+    parser.add_argument("--hb-graph",
+                        action = "store",
+                        type = str,
+                        dest = "hb_graph",
+                        default = None,
                         help = hbgraph_helpstr)
 
     hbperco_default = 0.0
     hbperco_helpstr = \
-        "Minimum persistence for hydrogen bonds (default: {:f})"
-    parser.add_argument("--hb-perco", \
-                        action = "store", \
-                        type = float, \
-                        dest = "hb_perco", \
-                        default = hbperco_default, \
-                        help = hbperco_helpstr.format(hbperco_default))
+        f"Minimum persistence for hydrogen bonds (default: " \
+        f"{hbperco_default})"
+    parser.add_argument("--hb-perco",
+                        action = "store",
+                        type = float,
+                        dest = "hb_perco",
+                        default = hbperco_default,
+                        help = hbperco_helpstr)
 
     hbclass_choices = ["all", "mc-mc", "mc-sc", "sc-sc", "custom"]
     hbclass_default = "all"
     hbclass_helpstr = \
-        "Class of hydrogen bonds to analyze. Accepted classes are {:s} " \
-        "(default: {:s})"
-    parser.add_argument("--hb-class", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hb_class", \
-                        choices = hbclass_choices, \
-                        default = hbclass_default, \
-                        help = hbclass_helpstr.format(\
-                                ", ".join(hbclass_choices), \
-                                hbclass_default))
+        f"Class of hydrogen bonds to analyze (default: " \
+        f"{hbclass_default})"
+    parser.add_argument("--hb-class",
+                        action = "store",
+                        type = str,
+                        dest = "hb_class",
+                        choices = hbclass_choices,
+                        default = hbclass_default,
+                        help = hbclass_helpstr)
 
-    hbadfile_default = pkg_resources.resource_filename('pyinteraph', "hydrogen_bonds.ini")
+    hbadfile_default = \
+        pkg_resources.resource_filename("pyinteraph",
+                                        "hydrogen_bonds.ini")
     hbadfile_helpstr = \
-        "File defining hydrogen bonds donor and acceptor atoms " \
-        "(default: {:s})"
-    parser.add_argument("--hb-ad-file", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hbs_file", \
-                        default = hbadfile_default, \
-                        help = hbadfile_helpstr.format(hbadfile_default))
+        f"File defining hydrogen bonds donor and acceptor atoms " \
+        f"(default: {hbadfile_default})"
+    parser.add_argument("--hb-ad-file",
+                        action = "store",
+                        type = str,
+                        dest = "hbs_file",
+                        default = hbadfile_default,
+                        help = hbadfile_helpstr)
 
     hbcustom1_helpstr = "Custom group 1 for hydrogen bonds calculation"
-    parser.add_argument("--hb-custom-group-1", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hb_group1", \
-                        default = None, \
+    parser.add_argument("--hb-custom-group-1",
+                        action = "store",
+                        type = str,
+                        dest = "hb_group1",
+                        default = None,
                         help = hbcustom1_helpstr)
 
     hbcustom2_helpstr = "Custom group 2 for hydrogen bonds calculation"
-    parser.add_argument("--hb-custom-group-2", \
-                        action = "store", \
-                        type = str, \
-                        dest = "hb_group2", \
-                        default = None, \
+    parser.add_argument("--hb-custom-group-2",
+                        action = "store",
+                        type = str,
+                        dest = "hb_group2",
+                        default = None,
                         help = hbcustom2_helpstr)
 
 
-    #----------------------------- Potential -----------------------------#
+    #--------------------------- Potential ---------------------------#
 
-    kbpff_default = pkg_resources.resource_filename('pyinteraph', "ff.S050.bin64")
-    kbpff_helpstr = "Statistical potential definition file (default: {:s})"
-    parser.add_argument("--kbp-ff", "--force-field", \
-                        action = "store", \
-                        type = str, \
-                        dest = "kbp_ff", \
-                        default = kbpff_default, \
-                        help = kbpff_helpstr.format(kbpff_default))
 
-    kbpatom_default = pkg_resources.resource_filename('pyinteraph', "kbp_atomlist")
+    kbpff_default = \
+        pkg_resources.resource_filename("pyinteraph", "ff.S050.bin64")
+    kbpff_helpstr = \
+        f"Statistical potential definition file (default: " \
+        f"{hbperco_default})"
+    parser.add_argument("--kbp-ff", "--force-field",
+                        action = "store",
+                        type = str,
+                        dest = "kbp_ff",
+                        default = kbpff_default,
+                        help = kbpff_helpstr)
+
+    kbpatom_default = \
+        pkg_resources.resource_filename("pyinteraph", "kbp_atomlist")
     kbpatom_helpstr = \
-        "Ordered, force-field specific list of atom names (default: {:s})"
-    parser.add_argument("--kbp-atomlist", \
-                        action = "store", \
-                        type = str, \
-                        dest = "kbp_atomlist", \
-                        default = kbpatom_default, \
-                        help = kbpatom_helpstr.format(kbpatom_default))
+        f"Ordered, force-field specific list of atom names " \
+        f"(default: {kbpatom_default})"
+    parser.add_argument("--kbp-atomlist",
+                        action = "store",
+                        type = str,
+                        dest = "kbp_atomlist",
+                        default = kbpatom_default,
+                        help = kbpatom_helpstr)
 
     kbpdat_default = "kb-potential.dat"
     kbpdat_helpstr = \
-        "Name of the file where to store the results of " \
-        "the statistical potential analysis (default: {:s})"
-    parser.add_argument("--kbp-dat", \
-                        action = "store", \
-                        type = str, \
-                        dest = "kbp_dat", \
-                        default = kbpdat_default, \
-                        help = kbpdat_helpstr.format(kbpdat_default))
+        f"File where to store the results of the statistical " \
+        f"potential analysis (default: {kbpdat_default})"
+    parser.add_argument("--kbp-dat",
+                        action = "store",
+                        type = str,
+                        dest = "kbp_dat",
+                        default = kbpdat_default,
+                        help = kbpdat_helpstr)
 
     kbpgraph_helpstr = \
-        "Name of the file where to store adjacency matrix " \
-        "for interaction graph (statistical potential)"
-    parser.add_argument('--kbp-graph', \
-                        action = "store", \
-                        type = str, \
-                        dest = "kbp_graph", \
-                        default = None, \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (statistical potential)"
+    parser.add_argument("--kbp-graph",
+                        action = "store",
+                        type = str,
+                        dest = "kbp_graph",
+                        default = None,
                         help = kbpgraph_helpstr)
 
     kbpkbt_default = 1.0
     kbpkbt_helpstr = \
-        "kb*T value used in the inverse-Boltzmann relation " \
-        "for the knowledge-based potential (default: {:f})"
-    parser.add_argument("--kbp-kbt", \
-                        action = "store", \
-                        type = float, \
-                        dest = "kbp_kbt", \
-                        default = kbpkbt_default, \
-                        help = kbpkbt_helpstr.format(kbpkbt_default))
+        f"kb*T value used in the inverse-Boltzmann relation for the " \
+        f"knowledge-based potential (default: {kbpkbt_default})"
+    parser.add_argument("--kbp-kbt",
+                        action = "store",
+                        type = float,
+                        dest = "kbp_kbt",
+                        default = kbpkbt_default,
+                        help = kbpkbt_helpstr)
 
-    #---------------------------- Miscellanea ----------------------------#
 
-    ff_masses_dir = "ff_masses"
-    masses_dir = pkg_resources.resource_filename('pyinteraph', ff_masses_dir)
+    #-------------------------- Miscellanea --------------------------#
 
-    masses_files = os.listdir(masses_dir)
 
+    ffmasses_dir = "ff_masses"
+    ffmasses_dir = \
+        pkg_resources.resource_filename("pyinteraph", ffmasses_dir)
+    
+    ffmasses_choices = os.listdir(ffmasses_dir)
     ffmasses_default = "charmm27"
     ffmasses_helpstr = \
-        "Force field to be used (for masses calculation only). " \
-        "Accepted force fields are {:s} (default: {:s})"
-    parser.add_argument("--ff-masses", \
-                        action = "store", \
-                        type = str, \
-                        choices = masses_files, 
-                        dest = "ffmasses", \
-                        default = ffmasses_default, \
-                        help = ffmasses_helpstr.format(\
-                                ", ".join(masses_files), \
-                                ffmasses_default))
+        f"Force field to be used (for masses calculation only) " \
+        f"(default: {ffmasses_default})"
+    parser.add_argument("--ff-masses",
+                        action = "store",
+                        type = str,
+                        dest = "ffmasses",
+                        choices = ffmasses_choices, 
+                        default = ffmasses_default,
+                        help = ffmasses_helpstr)
 
     v_helpstr = "Verbose mode"
-    parser.add_argument("-v", "--verbose", \
-                        action = "store_true", \
-                        dest = "verbose", \
+    parser.add_argument("-v", "--verbose",
+                        action = "store_true",
+                        dest = "verbose",
                         help = v_helpstr)
 
     args = parser.parse_args()
 
 
-    ############################ LOGGER SETUP #############################
+    ########################## LOGGER SETUP ###########################
+
 
     # Logging format
     LOGFMT = "%(levelname)s: %(message)s"
+    
     # Verbose mode?
     if args.verbose:
         log.basicConfig(level = log.INFO, format = LOGFMT)
@@ -411,33 +511,47 @@ def main():
         log.basicConfig(level = log.WARNING, format = LOGFMT)
 
 
-    ############################## ARGUMENTS ##############################
+    ############################ ARGUMENTS ############################
 
-    # input files
+
+    # Input files
     top = args.top
     trj = args.trj
     ref = args.ref
-    # hydrophobic contacts
+
+    # cmPSN
+    do_cmpsn = args.do_cmpsn
+    if type(args.cmpsn_reslist) is str:
+        cmpsn_reslist = [l.strip() for l in args.cmpsn_reslist.split(",")]
+    else:
+        cmpsn_reslist = args.cmpsn_reslist
+    cmpsn_graph = args.cmpsn_graph
+    cmpsn_co = args.cmpsn_co
+    cmpsn_perco = args.cmpsn_perco
+    cmpsn_csv = args.cmpsn_csv
+    cmpsn_correction = args.cmpsn_correction
+    
+    # Hydrophobic contacts
     do_hc = args.do_hc
     if type(args.hc_reslist) is str:
         hc_reslist = [l.strip() for l in args.hc_reslist.split(",")]
     else:
         hc_reslist = args.hc_reslist
-
     hc_graph = args.hc_graph
     hc_co = args.hc_co
     hc_perco = args.hc_perco
-    hc_dat = args.hc_dat
-    hc_cf = args.hc_cf
-    # salt bridges
+    hc_csv = args.hc_csv
+    
+    # Salt bridges
     do_sb = args.do_sb
     cgs_file = args.cgs_file
     sb_mode = args.sb_mode
     sb_graph = args.sb_graph
     sb_co = args.sb_co
     sb_perco = args.sb_perco
-    sb_dat = args.sb_dat
-    # hydrogen bonds
+    sb_csv = args.sb_csv
+    
+    # Hydrogen bonds
     do_hb = args.do_hb
     hbs_file = args.hbs_file
     hb_group1 = args.hb_group1
@@ -447,28 +561,34 @@ def main():
     hb_co = args.hb_co
     hb_perco = args.hb_perco
     hb_angle = args.hb_angle
-    hb_dat = args.hb_dat
-    # potential
+    hb_csv = args.hb_csv
+    
+    # Statistical potential
     do_kbp = args.do_kbp
     kbp_atomlist = args.kbp_atomlist
     kbp_graph = args.kbp_graph
     kbp_ff = args.kbp_ff
     kbp_kbt = args.kbp_kbt
     kbp_dat = args.kbp_dat
-    # miscellanea
-    ffmasses = os.path.join(masses_dir, args.ffmasses)
+    
+    # Miscellanea
+    ffmasses = os.path.join(ffmasses_dir, args.ffmasses)
 
 
-    ############################ CHECK INPUTS #############################
+    ########################## CHECK INPUTS ###########################
 
-    # top and trj must be present
+
+    # Topology and trajectory must be present
     if not top or not trj:
         log.error("Topology and trajectory are required.")
         exit(1)
-    # if no reference, topology is reference
+    
+    # If no reference structure is passed, the topology will be 
+    # the reference
     if not ref:
         ref = top
         log.info("Using topology as reference structure.")
+    
     # Load systems
     try:
         pdb = mda.Universe(ref)
@@ -480,47 +600,86 @@ def main():
         log.error(logstr)
         exit(1)
 
-    # Warn user if correction is specified but --hc is not used
-    if hc_cf is not None and not do_hc:
-        log.warn('Correction function (--hc-cf) is specified but hydrophobic network (--hc) is not used. Correction function will be ignored.')
 
-
-    ######################## HYDROPHOBIC CONTACTS #########################
+    ###################### HYDROPHOBIC CONTACTS #######################
 
 
     if do_hc:
-        fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
 
-        # Select appropriate correction function
-        if hc_cf is None or hc_cf =='null':
-            selected_func = li.null_correction
-        elif hc_cf == 'rg':
-            selected_func = li.rg_correction
+        # Function to compute the full matrix
+        hc_fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
 
-        table_out, hc_mat_out = li.do_interact(li.generate_sc_identifiers,
-                                             pdb = pdb,
-                                             uni = uni,
-                                             co = hc_co,
-                                             perco = hc_perco,
-                                             ffmasses = ffmasses,
-                                             fullmatrixfunc = fmfunc,
-                                             mindist = False,
-                                             reslist = hc_reslist,
-                                             correction_func = selected_func)
+        # Compute the table and the matrix
+        hc_table_out, hc_mat_out = \
+            li.do_interact(li.generate_sc_identifiers,
+                           pdb = pdb,
+                           uni = uni,
+                           co = hc_co,
+                           perco = hc_perco,
+                           ffmasses = ffmasses,
+                           fullmatrixfunc = hc_fmfunc,
+                           mindist = False,
+                           reslist = hc_reslist,
+                           correction_func = li.null_correction)
 
         # Save .csv
-        table_dict = li.create_table_dict(table_out)
-        li.save_output_dict(table_dict, hc_dat)
+        hc_table_dict = li.create_table_dict(hc_table_out)
+        li.save_output_dict(hc_table_dict, hc_csv)
 
         # Save .dat (if available)
         if hc_mat_out is not None:
-            mat_dict = li.create_matrix_dict(hc_mat_out, table_dict, pdb)
-            li.save_output_dict(mat_dict, hc_graph)
+            hc_mat_dict = \
+                li.create_matrix_dict(hc_mat_out, hc_table_dict, pdb)
+            li.save_output_dict(hc_mat_dict, hc_graph)
 
 
-    ############################ SALT BRIDGES #############################
+    ############################## cmPSN ##############################
+
+
+    if do_cmpsn:
+
+        # Function to compute the full matrix
+        cmpsn_fmfunc = \
+            None if not cmpsn_graph else li.calc_sc_fullmatrix
+
+        # Select the appropriate correction function
+        if cmpsn_correction == "null":
+            selected_func = li.null_correction
+        elif cmpsn_correction == "rg":
+            selected_func = li.rg_correction
+
+        # Compute the table and the matrix
+        cmpsn_table_out, cmpsn_mat_out = \
+            li.do_interact(li.generate_sc_identifiers,
+                           pdb = pdb,
+                           uni = uni,
+                           co = cmpsn_co,
+                           perco = cmpsn_perco,
+                           ffmasses = ffmasses,
+                           fullmatrixfunc = cmpsn_fmfunc,
+                           mindist = False,
+                           reslist = cmpsn_reslist,
+                           correction_func = selected_func)
+
+        # Save .csv
+        cmpsn_table_dict = li.create_table_dict(cmpsn_table_out)
+        li.save_output_dict(cmpsn_table_dict, cmpsn_csv)
+
+        # Save .dat (if available)
+        if cmpsn_mat_out is not None:
+            cmpsn_mat_dict = \
+                li.create_matrix_dict(cmpsn_mat_out, 
+                                      cmpsn_table_dict,
+                                      pdb)
+            li.save_output_dict(cmpsn_mat_dict, cmpsn_graph)
+
+
+    ########################## SALT BRIDGES ###########################
+
 
     if do_sb:
+        
+        # Try to parse the charged groups definitions file
         try:
             cgs = li.parse_cgs_file(cgs_file)
         except IOError:
@@ -529,8 +688,8 @@ def main():
             exit(1)
         except:
             logstr = \
-                f"Could not parse the charged groups file {cgs_file}. " \
-                f"Are there any inconsistencies?"
+                f"Could not parse the charged groups file " \
+                f"{cgs_file}. Are there any inconsistencies?"
             log.error(logstr, exc_info = True)
             exit(1)
         
@@ -541,37 +700,46 @@ def main():
         elif sb_mode == "all":
             sb_mode = "both"
 
-        fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
-        table_out, sb_mat_out = li.do_interact(li.generate_cg_identifiers,
-                                             pdb = pdb,
-                                             uni = uni,
-                                             co = sb_co, 
-                                             perco = sb_perco,
-                                             ffmasses = ffmasses, 
-                                             fullmatrixfunc = fmfunc, 
-                                             mindist = True,
-                                             mindist_mode = sb_mode,
-                                             cgs = cgs)
+        # Function to compute the full matrix
+        sb_fmfunc = None if not sb_graph else li.calc_cg_fullmatrix
+
+        # Compute the table and the matrix
+        sb_table_out, sb_mat_out = \
+            li.do_interact(li.generate_cg_identifiers,
+                           pdb = pdb,
+                           uni = uni,
+                           co = sb_co, 
+                           perco = sb_perco,
+                           ffmasses = ffmasses, 
+                           fullmatrixfunc = sb_fmfunc, 
+                           mindist = True,
+                           mindist_mode = sb_mode,
+                           cgs = cgs)
 
         # Save .csv
-        table_dict = li.create_table_dict(table_out)
-        li.save_output_dict(table_dict, sb_dat)
+        sb_table_dict = li.create_table_dict(sb_table_out)
+        li.save_output_dict(sb_table_dict, sb_csv)
 
         # Save .dat (if available)
         if sb_mat_out is not None:
-            mat_dict = li.create_matrix_dict(sb_mat_out, table_dict, pdb)
-            li.save_output_dict(mat_dict, sb_graph)
+            sb_mat_dict = \
+                li.create_matrix_dict(sb_mat_out, sb_table_dict, pdb)
+            li.save_output_dict(sb_mat_dict, sb_graph)
 
 
     ########################### HYDROGEN BONDS ############################
 
-    if args.do_hb:
-        # atom selection for main chain hydrogen bonds
+
+    if do_hb:
+        
+        # Atom selection for main chain hydrogen bonds
         mc_sel = "backbone or name H or name H1 or name H2 " \
                  "or name H3 or name O1 or name O2 or name OXT"
-        # atom selection for side chain hydrogen bonds
+        
+        # Atom selection for side chain hydrogen bonds
         sc_sel = f"protein and (not {mc_sel})"
 
+        # Custom atom selection
         if (hb_group1 and hb_group2) and hb_class != "custom":
             warnstr = \
                 "Hydrogen bond custom groups have been specified; " \
@@ -589,35 +757,41 @@ def main():
                 log.error(errstr)
                 exit(1)
 
+        # All hydrogen bonds
         elif hb_class == "all":
             hb_group1 = "protein"
             hb_group2 = "protein"
         
+        # Main chain - main chain hydrogen bonds
         elif hb_class == "mc-mc":
             hb_group1 = mc_sel
             hb_group2 = mc_sel
         
+        # Side chain - side chain hydrogen bonds
         elif hb_class == "sc-sc":
             hb_group1 = sc_sel
             hb_group2 = sc_sel
         
+        # Main chain - side chain hydrogen bonds
         elif hb_class == "mc-sc":
             hb_group1 = mc_sel
             hb_group2 = sc_sel
 
-        # check if selection 1 is valid
+        # Check if selection 1 is valid
         try:
             uni.select_atoms(hb_group1)
         except:
             log.error("Selection 1 is invalid", exc_info = True)
             exit(1)
-        # check if selection 2 is valid
+        
+        # Check if selection 2 is valid
         try:
             uni.select_atoms(hb_group2)
         except:
             log.error("Selection 2 is invalid", exc_info = True)
             exit(1)
-        # check the donors-acceptors file
+        
+        # Check the donors-acceptors file
         try:
             hbs = li.parse_hbs_file(hbs_file)
         except IOError:
@@ -629,55 +803,72 @@ def main():
             log.error(logstr, exc_info = True)
             exit(1)
 
+        # Whether to compute the full matrix
         do_fullmatrix = True if hb_graph else False
-        perresidue = False    
-        table_out, hb_mat_out = li.do_hbonds(sel1 = hb_group1,
-                                           sel2 = hb_group2,
-                                           pdb = pdb,
-                                           uni = uni,
-                                           distance = hb_co,
-                                           angle = hb_angle,
-                                           perco = hb_perco,
-                                           do_fullmatrix = do_fullmatrix,
-                                           other_hbs = hbs,
-                                           perresidue = perresidue)                                    
+
+        # Whtether to group the hydrogen bonds per residue
+        perresidue = False
+
+        # Compute the table and the matrix
+        hb_table_out, hb_mat_out = \
+            li.do_hbonds(sel1 = hb_group1,
+                         sel2 = hb_group2,
+                         pdb = pdb,
+                         uni = uni,
+                         distance = hb_co,
+                         angle = hb_angle,
+                         perco = hb_perco,
+                         do_fullmatrix = do_fullmatrix,
+                         other_hbs = hbs,
+                         perresidue = perresidue)                                    
 
         # Save .csv
-        table_dict = li.create_table_dict(table_out)
-        li.save_output_dict(table_dict, hb_dat)
+        hb_table_dict = li.create_table_dict(hb_table_out)
+        li.save_output_dict(hb_table_dict, hb_csv)
 
         # Save .dat (if available)
         if hb_mat_out is not None:
-            mat_dict = li.create_matrix_dict(hb_mat_out, table_dict, pdb)
-            li.save_output_dict(mat_dict, hb_graph)
+            hb_mat_dict = \
+                li.create_matrix_dict(hb_mat_out, hb_table_dict, pdb)
+            li.save_output_dict(hb_mat_dict, hb_graph)
 
 
     ######################## STATISTICAL POTENTIAL ########################
 
+
     if do_kbp:
+        
         # Residue list for potential calculation - all canonical but GLY
         kbp_reslist = \
-            ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS", \
-             "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", \
+            ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "HIS",
+             "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR",
              "TRP", "TYR", "VAL"]
         
+        # Parse the atom list
         kbp_atomlist = li.parse_atomlist(kbp_atomlist)
+
+        # Whether to compute the full matrix
         do_fullmatrix = True if kbp_graph else False
-        str_out, kbp_mat_out = li.do_potential(kbp_atomlist = kbp_atomlist, \
-                                               residues_list = kbp_reslist, \
-                                               potential_file = kbp_ff, \
-                                               uni = uni, \
-                                               pdb = pdb, \
-                                               do_fullmatrix = do_fullmatrix, \
-                                               kbT = kbp_kbt, \
-                                               seq_dist_co = 0)
+
+        # Compute the output string and the matrix
+        kbp_str_out, kbp_mat_out = \
+            li.do_potential(kbp_atomlist = kbp_atomlist,
+                            residues_list = kbp_reslist,
+                            potential_file = kbp_ff,
+                            uni = uni,
+                            pdb = pdb,
+                            do_fullmatrix = do_fullmatrix,
+                            kbT = kbp_kbt,
+                            seq_dist_co = 0)
 
         # Save .dat
         with open(kbp_dat, "w") as out:
-            out.write(str_out)
+            out.write(kbp_str_out)
+        
         # Save .mat (if available)
         if kbp_mat_out is not None:
             np.savetxt(kbp_graph, kbp_mat_out, fmt = "%.3f")
+
 
 if __name__ == "__main__":
     main()
