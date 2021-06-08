@@ -14,8 +14,8 @@ dependencies:
     - iniconfig=1.1.1
     - joblib=1.0.1
     - kiwisolver=1.3.1
-    - matplotlib=3.4.1
-    - MDAnalysis=1.0.0
+    - matplotlib=3.3.4
+    - MDAnalysis=1.1.1
     - mmtf-python=1.1.2
     - mock=4.0.3
     - networkx=2.5.1
