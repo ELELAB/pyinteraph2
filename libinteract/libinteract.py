@@ -21,17 +21,23 @@
 #   along with this program.
 #   If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import logging as log
+
+
+# Standard library
 import collections
-import itertools
 import configparser as cp
+import itertools
 import json
+import logging as log
+import os
+import re
 import struct
+import sys
+# Third-party packages
 import numpy as np
 import MDAnalysis as mda
-import re
-import os
+# libinteract
+from libinteract import acPSN
 from libinteract import innerloops as il
 
 
@@ -146,7 +152,7 @@ def parse_sparse(potential_file):
         errstr = \
             f"Error: could not completely parse the file " \
             f"{potential_file} ({pointer} bytes read, " \
-            f"{len(data)} expected)"
+            f"{len(data)} expected)."
         log.error(errstr)
         raise ValueError(errstr)
 
@@ -174,7 +180,9 @@ def parse_atomlist(fname):
     try:
         fh = open(fname)
     except:
-        raise IOError(f"Could not open file {kbpatomsfile}.")
+        errstr = f"Could not open file {kbpatomsfile}."
+        log.error(errstr)
+        raise IOError(errstr)
     
     with fh:
         data = {}
@@ -218,64 +226,6 @@ def calc_potential(distances,
                 scores[pn] += 0.0
     
     return scores/distances.shape[0]
-
-
-def parse_cgs_file(fname):
-    """Parse the file contaning the charged groups to be
-    used for the calculation of electrostatic interactions.
-    """
-    
-    grps_str = "CHARGED_GROUPS"
-    res_str = "RESIDUES"
-    default_grps_str = "default_charged_groups"
-
-    cfg = cp.ConfigParser()
-    
-    try:
-        cfg.read(fname)
-    except:
-        logstr = \
-            f"File {fname} not readable or not in the right format."
-        log.error(logstr)
-        exit(1)
-
-    out = {}
-    group_definitions = {}
-
-    charged_groups = cfg.options(grps_str)
-    charged_groups.remove(default_grps_str)
-    charged_groups = [i.strip() for i in charged_groups]
-
-    default_charged = cfg.get(grps_str, default_grps_str).split(",")
-    default_charged = [i.strip() for i in default_charged]
-
-    residues = cfg.options(res_str)
-
-    for i in charged_groups + default_charged:
-        group_definitions[i] = \
-            [s.strip() for s in cfg.get(grps_str, i).split(",")]
-    
-    for j in range(len(group_definitions[i])):
-        group_definitions[i][j] = \
-            group_definitions[i][j].strip()
-
-    try:
-        for i in residues:
-            i = i.upper()
-            out[i] = {}
-            for j in default_charged:
-                out[i][j] = group_definitions[j]
-            this_cgs = [s.strip() for s in cfg.get(res_str, i).split(",")]
-            for j in this_cgs:
-                if j:
-                    out[i][j] = group_definitions[j.lower()]
-    except:
-        logstr = \
-            f"Could not parse the charged groups file {fname}. " \
-            f"Are there any inconsistencies?"
-        log.error(logstr)
-
-    return out
 
 
 def do_potential(kbp_atomlist,
@@ -455,6 +405,64 @@ def do_potential(kbp_atomlist,
 
 ############################ INTERACTIONS #############################
 
+
+
+def parse_cgs_file(fname):
+    """Parse the file contaning the charged groups to be
+    used for the calculation of electrostatic interactions.
+    """
+    
+    grps_str = "CHARGED_GROUPS"
+    res_str = "RESIDUES"
+    default_grps_str = "default_charged_groups"
+
+    cfg = cp.ConfigParser()
+    
+    try:
+        cfg.read(fname)
+    except Exception as e:
+        errstr = \
+            f"File {fname} not readable or not in the right format." \
+            f"Exception: {e}"
+        raise IOError(errstr)
+
+    out = {}
+    group_definitions = {}
+
+    charged_groups = cfg.options(grps_str)
+    charged_groups.remove(default_grps_str)
+    charged_groups = [i.strip() for i in charged_groups]
+
+    default_charged = cfg.get(grps_str, default_grps_str).split(",")
+    default_charged = [i.strip() for i in default_charged]
+
+    residues = cfg.options(res_str)
+
+    for i in charged_groups + default_charged:
+        group_definitions[i] = \
+            [s.strip() for s in cfg.get(grps_str, i).split(",")]
+    
+    for j in range(len(group_definitions[i])):
+        group_definitions[i][j] = \
+            group_definitions[i][j].strip()
+
+    try:
+        for i in residues:
+            i = i.upper()
+            out[i] = {}
+            for j in default_charged:
+                out[i][j] = group_definitions[j]
+            this_cgs = [s.strip() for s in cfg.get(res_str, i).split(",")]
+            for j in this_cgs:
+                if j:
+                    out[i][j] = group_definitions[j.lower()]
+    except Exception as e:
+        errstr = \
+            f"Could not parse the charged groups file {fname}. " \
+            f"Are there any inconsistencies? Exception: {e}"
+        raise ValueError(errstr)
+
+    return out
 
 
 def null_correction(chosenselections, frame):
@@ -803,7 +811,8 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
             cgs[res][cgname] =  {True : true_set, False : false_set}
     
     # Create a list of identifiers
-    identifiers = [(r.segid, r.resid, r.resname, "") for r in pdb.residues]
+    identifiers = \
+        [(r.segid, r.resid, r.resname, "") for r in pdb.residues]
     
     # Create empty lists for IDs and atom selections
     idxs = []
@@ -1129,8 +1138,8 @@ def filter_by_chain(chain1, chain2, table):
     # Warn if no contacts found and return None
     if filtered_rows.shape[0] == 0:
         if chain1 == chain2:
-            logstr = f"No intrachain contacts found in chain {chain1}."
-            log.warning(logstr)
+            warnstr = f"No intrachain contacts found in chain {chain1}."
+            log.warning(warnstr)
         else:
             warnstr = f"No interchain contacts found between chains " \
                       f"{chain1} and {chain2}."
@@ -1142,7 +1151,7 @@ def filter_by_chain(chain1, chain2, table):
         return filtered_rows
 
 
-def create_table_dict(table):
+def create_dict_tables(table):
     """Takes in a single table (list of tuples) and returns a dictionary
     of tables (arrays). Each key in this dictionary represent whether
     the table contains all/intrachain/interchain contacts.
@@ -1153,7 +1162,7 @@ def create_table_dict(table):
     table_cols = table_rows.T
     
     # Initialize output dictionary of tables
-    table_dict = {"all": table_rows}
+    dict_tables = {"all" : table_rows}
     
     # Find unique chains in the table
     chains = np.unique(np.concatenate((table_cols[0], table_cols[4])))
@@ -1169,7 +1178,7 @@ def create_table_dict(table):
                                                   table_rows)
             # Check that the rows exist
             if filtered_rows_intra is not None:
-                table_dict[chain] = filtered_rows_intra
+                dict_tables[chain] = filtered_rows_intra
         
         # Create a vector of all nodes that are in contact
         # with different chains
@@ -1181,29 +1190,31 @@ def create_table_dict(table):
         
         # Otherwise, find intrachain contacts for each pair of chains
         else:
+            
             # For all combinations of different chains, find nodes
             # that are in contact with different chains
-            for chain1, chain2 in itertools.combinations(chains, 2):
-                
-                filtered_rows_inter = filter_by_chain(chain1, chain2, table_rows)
+            for chain1, chain2 in itertools.combinations(chains, 2):  
+                filtered_rows_inter = filter_by_chain(chain1,
+                                                      chain2,
+                                                      table_rows)
                 
                 # Check that the rows exist
                 if filtered_rows_inter is not None:
                     name = tuple(sorted([chain1, chain2]))
-                    table_dict[name] = filtered_rows_inter
+                    dict_tables[name] = filtered_rows_inter
     
     # Return the dictionary
-    return table_dict
+    return dict_tables
 
 
-def create_matrix_dict(fullmatrix, table_dict, pdb):
+def create_dict_matrices(fullmatrix, dict_tables, pdb):
     """Takes in the full matrix of persistence values and a dictionary
     of tables where each key represents all/intrachain/interchain
     contacts and returns a dictionary of matrices for each key.
     """
 
     # Initialize output dictionary of matrices
-    mat_dict = {"all": fullmatrix}
+    dict_matrices = {"all": fullmatrix}
     
     # Get chain ID
     res_chain = pdb.residues.segids
@@ -1217,7 +1228,7 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
          for i in range(fullmatrix.shape[0])}
     
     # Create a matrix for each table and store it with the same key
-    for key, element in table_dict.items():
+    for key, element in dict_tables.items():
         
         # Exclude the all chains table
         if key != "all":
@@ -1234,10 +1245,10 @@ def create_matrix_dict(fullmatrix, table_dict, pdb):
             matrix[mat_i, mat_j] = fullmatrix[mat_i, mat_j]
             matrix[mat_j, mat_i] = fullmatrix[mat_j, mat_i]
             # Insert matrix into dictionary
-            mat_dict[key] = matrix
+            dict_matrices[key] = matrix
     
     # Return the dictionary of matrices
-    return mat_dict
+    return dict_matrices
 
 
 def save_output_dict(out_dict, filename):
@@ -1273,9 +1284,9 @@ def save_output_dict(out_dict, filename):
         np.savetxt(fname, out_dict[key], delimiter = delim, fmt = format)
 
 
-def do_interact(identfunc,
-                pdb,
+def do_interact(pdb,
                 uni,
+                identfunc = None,
                 co = 5.0,
                 perco = 0.0,
                 assignffmassesfunc = assign_ff_masses,
@@ -1343,6 +1354,75 @@ def do_interact(identfunc,
     
     # Return the output list and full matrix
     return table, fullmatrix
+
+
+
+############################### acPSN #################################
+
+
+
+def parse_nf_file(fname):
+    """Parse the file contaning the normalization factors to be
+    used for the calculation of the acPSN.
+    """
+    
+    # String indicating the section to get the normalization
+    # factors from
+    nf_str = "NORMALIZATION_FACTORS"
+
+    # Create the configparser
+    cfg = cp.ConfigParser()
+    
+    # Try to read the file
+    try:
+        cfg.read(fname)
+    # If something went wrong, log the error and exit 
+    except Exception as e:
+        errstr = \
+            f"File {fname} not readable or not in the right format. " \
+            f"Exception : {e}"
+        log.error(errstr)
+        raise IOError(errstr)
+
+    # Try to parse the file
+    try:
+        nf = {r.upper() : float(cfg.get(nf_str, r)) \
+              for r in cfg.options(nf_str)}
+    # If something went wrong, log the error and exit
+    except Exception as e:
+        errstr = \
+            f"Could not parse the normalization factors file " \
+            f"{fname}. Are there any inconsistencies? Exception: {e}"
+        log.error(errstr)
+        raise ValueError(errstr)
+
+    # Return the dictionary of normalization factors
+    return nf
+
+
+def do_acpsn(pdb,
+             uni,
+             co,
+             perco,
+             proxco,
+             imin,
+             edge_weight,
+             norm_facts):
+    """Compute the atomic contacts-based PSN as devised by
+    Vishveshvara's group.
+    """
+
+    # Create the acPSN constructor
+    builder = acPSN.AtomicContactsPSNBuilder()
+    # Return the table of contacts and the acPSN
+    return builder.get_average_psn(universe = uni,
+                                   universe_ref = pdb,
+                                   i_min = imin,
+                                   dist_cut = co,
+                                   prox_cut = proxco,
+                                   p_min = perco,
+                                   norm_facts = norm_facts,
+                                   edge_weight = edge_weight)
 
 
 
@@ -1551,7 +1631,7 @@ def do_hbonds(sel1,
         # Count hydrogen bonds by type
         table = h.count_by_type()
         hbonds_identifiers = \
-            [ get_list_identifier(uni, hbond) for hbond in table ]
+            [get_list_identifier(uni, hbond) for hbond in table]
         
         # For each hydrogen bonds identified
         for i, hbidentifier in enumerate(hbonds_identifiers):

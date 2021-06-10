@@ -80,6 +80,12 @@ def main():
                         dest = "do_cmpsn",
                         help = m_helpstr)
 
+    a_helpstr = "Analyze atomic contacts (acPSN)"
+    parser.add_argument("-a", "--acpsn",
+                        action = "store_true",
+                        dest = "do_acpsn",
+                        help = a_helpstr)
+
     f_helpstr = "Analyze hydrophobic clusters"
     parser.add_argument("-f", "--hydrophobic",
                         action = "store_true",
@@ -109,20 +115,6 @@ def main():
     #----------------------------- cmPSN -----------------------------#
 
 
-    cmpsn_reslist = \
-        ["ALA", "CYS", "ASP", "GLU", "PHE", "HIS", "ILE", "LYS", "LEU",
-         "MET", "ASN", "PRO", "GLN", "ARG", "SER", "THR", "VAL", "TRP",
-         "TYR"]
-    cmpsnres_helpstr = \
-        f"Comma-separated list of residues to be used when " \
-        f"calculating the cmPSN (default: {', '.join(cmpsn_reslist)})"
-    parser.add_argument("--cmpsn-residues",
-                        action = "store",
-                        type = str,
-                        dest = "cmpsn_reslist",
-                        default = cmpsn_reslist,
-                        help = cmpsnres_helpstr)
-
     cmpsnco_default = 5.0
     cmpsnco_helpstr = \
         f"Distance cut-off for the cmPSN (default: {cmpsnco_default})"
@@ -143,6 +135,33 @@ def main():
                         dest = "cmpsn_perco",
                         default = cmpsnperco_default,
                         help = cmpsnperco_helpstr)
+
+    cmpsn_reslist = \
+        ["ALA", "CYS", "ASP", "GLU", "PHE", "HIS", "ILE", "LYS", "LEU",
+         "MET", "ASN", "PRO", "GLN", "ARG", "SER", "THR", "VAL", "TRP",
+         "TYR"]
+    cmpsnres_helpstr = \
+        f"Comma-separated list of residues to be used when " \
+        f"calculating the cmPSN (default: {', '.join(cmpsn_reslist)})"
+    parser.add_argument("--cmpsn-residues",
+                        action = "store",
+                        type = str,
+                        dest = "cmpsn_reslist",
+                        default = cmpsn_reslist,
+                        help = cmpsnres_helpstr)
+
+    cmpsn_correction_choices = ["null", "rg"]
+    cmpsn_correction_default = "null"
+    cmpsn_correction_helpstr = \
+        f"Correction to be applied to the cmPSN (default: " \
+        f"{cmpsn_correction_default}"
+    parser.add_argument("--cmpsn-correction",
+                        action = "store",
+                        dest = "cmpsn_correction",
+                        type = str,
+                        choices = cmpsn_correction_choices, 
+                        default = cmpsn_correction_default,
+                        help = cmpsn_correction_helpstr)
 
     cmpsncsv_default = "cmpsn.csv"
     cmpsncsv_helpstr = \
@@ -165,34 +184,104 @@ def main():
                         default = None,
                         help = cmpsngraph_helpstr)
 
-    cmpsn_correction_choices = ["null", "rg"]
-    cmpsn_correction_default = "null"
-    cmpsn_correction_helpstr = \
-        f"Correction to be applied to the cmPSN (default: " \
-        f"{cmpsn_correction_default}"
-    parser.add_argument("--cmpsn-correction",
+
+    #----------------------------- acPSN -----------------------------#
+
+
+    acpsnco_default = 4.5
+    acpsnco_helpstr = \
+        f"Distance cut-off for the acPSN (default: {acpsnco_default})"
+    parser.add_argument("--acpsn-co", "--acpsn-cutoff",
                         action = "store",
-                        dest = "cmpsn_correction",
+                        dest = "acpsn_co",
+                        type = float,
+                        default = acpsnco_default,
+                        help = acpsnco_helpstr)
+
+    acpsnperco_default = 0.0
+    acpsnperco_helpstr = \
+        f"Minimum persistence for the acPSN (default: " \
+        f"{acpsnperco_default})"
+    parser.add_argument("--acpsn-perco", "--acpsn-persistence-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "acpsn_perco",
+                        default = acpsnperco_default,
+                        help = acpsnperco_helpstr)
+
+    acpsnproxco_default = 1
+    acpsnproxco_helpstr = \
+        f"Minimum sequence distance for the acPSN (default: " \
+        f"{acpsnproxco_default})"
+    parser.add_argument("--acpsn-proxco", "--acpsn-sequence-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "acpsn_proxco",
+                        default = acpsnproxco_default,
+                        help = acpsnproxco_helpstr)
+
+    acpsnimin_default = 3.0
+    acpsnimin_helpstr = \
+        f"Minimum interaction strength value for the acPSN " \
+        f"(default: {acpsnimin_default})"
+    parser.add_argument("--acpsn-imin", "--acpsn-imin-cutoff",
+                        action = "store",
+                        type = float,
+                        dest = "acpsn_imin",
+                        default = acpsnimin_default,
+                        help = acpsnimin_helpstr)
+
+    acpsnew_choices = ["strength", "persistence"]
+    acpsnew_default = "strength"
+    acpsnew_helpstr = \
+        f"Edge weighting method for the acPSN (default: " \
+        f"{acpsnew_default})"
+    parser.add_argument("--acpsn-ew", "--acpsn-edge-weights",
+                        action = "store",
                         type = str,
-                        choices = cmpsn_correction_choices, 
-                        default = cmpsn_correction_default,
-                        help = cmpsn_correction_helpstr)
+                        dest = "acpsn_ew",
+                        choices = acpsnew_choices,
+                        default = acpsnew_default,
+                        help = acpsnew_helpstr)
+
+    acpsnnffile_default = \
+        pkg_resources.resource_filename("pyinteraph",
+                                        "normalization_factors.ini")
+    acpsnnffile_helpstr = \
+        f"File with normalization factors to be used " \
+        f"in the calculation of the acPSN (default: " \
+        f"{acpsnnffile_default})"
+    parser.add_argument("--acpsn-nf-file",
+                        action = "store",
+                        type = str,
+                        dest = "nf_file",
+                        default = acpsnnffile_default,
+                        help = acpsnnffile_helpstr)
+
+    acpsncsv_default = "acpsn.csv"
+    acpsncsv_helpstr = \
+        f"Name of the CSV file where to store the list of contacts " \
+        f"found in the acPSN (default: {acpsncsv_default})"
+    parser.add_argument("--acpsn-csv",
+                        action = "store",
+                        type = str,
+                        dest = "acpsn_csv",
+                        default = acpsncsv_default,
+                        help = acpsncsv_helpstr)
+
+    acpsngraph_helpstr = \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (acPSN)"
+    parser.add_argument("--acpsn-graph",
+                        action = "store",
+                        dest = "acpsn_graph",
+                        type = str,
+                        default = None,
+                        help = acpsngraph_helpstr)
 
 
     #---------------------- Hydrophobic contacts ---------------------#
 
-
-    hc_reslist = \
-        ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
-    hcres_helpstr = \
-        f"Comma-separated list of hydrophobic residues (default: " \
-        f"{', '.join(hc_reslist)})"
-    parser.add_argument("--hc-residues",
-                        action = "store",
-                        type = str,
-                        dest = "hc_reslist",
-                        default = hc_reslist,
-                        help = hcres_helpstr)
 
     hcco_default = 5.0
     hcco_helpstr = \
@@ -215,6 +304,18 @@ def main():
                         dest = "hc_perco",
                         default = hcperco_default,
                         help = hcperco_helpstr)
+
+    hc_reslist = \
+        ["ALA", "VAL", "LEU", "ILE", "PHE", "PRO", "TRP", "MET"]
+    hcres_helpstr = \
+        f"Comma-separated list of hydrophobic residues (default: " \
+        f"{', '.join(hc_reslist)})"
+    parser.add_argument("--hc-residues",
+                        action = "store",
+                        type = str,
+                        dest = "hc_reslist",
+                        default = hc_reslist,
+                        help = hcres_helpstr)
 
     hccsv_default = "hydrophobic-clusters.csv"
     hccsv_helpstr = \
@@ -262,6 +363,31 @@ def main():
                         default = sbperco_default,
                         help = sbperco_helpstr)
 
+    sbmode_choices = ["different_charge", "same_charge", "all"]
+    sbmode_default = "different_charge"
+    sbmode_helpstr = \
+        f"Electrostatic interactions mode (default: {sbmode_default})"
+    parser.add_argument("--sb-mode",
+                        action = "store",
+                        type = str,
+                        dest = "sb_mode",
+                        choices = sbmode_choices,
+                        default = sbmode_default,
+                        help = sbmode_helpstr)
+
+    sbcgfile_default = \
+        pkg_resources.resource_filename("pyinteraph",
+                                        "charged_groups.ini")
+    sbcgfile_helpstr = \
+        f"File with charged groups to be used to find " \
+        f"salt bridges (default: {sbcgfile_default})"
+    parser.add_argument("--sb-cg-file",
+                        action = "store",
+                        type = str,
+                        dest = "cgs_file",
+                        default = sbcgfile_default,
+                        help = sbcgfile_helpstr)
+
     sbcsv_default = "salt-bridges.csv"
     sbcsv_helpstr = \
         f"Name of the CSV file where to store the list of " \
@@ -282,31 +408,6 @@ def main():
                         dest = "sb_graph",
                         default = None,
                         help = sbgraph_helpstr)
-
-    sbcgfile_default = \
-        pkg_resources.resource_filename("pyinteraph",
-                                        "charged_groups.ini")
-    sbcgfile_helpstr = \
-        f"File with charged groups to be used to find " \
-        f"salt bridges (default: {sbcgfile_default})"
-    parser.add_argument("--sb-cg-file",
-                        action = "store",
-                        type = str,
-                        dest = "cgs_file",
-                        default = sbcgfile_default,
-                        help = sbcgfile_helpstr)
-
-    sbmode_choices = ["different_charge", "same_charge", "all"]
-    sbmode_default = "different_charge"
-    sbmode_helpstr = \
-        f"Electrostatic interactions mode (default: {sbmode_default})"
-    parser.add_argument("--sb-mode",
-                        action = "store",
-                        type = str,
-                        dest = "sb_mode",
-                        choices = sbmode_choices,
-                        default = sbmode_default,
-                        help = sbmode_helpstr)
 
 
     #------------------------- Hydrogen bonds ------------------------#
@@ -334,27 +435,6 @@ def main():
                         default = hbang_default,
                         help = hbang_helpstr)
 
-    hbcsv_default = "hydrogen-bonds.csv"
-    hbcsv_helpstr = \
-        f"Name of the CSV file where to store the list of hydrogen " \
-        f"bonds found (default: {hbcsv_default})"
-    parser.add_argument("--hb-csv",
-                        action = "store",
-                        type = str,
-                        dest = "hb_csv",
-                        default = hbcsv_default,
-                        help = hbcsv_helpstr)
-
-    hbgraph_helpstr = \
-        "File where to store the adjacency matrix for the " \
-        "interaction graph (hydrogen bonds)"
-    parser.add_argument("--hb-graph",
-                        action = "store",
-                        type = str,
-                        dest = "hb_graph",
-                        default = None,
-                        help = hbgraph_helpstr)
-
     hbperco_default = 0.0
     hbperco_helpstr = \
         f"Minimum persistence for hydrogen bonds (default: " \
@@ -379,19 +459,6 @@ def main():
                         default = hbclass_default,
                         help = hbclass_helpstr)
 
-    hbadfile_default = \
-        pkg_resources.resource_filename("pyinteraph",
-                                        "hydrogen_bonds.ini")
-    hbadfile_helpstr = \
-        f"File defining hydrogen bonds donor and acceptor atoms " \
-        f"(default: {hbadfile_default})"
-    parser.add_argument("--hb-ad-file",
-                        action = "store",
-                        type = str,
-                        dest = "hbs_file",
-                        default = hbadfile_default,
-                        help = hbadfile_helpstr)
-
     hbcustom1_helpstr = "Custom group 1 for hydrogen bonds calculation"
     parser.add_argument("--hb-custom-group-1",
                         action = "store",
@@ -408,9 +475,55 @@ def main():
                         default = None,
                         help = hbcustom2_helpstr)
 
+    hbadfile_default = \
+        pkg_resources.resource_filename("pyinteraph",
+                                        "hydrogen_bonds.ini")
+    hbadfile_helpstr = \
+        f"File defining hydrogen bonds donor and acceptor atoms " \
+        f"(default: {hbadfile_default})"
+    parser.add_argument("--hb-ad-file",
+                        action = "store",
+                        type = str,
+                        dest = "hbs_file",
+                        default = hbadfile_default,
+                        help = hbadfile_helpstr)
+
+    hbcsv_default = "hydrogen-bonds.csv"
+    hbcsv_helpstr = \
+        f"Name of the CSV file where to store the list of hydrogen " \
+        f"bonds found (default: {hbcsv_default})"
+    parser.add_argument("--hb-csv",
+                        action = "store",
+                        type = str,
+                        dest = "hb_csv",
+                        default = hbcsv_default,
+                        help = hbcsv_helpstr)
+
+    hbgraph_helpstr = \
+        "File where to store the adjacency matrix for the " \
+        "interaction graph (hydrogen bonds)"
+    parser.add_argument("--hb-graph",
+                        action = "store",
+                        type = str,
+                        dest = "hb_graph",
+                        default = None,
+                        help = hbgraph_helpstr)
+
 
     #--------------------------- Potential ---------------------------#
 
+
+    kbpkbt_default = 1.0
+    kbpkbt_helpstr = \
+        f"kb*T value used in the inverse-Boltzmann relation for the " \
+        f"knowledge-based potential (default: {kbpkbt_default})"
+    parser.add_argument("--kbp-kbt",
+                        action = "store",
+                        type = float,
+                        dest = "kbp_kbt",
+                        default = kbpkbt_default,
+                        help = kbpkbt_helpstr)
+    
 
     kbpff_default = \
         pkg_resources.resource_filename("pyinteraph", "ff.S050.bin64")
@@ -456,17 +569,6 @@ def main():
                         dest = "kbp_graph",
                         default = None,
                         help = kbpgraph_helpstr)
-
-    kbpkbt_default = 1.0
-    kbpkbt_helpstr = \
-        f"kb*T value used in the inverse-Boltzmann relation for the " \
-        f"knowledge-based potential (default: {kbpkbt_default})"
-    parser.add_argument("--kbp-kbt",
-                        action = "store",
-                        type = float,
-                        dest = "kbp_kbt",
-                        default = kbpkbt_default,
-                        help = kbpkbt_helpstr)
 
 
     #-------------------------- Miscellanea --------------------------#
@@ -521,55 +623,66 @@ def main():
 
     # cmPSN
     do_cmpsn = args.do_cmpsn
+    cmpsn_co = args.cmpsn_co
+    cmpsn_perco = args.cmpsn_perco
     if type(args.cmpsn_reslist) is str:
         cmpsn_reslist = [l.strip() for l in args.cmpsn_reslist.split(",")]
     else:
         cmpsn_reslist = args.cmpsn_reslist
-    cmpsn_graph = args.cmpsn_graph
-    cmpsn_co = args.cmpsn_co
-    cmpsn_perco = args.cmpsn_perco
-    cmpsn_csv = args.cmpsn_csv
     cmpsn_correction = args.cmpsn_correction
+    cmpsn_csv = args.cmpsn_csv
+    cmpsn_graph = args.cmpsn_graph
+
+    # acPSN
+    do_acpsn = args.do_acpsn
+    acpsn_co = args.acpsn_co
+    acpsn_perco = args.acpsn_perco
+    acpsn_proxco = args.acpsn_proxco
+    acpsn_imin = args.acpsn_imin
+    acpsn_ew = args.acpsn_ew
+    nf_file = args.nf_file
+    acpsn_csv = args.acpsn_csv
+    acpsn_graph = args.acpsn_graph
     
     # Hydrophobic contacts
     do_hc = args.do_hc
+    hc_co = args.hc_co
+    hc_perco = args.hc_perco
     if type(args.hc_reslist) is str:
         hc_reslist = [l.strip() for l in args.hc_reslist.split(",")]
     else:
         hc_reslist = args.hc_reslist
-    hc_graph = args.hc_graph
-    hc_co = args.hc_co
-    hc_perco = args.hc_perco
     hc_csv = args.hc_csv
+    hc_graph = args.hc_graph
     
     # Salt bridges
     do_sb = args.do_sb
-    cgs_file = args.cgs_file
-    sb_mode = args.sb_mode
-    sb_graph = args.sb_graph
     sb_co = args.sb_co
     sb_perco = args.sb_perco
+    sb_mode = args.sb_mode
+    cgs_file = args.cgs_file
     sb_csv = args.sb_csv
+    sb_graph = args.sb_graph
     
     # Hydrogen bonds
     do_hb = args.do_hb
-    hbs_file = args.hbs_file
-    hb_group1 = args.hb_group1
-    hb_group2 = args.hb_group2
-    hb_class = args.hb_class
-    hb_graph = args.hb_graph
+    hb_angle = args.hb_angle
     hb_co = args.hb_co
     hb_perco = args.hb_perco
-    hb_angle = args.hb_angle
+    hb_class = args.hb_class
+    hb_group1 = args.hb_group1
+    hb_group2 = args.hb_group2
+    hbs_file = args.hbs_file
     hb_csv = args.hb_csv
-    
+    hb_graph = args.hb_graph
+   
     # Statistical potential
     do_kbp = args.do_kbp
-    kbp_atomlist = args.kbp_atomlist
-    kbp_graph = args.kbp_graph
-    kbp_ff = args.kbp_ff
     kbp_kbt = args.kbp_kbt
+    kbp_atomlist = args.kbp_atomlist
+    kbp_ff = args.kbp_ff
     kbp_dat = args.kbp_dat
+    kbp_graph = args.kbp_graph
     
     # Miscellanea
     ffmasses = os.path.join(ffmasses_dir, args.ffmasses)
@@ -623,13 +736,15 @@ def main():
                            correction_func = li.null_correction)
 
         # Save .csv
-        hc_table_dict = li.create_table_dict(hc_table_out)
+        hc_table_dict = li.create_dict_tables(hc_table_out)
         li.save_output_dict(hc_table_dict, hc_csv)
 
         # Save .dat (if available)
-        if hc_mat_out is not None:
+        if hc_mat_out is not None and hc_graph is not None:
             hc_mat_dict = \
-                li.create_matrix_dict(hc_mat_out, hc_table_dict, pdb)
+                li.create_dict_matrices(hc_mat_out,
+                                        hc_table_dict,
+                                        pdb)
             li.save_output_dict(hc_mat_dict, hc_graph)
 
 
@@ -662,16 +777,59 @@ def main():
                            correction_func = selected_func)
 
         # Save .csv
-        cmpsn_table_dict = li.create_table_dict(cmpsn_table_out)
+        cmpsn_table_dict = li.create_dict_tables(cmpsn_table_out)
         li.save_output_dict(cmpsn_table_dict, cmpsn_csv)
 
         # Save .dat (if available)
-        if cmpsn_mat_out is not None:
+        if cmpsn_mat_out is not None and cmpsn_graph is not None:
             cmpsn_mat_dict = \
-                li.create_matrix_dict(cmpsn_mat_out, 
-                                      cmpsn_table_dict,
-                                      pdb)
+                li.create_dict_matrices(cmpsn_mat_out, 
+                                        cmpsn_table_dict,
+                                        pdb)
             li.save_output_dict(cmpsn_mat_dict, cmpsn_graph)
+
+
+    ############################## acPSN ##############################
+
+
+    if do_acpsn:
+
+        # Try to parse the charged groups definitions file
+        try:
+            norm_facts = li.parse_nf_file(nf_file)
+        except IOError:
+            logstr = f"Problems reading file {nf_file}."
+            log.error(logstr, exc_info = True)
+            exit(1)
+        except:
+            logstr = \
+                f"Could not parse the normalization factors file " \
+                f"{nf_file}. Are there any inconsistencies?"
+            log.error(logstr, exc_info = True)
+            exit(1)
+
+        # Compute the table of contacts and the matrix
+        acpsn_table_out, acpsn_mat_out = \
+            li.do_acpsn(pdb = pdb,
+                        uni = uni,
+                        co = acpsn_co,
+                        perco = acpsn_perco,
+                        proxco = acpsn_proxco,
+                        imin = acpsn_imin,
+                        edge_weight = acpsn_ew,
+                        norm_facts = norm_facts)
+
+        # Save .csv
+        acpsn_table_dict = li.create_dict_tables(acpsn_table_out)
+        li.save_output_dict(acpsn_table_dict, acpsn_csv)
+
+        # Save .dat (if available)
+        if acpsn_mat_out is not None and acpsn_graph is not None:
+            acpsn_mat_dict = \
+                li.create_dict_matrices(acpsn_mat_out, 
+                                        acpsn_table_dict,
+                                        pdb)
+            li.save_output_dict(acpsn_mat_dict, acpsn_graph)
 
 
     ########################## SALT BRIDGES ###########################
@@ -717,13 +875,15 @@ def main():
                            cgs = cgs)
 
         # Save .csv
-        sb_table_dict = li.create_table_dict(sb_table_out)
+        sb_table_dict = li.create_dict_tables(sb_table_out)
         li.save_output_dict(sb_table_dict, sb_csv)
 
         # Save .dat (if available)
-        if sb_mat_out is not None:
+        if sb_mat_out is not None and sb_graph is not None:
             sb_mat_dict = \
-                li.create_matrix_dict(sb_mat_out, sb_table_dict, pdb)
+                li.create_dict_matrices(sb_mat_out,
+                                        sb_table_dict,
+                                        pdb)
             li.save_output_dict(sb_mat_dict, sb_graph)
 
 
@@ -823,13 +983,15 @@ def main():
                          perresidue = perresidue)                                    
 
         # Save .csv
-        hb_table_dict = li.create_table_dict(hb_table_out)
+        hb_table_dict = li.create_dict_tables(hb_table_out)
         li.save_output_dict(hb_table_dict, hb_csv)
 
         # Save .dat (if available)
-        if hb_mat_out is not None:
+        if hb_mat_out is not None and hb_graph is not None:
             hb_mat_dict = \
-                li.create_matrix_dict(hb_mat_out, hb_table_dict, pdb)
+                li.create_dict_matrices(hb_mat_out,
+                                        hb_table_dict,
+                                        pdb)
             li.save_output_dict(hb_mat_dict, hb_graph)
 
 
@@ -866,7 +1028,7 @@ def main():
             out.write(kbp_str_out)
         
         # Save .mat (if available)
-        if kbp_mat_out is not None:
+        if kbp_mat_out is not None and kbp_graph is not None:
             np.savetxt(kbp_graph, kbp_mat_out, fmt = "%.3f")
 
 
