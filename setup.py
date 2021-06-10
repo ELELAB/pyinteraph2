@@ -3,6 +3,13 @@ from setuptools.command.build_ext import build_ext as _build_ext
 import numpy
 
 
+
+libinteract = \
+      Extension("libinteract.innerloops",
+                ["libinteract/innerloops.pyx",
+                 "libinteract/clibinteract.c"], \
+                include_dirs = [numpy.get_include()])
+
 name = "pyinteraph"
 
 url = "https://www.github.com/ELELAB/pyinteraph"
@@ -51,13 +58,6 @@ install_requires = ["cython",
                     "scipy",
                     "pytest",
                     "pandas"]
-
-
-libinteract = \
-      Extension("libinteract.innerloops",
-                ["libinteract/innerloops.pyx",
-                 "libinteract/clibinteract.c"], \
-                include_dirs = [numpy.get_include()])
 
 
 setup(name = name,
