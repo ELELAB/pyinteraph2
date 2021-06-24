@@ -30,6 +30,7 @@ package_data = {"pyinteraph" : \
                    "kbp_atomlist",
                    "charged_groups.ini",
                    "hydrogen_bonds.ini",
+                   "normalization_factors.ini",
                    "ff.S050.bin64",
                    "ff_masses/*"]}
 
