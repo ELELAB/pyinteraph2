@@ -2,8 +2,6 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 import numpy
 
-
-
 libinteract = \
       Extension("libinteract.innerloops",
                 ["libinteract/innerloops.pyx",
