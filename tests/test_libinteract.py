@@ -739,8 +739,7 @@ def test_do_acpsn(systems,
 
     # Test the equality between the table computed and the reference
     for i, t in enumerate(table):
-        assert(",".join(str(x) for x in t)[:5] == \
-                ref_table[i].strip()[:5])
+        assert(",".join(str(x) for x in t) == ref_table[i].strip())
 
 
 def test_create_dict_tables_acpsn(acpsn_twochains,
@@ -817,8 +816,7 @@ def test_do_hc(systems,
 
     # Test the equality between the table computed and the reference
     for i, t in enumerate(table):
-        assert(",".join(str(x) for x in t)[:5] == \
-                ref_table[i].strip()[:5])
+        assert(",".join(str(x) for x in t) == ref_table[i].strip())
 
 
 def test_do_hc_rg(systems,
@@ -840,8 +838,7 @@ def test_do_hc_rg(systems,
 
     # Test the equality between the table computed and the reference
     for i, t in enumerate(table):
-        assert(",".join(str(x) for x in t)[:5] == \
-                ref_table[i].strip()[:5])
+        assert(",".join(str(x) for x in t) == ref_table[i].strip())
 
 
 def test_create_dict_tables_hc(hc_twochains,
@@ -916,8 +913,7 @@ def test_do_sb(systems,
 
     # Test the equality between the table computed and the reference
     for i, t in enumerate(table):
-        assert(",".join(str(x) for x in t)[:5] == \
-                ref_table[i].strip()[:5])
+        assert(",".join(str(x) for x in t) == ref_table[i].strip())
 
 
 def test_create_dict_tables_sb(sb_twochains,
@@ -992,8 +988,7 @@ def test_do_hb(systems,
 
     # Test the equality between the table computed and the reference
     for i, t in enumerate(table):
-        assert(",".join(str(x) for x in t)[:5] == \
-                ref_table[i].strip()[:5])
+        assert(",".join(str(x) for x in t) == ref_table[i].strip())
 
 
 def test_create_dict_tables_hb(hb_twochains,
@@ -1073,4 +1068,4 @@ def test_do_potential(systems,
     # reference string 
     split_string = string.split("\n")[:-1]
     for i, s in enumerate(split_string):
-        assert(s[:5] == ref_string[i].strip()[:5])
+        assert(s == ref_string[i].strip())

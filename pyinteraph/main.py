@@ -215,7 +215,7 @@ def main():
         f"{acpsnproxco_default})"
     parser.add_argument("--acpsn-proxco", "--acpsn-sequence-cutoff",
                         action = "store",
-                        type = float,
+                        type = int,
                         dest = "acpsn_proxco",
                         default = acpsnproxco_default,
                         help = acpsnproxco_helpstr)
