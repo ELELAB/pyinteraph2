@@ -78,19 +78,19 @@ class AtomicContactsPSNBuilder(object):
     ######################### PRIVATE METHODS #########################
 
 
-    def _set_i_min(self,
-                   i_min):
+    def _check_i_min(self,
+                     i_min):
         """Check and return a single i_min value.
         """
         
         # If the i_min is neither an integer, a float or None, raise
         # an error
-        if not isinstance(i_min, (int, float, type(None))):
-            errmsg = "A single i_min must be int, float or None."
-            raise TypeError(errmsg)
+        if not isinstance(i_min, (int, float)):
+            errstr = "A single i_min must be int, float or None."
+            raise TypeError(errstr)
         
-        # Set the i_min to -inf if it was None
-        i_min = float(i_min) if i_min else -np.inf
+        # Set the i_min to 0.0 if it was None
+        i_min = float(i_min) if i_min is not None else 0.0
         
         # Inform the user about the i_min
         log.info(f"i_min provided: {i_min}.")
@@ -99,32 +99,36 @@ class AtomicContactsPSNBuilder(object):
         return float(i_min)
 
 
-    def _set_i_mins(self,
-                    i_mins):
+    def _check_i_mins(self,
+                      i_mins):
         """Check and return the i_mins.
         """
         
-        # If no i_mins were provided
-        if not i_mins:
-            log.info("No i_min provided. -inf will be used.")
-            # Return an iterable only containin -np.inf
-            return [-np.inf]
+        # If no i_min(s) was provided
+        if i_mins is None:
+            log.info(\
+                "No i_min provided. 0.0 will be used as default i_min.")
+            # Return an iterable only containing 0.0
+            return [0.0]
         
-        # If i_mins were neither None nor an iterable
+        # If i_min(s) was neither provided nor an iterable
         if not isinstance(i_mins, abc.Iterable):
-            errmsg = \
+            errstr = \
                 "i_mins must be None or an iterable of int or float."
-            raise TypeError(errmsg)
-
-        # Inform the user about the i_min
-        log.info(f"i_min(s) set to {', '.join(i_mins)}.")          
+            raise TypeError(errstr)         
         
-        # Return a list of i_mins
-        return [self._set_i_min(i_min) for i_min in i_mins]
+        # Check the i_min(s)
+        i_mins = [self._check_i_min(i_min) for i_min in i_mins]
+
+        # Inform the user about the i_min(s)
+        log.info(f"i_min(s) set to {', '.join(i_mins)}.")
+
+        # Return the i_min(s)
+        return i_mins
 
 
-    def _set_dist_cut(self,
-                      dist_cut):
+    def _check_dist_cut(self,
+                        dist_cut):
         """Check and return the distance cutoff.
         """
         
@@ -134,7 +138,10 @@ class AtomicContactsPSNBuilder(object):
         
         # dist_cut must be strictly greater than 0
         if dist_cut <= 0.0:
-            raise ValueError("dist_cut must be greater than zero.")
+            errstr = \
+                f"dist_cut must be greater than zero, but " \
+                f"{dist_cut} was passed."
+            raise ValueError(errstr)
         
         # Inform the user about the distance cut-off
         log.info(f"Distance cutoff set to {dist_cut}.")
@@ -143,8 +150,8 @@ class AtomicContactsPSNBuilder(object):
         return float(dist_cut)
 
 
-    def _set_prox_cut(self,
-                      prox_cut):
+    def _check_prox_cut(self,
+                        prox_cut):
         """Check and return the proximity cutoff.
         """
         
@@ -160,25 +167,36 @@ class AtomicContactsPSNBuilder(object):
         
         # If the proximity cut-off provided was lower than 0
         if prox_cut < 0:
-            errmsg = "prox_cut must be equal to or greater than zero."
-            raise ValueError(errmsg)
+            errstr = \
+                f"prox_cut must be non negative, but {prox_cut} " \
+                f"was passed."
+            raise ValueError(errstr)
         
         # Inform the user about the proximity cut-off
         log.info(f"Proximity cutoff set to {prox_cut}.")
         
-        # Always convert to float before returning   
-        return float(prox_cut)
+        # Return the proximity cut-off  
+        return prox_cut
 
 
-    def _set_norm_facts(self,
-                        norm_facts):
+    def _check_norm_facts(self,
+                          norm_facts):
         """Check and return the default normalization 
         factors or those provided.
         """
 
         # Check the data type
-        if not isinstance(norm_facts, (dict, type(None))):
-            TypeError("norm_facts must be None or a dictionary.")
+        if not isinstance(norm_facts, dict):
+            raise TypeError("norm_facts must be a dictionary.")
+
+        # Check that all normalization factors are greater than zero
+        for res, norm_fact in norm_facts.items():
+            if norm_fact <= 0.0:
+                errstr = \
+                    f"All normalization factors must be strictly " \
+                    f"greater than zero, while the normalization " \
+                    f"factor for {res} is {norm_fact}."
+                raise ValueError(errstr)
         
         # Inform the user about the normalization factors used
         normfactstr = "\n".join(\
@@ -189,8 +207,8 @@ class AtomicContactsPSNBuilder(object):
         return norm_facts
 
 
-    def _set_p_min(self,
-                   p_min):
+    def _check_p_min(self,
+                     p_min):
         """Check and return the p_min.
         """
 
@@ -199,9 +217,18 @@ class AtomicContactsPSNBuilder(object):
             raise TypeError("p_min must be an int, float or None.")
         
         # If no p_min was passed
-        if not p_min:
+        if p_min is None:
             # Persistence cut-off set to zero (= no cut-off)
             p_min = 0.0
+
+        # If a p_min was passed
+        else:
+            # Check that it is non negative
+            if p_min < 0.0:
+                errstr = \
+                    f"p_min must be non negative, but {p_min} " \
+                    f"was passed."
+                raise ValueError(errstr)
         
         # Inform the user about the persistence cut-off
         log.info(f"Persistence cutoff set to {p_min}.")
@@ -225,8 +252,8 @@ class AtomicContactsPSNBuilder(object):
         i_const =  \
             {res1 : \
                 {res2 : \
-                    1/math.sqrt(norm_facts[res1]* \
-                                norm_facts[res2]) \
+                    (1/math.sqrt(norm_facts[res1]* \
+                                 norm_facts[res2]))*100 \
                  for res2 in norm_facts.keys()} \
              for res1 in norm_facts.keys()}
         
@@ -237,10 +264,16 @@ class AtomicContactsPSNBuilder(object):
     def _get_residues(self,
                       universe,
                       universe_ref,
-                      norm_facts):
+                      norm_facts,
+                      permissive,
+                      norm_fact_default):
         """Get each residue in the system that has a
         normalization factor associated.
         """
+
+        # Generate a copy of the dictionary of normalization
+        # factors to be modified
+        norm_facts_copy = dict(norm_facts)
 
         # If the two Universes have a different number of
         # residues
@@ -252,12 +285,85 @@ class AtomicContactsPSNBuilder(object):
 
         # Get which residues of the system must be kept in
         # building the acPSN; use sets to speed up the lookup
-        restokeep = [res for res in universe.residues \
-                     if res.resname in set(norm_facts.keys())]
+        restokeep = []
+        
+        # For each residue in the topology
+        for res in universe.residues:
+            
+            # If the residue does not have an associated
+            # normalization factor. Here, we are checking
+            # on the copy of the original dictionary since
+            # at this point is identical to the original.
+            if not res.resname in set(norm_facts_copy.keys()):
+
+                # If we are running in non-permisive mode
+                if not permisive:
+
+                    # Raise an error
+                    errstr = \
+                        f"Residue {res.resname} does not have an " \
+                        f"associated normalization factor."
+                    raise ValueError(errstr)
+                
+                # If we are running in permisive mode
+                else:
+
+                    # Add the residue name to the dictionary of
+                    # normalization factors with the default
+                    # normalization factor associated. Warn the
+                    # user.
+                    norm_facts_copy[res.resname] = norm_fact_default
+                    warnstr = \
+                        f"Residue {res.resname} has no associated " \
+                        f"normalization factor. Since you are " \
+                        f"running in permissive mode, the default " \
+                        f"normalization factor ({norm_fact_default}) " \
+                        f"will be assigned to it."
+                    log.warnstr(warnstr)
+
+            restokeep.append(res)
 
         # Get which residues of the reference must be kept
-        restokeep_ref = [res for res in universe_ref.residues \
-                         if res.resname in set(norm_facts.keys())]   
+        restokeep_ref = []
+
+        # For each residue in the reference
+        for res in universe_ref.residues:
+
+            # If the residue does not have an associated
+            # normalization factor. Here, we are checking on
+            # the copy of the original dictionary so that we
+            # do not add twice residues which got assigned the
+            # default normalization factor when parsing the
+            # topology (it would have been overwritten but it
+            # is still a waste of time).
+            if not res.resname in set(norm_facts_copy.keys()):
+                
+                # If we are running in non-permisive mode
+                if not permissive:
+
+                    # Raise an error
+                    errstr = \
+                        f"Residue {res.resname} does not have an " \
+                        f"associated normalization factor."
+                    raise ValueError(errstr)
+
+                # If we are running in permisive mode
+                else:
+
+                    # Add the residue name to the dictionary of
+                    # normalization factors with the default
+                    # normalization factor associated. Warn the
+                    # user.
+                    norm_facts_copy[res.resname] = norm_fact_default
+                    warnstr = \
+                        f"Residue {res.resname} has no associated " \
+                        f"normalization factor. Since you are " \
+                        f"running in permissive mode, the default " \
+                        f"normalization factor ({norm_fact_default}) " \
+                        f"will be assigned to it."
+                    log.warnstr(warnstr)
+
+            restokeep_ref.append(res)
         
         # Inform the user about which residues will be included
         # in the construction of the PSN. For each residue, state
@@ -271,7 +377,7 @@ class AtomicContactsPSNBuilder(object):
                  f"of the PSN:\n{logstr}")
         
         # Return the residues of the system and of the reference
-        return restokeep, restokeep_ref
+        return restokeep, restokeep_ref, norm_facts_copy
 
 
     def _get_nb_atoms_per_res(self,
@@ -364,7 +470,7 @@ class AtomicContactsPSNBuilder(object):
             proxres = []
 
 
-            #----------------------- Residue 'i' ---------------------#
+            #----------------------- Residue 'j' ---------------------#
 
 
             # For each group of neighboring atoms (each group
@@ -383,22 +489,23 @@ class AtomicContactsPSNBuilder(object):
                 #------------------ Proximity cut-off ----------------#
 
 
-                # Ignore residue 'j' if it is within the proximity 
-                # cutoff with respect to residue 'i' and they belong 
-                # to the same segment
-                is_same_segment = (segindex_i == segindex_j)
-                is_within_prox_cut = \
-                    resindex_j >= (resindex_i-prox_cut) and \
-                    resindex_j <= (resindex_i+prox_cut)
-                
-                # Alternative formulation
-                # is_within_prox_cut = \
-                #    not (resindex_j < (resindex_i-prox_cut) or \
-                #         resindex_j > (resindex_i+prox_cut))
-                
-                if is_same_segment and is_within_prox_cut:
-                    proxres.append(f"{segid_j}-{resnum_j}{resname_j}")
-                    continue
+                # If residue 'i' and residue 'j' belong to the
+                # same segment
+                if segindex_i == segindex_j:
+                    
+                    # Check whether they are within the proximity
+                    # cut-off
+                    is_within_prox_cut = \
+                        resindex_i - prox_cut <= resindex_j \
+                        <= resindex_i + prox_cut
+
+                    # If they are, append residue 'j' to the list
+                    # of residues proximal to residue 'i' and
+                    # continue
+                    if is_within_prox_cut:
+                        proxres.append(\
+                            f"{segid_j}-{resnum_j}{resname_j}")
+                        continue
 
 
                 #------------------ I_ij calculation -----------------#
@@ -418,9 +525,8 @@ class AtomicContactsPSNBuilder(object):
                     atom_pairs = np.sum(d_array <= dist_cut)
                     
                     # Calculate the I_ij
-                    I_ij = (atom_pairs * \
-                            i_const[resname_i][resname_j]) \
-                           * 100
+                    I_ij = atom_pairs * \
+                           i_const[resname_i][resname_j]
                     
                     # Update the PSN
                     psn[resindex_i,resindex_j] = I_ij
@@ -528,6 +634,8 @@ class AtomicContactsPSNBuilder(object):
                         universe,
                         universe_ref,
                         norm_facts,
+                        permissive,
+                        norm_fact_default,
                         i_min = None,
                         dist_cut = 4.5,
                         prox_cut = None,
@@ -538,27 +646,32 @@ class AtomicContactsPSNBuilder(object):
 
         # If an invalid value was provided for the edge weight,
         # raise an error
-        if edge_weight not in ("strength", "persistence"):   
-            raise ValueError("edge_weight must be either " \
-                             "'strength' or 'persistence'")
+        if edge_weight not in ("strength", "persistence"):
+            errstr = \
+                f"edge_weight must be either 'strength' or " \
+                f"'persistence', but {edge_weight} was passed."
+            raise ValueError(errstr)
 
         # Check and return the dist_cut, prox_cut, norm_facts,
         # i_min, p_min
-        dist_cut = self._set_dist_cut(dist_cut = dist_cut)
-        prox_cut = self._set_prox_cut(prox_cut = prox_cut)
-        norm_facts = self._set_norm_facts(norm_facts = norm_facts)
-        i_min = self._set_i_min(i_min = i_min) 
-        p_min = self._set_p_min(p_min = p_min)     
-        
-        # Compute the i_const values
-        i_const = self._get_i_const(norm_facts = norm_facts)
-        
+        dist_cut = self._check_dist_cut(dist_cut = dist_cut)
+        prox_cut = self._check_prox_cut(prox_cut = prox_cut)
+        norm_facts = self._check_norm_facts(norm_facts = norm_facts)
+        i_min = self._check_i_min(i_min = i_min) 
+        p_min = self._check_p_min(p_min = p_min)
+
         # Get the residues in the system and in the reference
         # for which a normalization factor is available
-        residues, residues_ref = \
+        residues, residues_ref, norm_facts_copy = \
             self._get_residues(universe = universe,
                                universe_ref = universe_ref,
-                               norm_facts = norm_facts)
+                               norm_facts = norm_facts,
+                               permissive = permissive,
+                               norm_fact_default = norm_fact_default)  
+        
+        # Compute the i_const values (use the updated copy of the
+        # normalization factors' dictionary)
+        i_const = self._get_i_const(norm_facts = norm_facts_copy)
 
         # Set the shape of the PSN (num. residues x num. residues)
         psn_shape = (len(residues), len(residues))

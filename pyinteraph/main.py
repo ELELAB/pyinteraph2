@@ -258,6 +258,27 @@ def main():
                         default = acpsnnffile_default,
                         help = acpsnnffile_helpstr)
 
+    acpsnnf_default = 999.9
+    acpsnnfpermissive_helpstr = \
+        f"Permissive mode. If a residue with no associated " \
+        f"normalization factor is found, the default normalization " \
+        f"factor {acpsnnf_default} will be used, and no error will " \
+        f"be thrown"
+    parser.add_argument("--acpsn-nf-permissive",
+                        action = "store_true",
+                        dest = "nf_permissive",
+                        help = acpsnnfpermissive_helpstr)
+
+    acpsnnf_helpstr = \
+        f"Default normalization factor to be used when running in " \
+        f"permissive mode (default: {acpsnnf_default})"
+    parser.add_argument("--acpsn-nf-default",
+                        action = "store",
+                        type = str,
+                        dest = "nf_default",
+                        default = acpsnnf_default,
+                        help = acpsnnf_helpstr)
+
     acpsncsv_default = "acpsn.csv"
     acpsncsv_helpstr = \
         f"Name of the CSV file where to store the list of contacts " \
@@ -641,6 +662,8 @@ def main():
     acpsn_imin = args.acpsn_imin
     acpsn_ew = args.acpsn_ew
     nf_file = args.nf_file
+    nf_permissive = args.nf_permissive
+    nf_default = args.nf_default
     acpsn_csv = args.acpsn_csv
     acpsn_graph = args.acpsn_graph
     
@@ -720,7 +743,8 @@ def main():
     if do_hc:
 
         # Function to compute the full matrix
-        hc_fmfunc = None if not hc_graph else li.calc_sc_fullmatrix
+        hc_fmfunc = \
+            None if hc_graph is None else li.calc_sc_fullmatrix
 
         # Compute the table and the matrix
         hc_table_out, hc_mat_out = \
@@ -739,8 +763,9 @@ def main():
         hc_table_dict = li.create_dict_tables(hc_table_out)
         li.save_output_dict(hc_table_dict, hc_csv)
 
-        # Save .dat (if available)
-        if hc_mat_out is not None and hc_graph is not None:
+        # Save .dat (if available) (hc_graph being not None has
+        # been checked already)
+        if hc_mat_out is not None:
             hc_mat_dict = \
                 li.create_dict_matrices(hc_mat_out,
                                         hc_table_dict,
@@ -808,16 +833,26 @@ def main():
             log.error(logstr, exc_info = True)
             exit(1)
 
-        # Compute the table of contacts and the matrix
-        acpsn_table_out, acpsn_mat_out = \
-            li.do_acpsn(pdb = pdb,
-                        uni = uni,
-                        co = acpsn_co,
-                        perco = acpsn_perco,
-                        proxco = acpsn_proxco,
-                        imin = acpsn_imin,
-                        edge_weight = acpsn_ew,
-                        norm_facts = norm_facts)
+        # Try to compute the table of contacts and the matrix
+        try:
+            acpsn_table_out, acpsn_mat_out = \
+                li.do_acpsn(pdb = pdb,
+                            uni = uni,
+                            co = acpsn_co,
+                            perco = acpsn_perco,
+                            proxco = acpsn_proxco,
+                            imin = acpsn_imin,
+                            edge_weight = acpsn_ew,
+                            norm_facts = norm_facts,
+                            nf_permissive = nf_permissive,
+                            nf_default = nf_default)
+        # In case something went wront, report it and exit
+        except Exception as e:
+            logstr = \
+                f"Could not compute the table of contacts and the " \
+                f"matrix for acPSN: {e}"
+            log.error(logstr)
+            exit(1)
 
         # Save .csv
         acpsn_table_dict = li.create_dict_tables(acpsn_table_out)

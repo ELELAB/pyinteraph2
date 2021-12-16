@@ -92,8 +92,8 @@ class Sparse:
 def parse_sparse(potential_file):
 
     kbp_residues_list = \
-        ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS", \
-         "ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP", \
+        ["ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS",
+         "ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP",
          "TYR","VAL"]
     
     header_fmt  = "400i"
@@ -642,12 +642,12 @@ def calc_dist_matrix(uni,
 
                 # Get the coordinates of the first set of atoms
                 this_coords1 = \
-                    np.array(np.concatenate(coords[s_index][0]), \
+                    np.array(np.concatenate(coords[s_index][0]),
                              dtype = np.float64)
                 
                 # Get the coordinates of the second set of atoms
                 this_coords2 = \
-                    np.array(np.concatenate(coords[s_index][1]), \
+                    np.array(np.concatenate(coords[s_index][1]),
                              dtype = np.float64)
                 
                 # Compute the distances within the cut-off
@@ -659,7 +659,7 @@ def calc_dist_matrix(uni,
                 # Update the final matrix
                 percmats.append(\
                     inner_loop.run_square_mindist(\
-                        sets_sizes[s_index][0], \
+                        sets_sizes[s_index][0],
                         sets_sizes[s_index][1]))
 
         for s_index, s in enumerate(sets):
@@ -704,8 +704,8 @@ def calc_dist_matrix(uni,
             # Log the progress along the trajectory
             logstr = "Now analyzing: frame {:d} / {:d} ({:3.1f}%)\r"
             sys.stdout.write(logstr.format(\
-                                numframe, \
-                                numframes, \
+                                numframe,
+                                numframes,
                                 float(numframe)/float(numframes)*100.0))
             sys.stdout.flush()
             
@@ -835,8 +835,8 @@ def generate_cg_identifiers(pdb, uni, **kwargs):
         # If something went wrong, warn the user and continue
         except KeyError:
             logstr = \
-                "Residue {resname} is not in the charge " \
-                "recognition set. Will be skipped."
+                f"Residue {resname} is not in the charge " \
+                f"recognition set. Will be skipped."
             log.warning(logstr)
             continue
         
@@ -1264,11 +1264,11 @@ def save_output_dict(out_dict, filename):
     if out_dict["all"].dtype == float:
         ext = ".dat"
         delim = ' '
-        format = "%.1f"
+        _format = "%.1f"
     else:
         ext = ".csv"
         delim = ','
-        format = '%s'
+        _format = '%s'
     
     # For each key, change the filename and save the dict value
     for key in out_dict:
@@ -1281,7 +1281,10 @@ def save_output_dict(out_dict, filename):
         elif len(key) == 2:
             fname = f"{filename}_inter_{key[0]}-{key[1]}{ext}"
         # Save the file
-        np.savetxt(fname, out_dict[key], delimiter = delim, fmt = format)
+        np.savetxt(fname,
+                   out_dict[key],
+                   delimiter = delim,
+                   fmt = _format)
 
 
 def do_interact(pdb,
@@ -1407,7 +1410,9 @@ def do_acpsn(pdb,
              proxco,
              imin,
              edge_weight,
-             norm_facts):
+             norm_facts,
+             nf_permissive,
+             nf_default):
     """Compute the atomic contacts-based PSN as devised by
     Vishveshvara's group.
     """
@@ -1422,7 +1427,9 @@ def do_acpsn(pdb,
                                    prox_cut = proxco,
                                    p_min = perco,
                                    norm_facts = norm_facts,
-                                   edge_weight = edge_weight)
+                                   edge_weight = edge_weight,
+                                   permissive = nf_permissive,
+                                   norm_fact_default = nf_default)
 
 
 
