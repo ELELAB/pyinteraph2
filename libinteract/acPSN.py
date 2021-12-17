@@ -83,17 +83,22 @@ class AtomicContactsPSNBuilder(object):
         """Check and return a single i_min value.
         """
         
-        # If the i_min is neither an integer, a float or None, raise
+        # If the i_min is neither an integer or a float or None, raise
         # an error
-        if not isinstance(i_min, (int, float)):
+        if not isinstance(i_min, (int, float, None)):
             errstr = "A single i_min must be int, float or None."
             raise TypeError(errstr)
         
-        # Set the i_min to 0.0 if it was None
-        i_min = float(i_min) if i_min is not None else 0.0
-        
-        # Inform the user about the i_min
-        log.info(f"i_min provided: {i_min}.")
+        # Set the i_min to 0.0 if None was passed
+        if i_min is None:
+            i_min = 0.0
+            log.info(\
+                "No i_min provided. 0.0 will be used as default i_min.")
+
+        # Otherwise, convert the i_min to a float
+        else:
+            i_min = float(i_min)
+            log.info(f"i_min provided: {i_min}.")
         
         # Return the i_min
         return float(i_min)
@@ -297,7 +302,7 @@ class AtomicContactsPSNBuilder(object):
             if not res.resname in set(norm_facts_copy.keys()):
 
                 # If we are running in non-permisive mode
-                if not permisive:
+                if not permissive:
 
                     # Raise an error
                     errstr = \
