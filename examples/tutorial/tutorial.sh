@@ -160,7 +160,7 @@ pyinteraph -s $top -t $traj -r $ref -p --kbp-graph kbp-graph.dat
 # for globular proteins and the central flex point can be used as the significance threhsold. 
 # This procedure is similar to what is performed in the Protein Structure Network analysis [ref].
 
-filter_graph -d hc-graph.dat -c clusters_sizes.dat -p clusters_plot.pdf
+filter_graph -d hc-graph_all.dat -c clusters_sizes.dat -p clusters_plot.pdf
 
 # It is also possible to try and fit the curve to a sigmoid curve  y = m / (1 +exp(k*(x-x0))) + n
 # and try to identify the flexus point by solving the second derivative. However, this is not 
@@ -170,9 +170,9 @@ filter_graph -d hc-graph.dat -c clusters_sizes.dat -p clusters_plot.pdf
 # all the edges with persistence lower than the desired threshold. This is performed with option -t:
 
 threshold=20.0
-filter_graph -d hc-graph.dat -o hc-graph-filtered.dat -t $threshold
-filter_graph -d hb-graph.dat -o hb-graph-filtered.dat -t $threshold
-filter_graph -d sb-graph.dat -o sb-graph-filtered.dat -t $threshold
+filter_graph -d hc-graph_all.dat -o hc-graph-filtered.dat -t $threshold
+filter_graph -d hb-graph_all.dat -o hb-graph-filtered.dat -t $threshold
+filter_graph -d sb-graph_all.dat -o sb-graph-filtered.dat -t $threshold
 
 # The output is a graph adjacency matrix that contains the persistence values as weights.
 
