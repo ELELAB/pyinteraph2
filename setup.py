@@ -46,7 +46,7 @@ entry_points = {"console_scripts" : [\
                   "parse_masses = pyinteraph.parse_masses:main",
                   "path_analysis = pyinteraph.path_analysis:main",
                   "centrality_analysis = pyinteraph.centrality_analysis:main",
-                  "reformat_graph = pyinteraph.cytoscape_compatible_format:main"]}
+                  "reformat_graph = pyinteraph.reformat_interaction_network_graph:main"]}
 
 install_requires = ["cython",
                     "biopython",

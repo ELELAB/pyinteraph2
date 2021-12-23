@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReformatDatGraph:
-    def __init__(self, interaction_network_file, output_name, reference_structure_file):
+    def __init__(self, interaction_network_file, output_name, reference_structure_file=None):
         self.reference_structure_file = reference_structure_file
         self.interaction_network_file = interaction_network_file
         self.output_name = output_name
