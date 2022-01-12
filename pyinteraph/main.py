@@ -748,7 +748,7 @@ def main():
 
         # Compute the table and the matrix
         hc_table_out, hc_mat_out = \
-            li.do_interact(li.generate_sc_identifiers,
+            li.do_interact(identfunc = li.generate_sc_identifiers,
                            pdb = pdb,
                            uni = uni,
                            co = hc_co,
@@ -790,7 +790,7 @@ def main():
 
         # Compute the table and the matrix
         cmpsn_table_out, cmpsn_mat_out = \
-            li.do_interact(li.generate_sc_identifiers,
+            li.do_interact(identfunc = li.generate_sc_identifiers,
                            pdb = pdb,
                            uni = uni,
                            co = cmpsn_co,
@@ -898,7 +898,7 @@ def main():
 
         # Compute the table and the matrix
         sb_table_out, sb_mat_out = \
-            li.do_interact(li.generate_cg_identifiers,
+            li.do_interact(identfunc = li.generate_cg_identifiers,
                            pdb = pdb,
                            uni = uni,
                            co = sb_co, 
