@@ -15,7 +15,7 @@ mmtf-python==1.1.2
 mock==4.0.3
 msgpack==1.0.2
 networkx==2.5.1
-numpy==1.20.2
+numpy==1.21.0
 packaging==20.9
 pandas==1.2.4
 Pillow==9.0.0
