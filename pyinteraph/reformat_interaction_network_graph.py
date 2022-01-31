@@ -82,9 +82,9 @@ class ReformatDatGraph:
         node_names = dict(zip(range(self.interaction_network.shape[0]), self.node_names))
         nx.relabel_nodes(interaction_network_graph, mapping=node_names, copy=False)
         return uploaded_interaction_network_graph
-       
+
     def graphml_formatted_interaction_network(self):
-        return nx.write_graphml(self.interaction_network_graph, f"{self.output_name}.graphml")
+        nx.write_graphml(self.interaction_network_graph, f"{self.output_name}.graphml")
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
 
     ReformatDatGraph(reference_structure_file=args.reference_structure_file,
                      interaction_network_file=args.interaction_network_file,
-                     output_name=args.output_name).graphml_formatted_interaction_network
+                     output_name=args.output_name).graphml_formatted_interaction_network()
 
 
 if __name__ == "__main__":
