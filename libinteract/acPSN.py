@@ -710,22 +710,22 @@ class AtomicContactsPSNBuilder(object):
             # Increament the counter of the total PSNs
             tot_psns += 1
         
-        # Get the edges frequencies
-        edges_freq = edges_occur / tot_psns
+        # Get the edges persistence
+        edges_pers = (edges_occur / tot_psns) * 100
         
         # If the user chose to weight the edges on their persistence
         if edge_weight == "persistence":
             # Filter out those edges not exceeding
             # the persistence cutoff
-            edges_freq[edges_freq<=p_min] = 0.0
-            # Return the PSN of edge frequencies    
-            final_psn = edges_freq
+            edges_pers[edges_pers<=p_min] = 0.0
+            # Return the PSN of edges persistence    
+            final_psn = edges_pers
         
         # If the user chose to weight the edges on their strength
         elif edge_weight == "strength":
             # Filter out those edges not exceeding
             # the persistence cutoff
-            avg_psn = avg_psn * ((edges_freq>p_min).astype(int))
+            avg_psn = avg_psn * ((edges_pers>p_min).astype(int))
             # Divide the final average PSN for the total number
             # of frames
             final_psn = (avg_psn / tot_psns)
