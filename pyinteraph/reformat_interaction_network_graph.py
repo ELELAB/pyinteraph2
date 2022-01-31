@@ -90,11 +90,11 @@ class ReformatDatGraph:
 def main():
     parser = argparse.ArgumentParser(description="Format converting module to generate cytoscape compatible formatted "
                                                  "graph for PyInteraph.")
-    parser.add_argument("-i", "--interaction_network", dest="interaction_network_file", help=".dat file matrix.",
+    parser.add_argument("-a", "--adj-matrix", dest="interaction_network_file", help=".dat file matrix",
                         type=lambda file_name: ArgumentParserFileExtensionValidation(("dat"),
                                                                                      file_name).validate_file_extension(),
                         required=True)
-    parser.add_argument("-r", "--reference_structure", dest="reference_structure_file", help="Reference PDB file.",
+    parser.add_argument("-r", "--reference", dest="reference_structure_file", help="Reference PDB file",
                         type=lambda file_name: ArgumentParserFileExtensionValidation(("pdb"),
                                                                                      file_name).validate_file_extension(),
                         default=None)
