@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pytest
 from numpy.testing import assert_array_equal
-from pyinteraph.reformat_interaction_network_graph import ReformatDatGraph
+from pyinteraph.dat2graphml import ReformatDatGraph
 
 
 @pytest.fixture
@@ -119,8 +119,7 @@ def test_node_names_without_reference_structure(caplog, reformat_dat_graph_refer
     node_names = reformat_dat_graph_reference_structure_not_given.node_names
     assert isinstance(node_names, list)
     assert not node_names == predefined_node_names
-    assert "Auto-generated numbers will be used to rename nodes" in caplog.text
-
+    assert "Auto-generated numbers will be used as node names" in caplog.text
 
 def test_interaction_network_graph(reformat_dat_graph):
     interaction_network_graph = reformat_dat_graph.interaction_network_graph
