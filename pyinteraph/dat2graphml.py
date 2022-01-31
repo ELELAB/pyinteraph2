@@ -111,7 +111,7 @@ class ReformatDatGraph:
         return interaction_network_graph
 
     def graphml_formatted_interaction_network(self):
-        nx.write_graphml(self.interaction_network_graph, f"{self.output_name}.graphml")
+        nx.write_graphml(self.interaction_network_graph, f"{self.output_name}")
 
 
 def main():
@@ -126,7 +126,7 @@ def main():
                                                                                      file_name).validate_file_extension(),
                         default=None)
     parser.add_argument("-o", "--output-name", dest="output_name", help="Specify graphml name", type=str,
-                        default="reformatted_graph")
+                        default="graph")
     args = parser.parse_args()
 
     ReformatDatGraph(reference_structure_file=args.reference_structure_file,
