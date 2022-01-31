@@ -37,7 +37,6 @@ class ReformatDatGraph:
         self.output_name = output_name
 
     @property
-    @functools.lru_cache()
     def interaction_network(self):
         try:
             interaction_network = np.loadtxt(self.interaction_network_file)
@@ -52,7 +51,6 @@ class ReformatDatGraph:
             exit(1)
 
     @property
-    @functools.lru_cache()
     def reference_structure(self):
         if not self.reference_structure_file:
             return
@@ -64,7 +62,6 @@ class ReformatDatGraph:
             return
 
     @property
-    @functools.lru_cache()
     def node_names(self):
         if not self.reference_structure:
             logger.warning("Auto-generated numbers will be used as node names")
