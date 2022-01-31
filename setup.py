@@ -45,7 +45,8 @@ entry_points = {"console_scripts" : [\
                   "filter_graph = pyinteraph.filter_graph:main",
                   "parse_masses = pyinteraph.parse_masses:main",
                   "path_analysis = pyinteraph.path_analysis:main",
-                  "centrality_analysis = pyinteraph.centrality_analysis:main"]}
+                  "centrality_analysis = pyinteraph.centrality_analysis:main",
+                  "dat2graphml = pyinteraph.dat2graphml:main"]}
 
 install_requires = ["cython",
                     "biopython",
