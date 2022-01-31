@@ -3,7 +3,7 @@
 #    PyInteraph, a software suite to analyze interactions and
 #    interaction network in structural ensembles.
 #    Copyright (C) 2022 Matteo Tiberti <matteo.tiberti@gmail.com>,
-#                       Deniz Doğan 
+#                       Deniz Doğan <deenizzdogan@gmail.com>
 #    This program is free software: you can redistribute it
 #    and/or modify it under the terms of the GNU General Public
 #    License as published by the Free Software Foundation, either
