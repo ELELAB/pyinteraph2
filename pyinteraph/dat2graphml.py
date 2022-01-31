@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+
+#    PyInteraph, a software suite to analyze interactions and
+#    interaction network in structural ensembles.
+#    Copyright (C) 2022 Matteo Tiberti <matteo.tiberti@gmail.com>,
+#                       Deniz Doğan 
+#    This program is free software: you can redistribute it
+#    and/or modify it under the terms of the GNU General Public
+#    License as published by the Free Software Foundation, either
+#    version 3 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.
+#    If not, see <http://www.gnu.org/licenses/>.
+
 import sys
 
 import argparse
@@ -45,7 +65,7 @@ class ReformatDatGraph:
             logger.error("Input network file not readable. Exiting...")
             sys.exit(1)
         except ValueError:
-            logger.error("Input network file not in the right format. Exiting..."
+            logger.error("Input network file not in the right format. Exiting...")
         if interaction_network.shape[0] != interaction_network.shape[1]:
             logger.error("The input matrix is not square. Exiting...")
             exit(1)
