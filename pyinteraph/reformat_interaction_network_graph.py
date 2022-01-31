@@ -17,7 +17,7 @@ class ArgumentParserFileExtensionValidation(argparse.FileType):
     def validate_file_extension(self):
         given_extension = os.path.splitext(self.file_name)[1][1:]
         if given_extension not in self.valid_extensions:
-            self.parser.error(f"Invalid file format. Please provide a {self.valid_extensions} file")
+            self.parser.error(f"Invalid file extension. Please provide a {self.valid_extensions} file")
         return self.file_name
 
 warnings.filterwarnings("ignore")
@@ -29,7 +29,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
 
 class ReformatDatGraph:
     def __init__(self, interaction_network_file, output_name, reference_structure_file=None):
@@ -43,8 +42,14 @@ class ReformatDatGraph:
         try:
             interaction_network = np.loadtxt(self.interaction_network_file)
             return interaction_network
-        except:
+        except IOError:
+            logger.error("Input network file not readable. Exiting...")
             sys.exit(1)
+        except ValueError:
+            logger.error("Input network file not in the right format. Exiting..."
+        if interaction_network.shape[0] != interaction_network.shape[1]:
+            logger.error("The input matrix is not square. Exiting...")
+            exit(1)
 
     @property
     @functools.lru_cache()
@@ -54,30 +59,33 @@ class ReformatDatGraph:
         try:
             return mda.Universe(self.reference_structure_file)
         except:
-            logger.warning("Reference structure not readable.")
+            logger.warning("Reference structure not readable. Exiting...")
+            sys.exit(1)
             return
 
     @property
     @functools.lru_cache()
     def node_names(self):
         if not self.reference_structure:
-            logger.warning("Auto-generated numbers will be used to rename nodes.")
+            logger.warning("Auto-generated numbers will be used as node names")
             return [str(i) for i in range(1, self.interaction_network.shape[0] + 1)]
         return list(map(lambda r: f"{r.segment.segid}-{r.resnum}{r.resname}", self.reference_structure.residues))
 
     @property
     def interaction_network_graph(self):
         try:
-            uploaded_interaction_network_graph = nx.Graph(self.interaction_network)
-            node_names = dict(zip(range(self.interaction_network.shape[0]), self.node_names))
-            nx.relabel_nodes(uploaded_interaction_network_graph, mapping=node_names, copy=False)
-            return uploaded_interaction_network_graph
+            interaction_network_graph = nx.Graph(self.interaction_network)
         except:
-            logger.error("Reformatted interaction network graph not generated. "
-                         "Please check the content of the interaction network file")
-            sys.exit(1)
+            logger.error("the input file doesn't contain a valid adjacency matrix")
+            exit(1)
+        if self.interaction_network.shape[0] != len(self.node_names):
+            logger.error("the input network doesn't have the same number of residues as the input structure. Exiting...")
+            exit(1)
 
-    @property
+        node_names = dict(zip(range(self.interaction_network.shape[0]), self.node_names))
+        nx.relabel_nodes(interaction_network_graph, mapping=node_names, copy=False)
+        return uploaded_interaction_network_graph
+       
     def graphml_formatted_interaction_network(self):
         return nx.write_graphml(self.interaction_network_graph, f"{self.output_name}.graphml")
 
