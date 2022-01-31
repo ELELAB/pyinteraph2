@@ -101,7 +101,7 @@ class ReformatDatGraph:
 
         node_names = dict(zip(range(self.interaction_network.shape[0]), self.node_names))
         nx.relabel_nodes(interaction_network_graph, mapping=node_names, copy=False)
-        return uploaded_interaction_network_graph
+        return interaction_network_graph
 
     def graphml_formatted_interaction_network(self):
         nx.write_graphml(self.interaction_network_graph, f"{self.output_name}.graphml")
