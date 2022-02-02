@@ -126,7 +126,7 @@ def main():
                                                                                      file_name).validate_file_extension(),
                         default=None)
     parser.add_argument("-o", "--output-name", dest="output_name", help="Specify graphml name", type=str,
-                        default="graph")
+                        default="graph.graphml")
     args = parser.parse_args()
 
     ReformatDatGraph(reference_structure_file=args.reference_structure_file,
