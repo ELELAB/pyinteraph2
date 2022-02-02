@@ -6,7 +6,7 @@ PyInteraph is made of a Python packages with Cython and C extensions.
 
 In order to install PyInteraph you will need
 
-- Python 3.6 or higher 
+- Python 3.7 or higher
 - a C compiler (e.g. GNU gcc)
 - the Python header files (e.g. package python-dev in Debian-based
 Linux distributions)
@@ -32,7 +32,7 @@ environment or in a conda environment.
 Installing with pip and setuptools
 ----------------------------------
 
-This is a simple installation procedure that requires a Python >=3.6 distribution
+This is a simple installation procedure that requires a Python >=3.7 distribution
 to be available. It guides you in the installation of the PyInteraph package
 in a virtual environment, meaning an instance of Python isolated from the rest
 of your system. This is not strictly necessary however and PyInteraph may be
