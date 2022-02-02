@@ -10,9 +10,6 @@ on the 3D structures of proteins, using the PyMOL included interaction plotter p
 for the interactions file (salt-bridges.dat, hydrogen-bonds.dat, hydrophobic-clusters.dat)
 or the xPyder PyMOL plugin (http://linux.btbs.unimib.it/xpyder/) for the graph files (graph-*.dat).
 
-You can find a short guide about the interaction plotter plugin in this same directory
-(INTERACTION_PLOTTER file). 
-
 Finally, a guide dealing with the customization of the configuration files is avilable 
 (CONFIGURATION_FILES)
 
