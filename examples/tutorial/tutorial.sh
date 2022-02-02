@@ -2,9 +2,8 @@
 
 # The PyInteraph package works through two main front-end scripts: pyinteraph and filter_graph.
 # pyinteraph performs the analysis of structural ensembles for salt-bridges, hydrogen bonds and 
-# hydrophobic interactions. The output files are a text file, which can be plotted on the 3D
-# structure of proteins using the interactions_plotter PyMOL plugin (and PyMOL of course), and
-# a graph .dat file. This is just the adjacency matrix of the IIN graph, and is a symmetric 
+# hydrophobic interactions. The output files are a text file and a graph .dat file. This is
+# just the adjacency matrix of the IIN graph, and is a symmetric
 # square matrix format with space-separated numbers. 
 # The graph file can be later processed using the filter_graph tool.
 
