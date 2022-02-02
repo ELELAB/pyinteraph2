@@ -6,10 +6,9 @@ Please modify accordingly the first lines of the script if necessary,
 accordingly with your installation.
 
 After having run the script, it is possible to plot the resulting files
-on the 3D structures of proteins, using the PyMOL included interaction plotter plugin
-for the interactions file (salt-bridges.dat, hydrogen-bonds.dat, hydrophobic-clusters.dat)
-or the xPyder PyMOL plugin (http://linux.btbs.unimib.it/xpyder/) for the graph files (graph-*.dat).
+using the xPyder PyMOL plugin (http://linux.btbs.unimib.it/xpyder/) on
+the graph files (graph-*.dat).
 
-Finally, a guide dealing with the customization of the configuration files is avilable 
+Finally, a guide dealing with the customization of the configuration files is avilable
 (CONFIGURATION_FILES)
 
