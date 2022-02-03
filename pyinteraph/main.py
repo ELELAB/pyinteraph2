@@ -570,16 +570,16 @@ def main():
                         default = kbpatom_default,
                         help = kbpatom_helpstr)
 
-    kbpdat_default = "kb-potential.dat"
-    kbpdat_helpstr = \
+    kbpcsv_default = "kb-potential.csv"
+    kbpcsv_helpstr = \
         f"File where to store the results of the statistical " \
-        f"potential analysis (default: {kbpdat_default})"
-    parser.add_argument("--kbp-dat",
+        f"potential analysis (default: {kbpcsv_default})"
+    parser.add_argument("--kbp-csv",
                         action = "store",
                         type = str,
-                        dest = "kbp_dat",
-                        default = kbpdat_default,
-                        help = kbpdat_helpstr)
+                        dest = "kbp_csv",
+                        default = kbpcsv_default,
+                        help = kbpcsv_helpstr)
 
     kbpgraph_helpstr = \
         "File where to store the adjacency matrix for the " \
@@ -704,7 +704,7 @@ def main():
     kbp_kbt = args.kbp_kbt
     kbp_atomlist = args.kbp_atomlist
     kbp_ff = args.kbp_ff
-    kbp_dat = args.kbp_dat
+    kbp_csv = args.kbp_csv
     kbp_graph = args.kbp_graph
     
     # Miscellanea
@@ -1047,8 +1047,8 @@ def main():
         # Whether to compute the full matrix
         do_fullmatrix = True if kbp_graph else False
 
-        # Compute the output string and the matrix
-        kbp_str_out, kbp_mat_out = \
+        # Compute the output table and the matrix
+        kbp_table_out, kbp_mat_out = \
             li.do_potential(kbp_atomlist = kbp_atomlist,
                             residues_list = kbp_reslist,
                             potential_file = kbp_ff,
@@ -1058,9 +1058,9 @@ def main():
                             kbT = kbp_kbt,
                             seq_dist_co = 0)
 
-        # Save .dat
-        with open(kbp_dat, "w") as out:
-            out.write(kbp_str_out)
+        # Save .csv
+        kbp_table_dict = li.create_dict_tables(kbp_table_out)
+        li.save_output_dict(kbp_table_dict, kbp_csv)
         
         # Save .mat (if available)
         if kbp_mat_out is not None and kbp_graph is not None:

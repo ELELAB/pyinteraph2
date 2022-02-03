@@ -331,7 +331,7 @@ def do_potential(kbp_atomlist,
             logstr.format(ts_i + 1,
                           numframes,
                           float(numframe)/float(numframes)*100.0))
-        sys.stdout.flush()       
+        sys.stdout.flush()   
         
         # Create an array of coordinates by concatenating the arrays of
         # atom positions in the selections row-wise
@@ -357,30 +357,30 @@ def do_potential(kbp_atomlist,
             calc_potential_func(distances = distances,
                                 ordered_sparses = ordered_sparses,
                                 kbT = kbT)
+
+        # Update the frame number
+        numframe += 1
     
     # Divide the scores for the lenght of the trajectory
     scores /= float(numframes)
-    
-    # Create the output string
-    outstr = ""
-    
-    # Set the format for the representation of each pair of
-    # residues in the output string
-    outstr_fmt = "{:s}-{:s}{:d}:{:s}-{:s}{:d}\t{:.3f}\n"
+
+    # Create an empty list to store the final table
+    table = []
     
     for i, score in enumerate(scores):
         if abs(score) > 0.000001:
             
-            # Update the output string
-            outstr +=  \
-                outstr_fmt.format(\
-                    pdb.residues[residue_pairs[i][0].ix].segment.segid,
-                    pdb.residues[residue_pairs[i][0].ix].resname,
-                    pdb.residues[residue_pairs[i][0].ix].resid,
-                    pdb.residues[residue_pairs[i][1].ix].segment.segid,
-                    pdb.residues[residue_pairs[i][1].ix].resname,
-                    pdb.residues[residue_pairs[i][1].ix].resid,
-                    score)
+            # Update the output table
+            table.append(\
+                 (pdb.residues[residue_pairs[i][0].ix].segment.segid,
+                  pdb.residues[residue_pairs[i][0].ix].resnum,
+                  pdb.residues[residue_pairs[i][0].ix].resname,
+                  ".".join(kbp_atomlist),
+                  pdb.residues[residue_pairs[i][1].ix].segment.segid,
+                  pdb.residues[residue_pairs[i][1].ix].resnum,
+                  pdb.residues[residue_pairs[i][1].ix].resname,
+                  ".".join(kbp_atomlist),
+                  score))
     
     # Inizialize the matrix to None  
     dm = None   
@@ -398,8 +398,8 @@ def do_potential(kbp_atomlist,
         dm[pair_firstelems, pairs_secondelems] = scores
         dm[pairs_secondelems, pair_firstelems] = scores
     
-    # Return the output string and the matrix
-    return (outstr, dm)
+    # Return the output table and the matrix
+    return (table, dm)
 
 
 

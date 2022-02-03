@@ -394,13 +394,13 @@ def kbp_references(ref_dirs):
     oc = ref_dirs["one_chain"]
 
     # Names of the string and matrix
-    string = "kb-potential"
+    table = "kbp-table"
     matrix = "kbp-graph"
 
     # Expected results for the statistical potential
     return \
-        {"strings" :
-            {"one_chain" : open(f"{oc}/{string}.dat").readlines()},
+        {"tables" :
+            {"one_chain" : open(f"{oc}/{table}.csv").readlines()},
          "matrices" :
             {"one_chain" : np.loadtxt(f"{oc}/{matrix}.dat")}}
 
@@ -1050,12 +1050,12 @@ def test_do_potential(systems,
                       kbp_parameters,
                       kbp_references):
     
-    # Get the reference string and the reference matrix
-    ref_string = kbp_references["strings"]["one_chain"]
+    # Get the reference table and the reference matrix
+    ref_table = kbp_references["tables"]["one_chain"]
     ref_matrix = kbp_references["matrices"]["one_chain"]
 
-    # Get the computed string and matrix
-    string, matrix = \
+    # Get the computed table and matrix
+    table, matrix = \
         li.do_potential(uni = systems["one_chain"]["uni"],
                         pdb = systems["one_chain"]["pdb"],
                         **kbp_parameters)
@@ -1063,9 +1063,7 @@ def test_do_potential(systems,
     # Check the equality between the computed matrix and the
     # reference matrix    
     assert_almost_equal(matrix, ref_matrix, decimal = 3)
-    
-    # Check the equality between the computed string and the
-    # reference string 
-    split_string = string.split("\n")[:-1]
-    for i, s in enumerate(split_string):
-        assert(s == ref_string[i].strip())
+
+    # Test the equality between the table computed and the reference
+    for i, t in enumerate(table):
+        assert(",".join(str(x) for x in t) == ref_table[i].strip())
