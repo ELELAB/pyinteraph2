@@ -375,11 +375,11 @@ def do_potential(kbp_atomlist,
                  (pdb.residues[residue_pairs[i][0].ix].segment.segid,
                   pdb.residues[residue_pairs[i][0].ix].resnum,
                   pdb.residues[residue_pairs[i][0].ix].resname,
-                  ".".join(kbp_atomlist),
+                  "sidechain",
                   pdb.residues[residue_pairs[i][1].ix].segment.segid,
                   pdb.residues[residue_pairs[i][1].ix].resnum,
                   pdb.residues[residue_pairs[i][1].ix].resname,
-                  ".".join(kbp_atomlist),
+                  "sidechain",
                   score))
     
     # Inizialize the matrix to None  
