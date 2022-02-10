@@ -1,4 +1,4 @@
-# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
+#!/usr/bin/env python
 
 #   path_analysis.py: script to calculate paths and path-related 
 #                     network properties
