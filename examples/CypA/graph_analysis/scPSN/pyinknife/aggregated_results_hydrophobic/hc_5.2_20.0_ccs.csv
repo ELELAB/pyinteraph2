@@ -1,6 +1,0 @@
-cc_num,fulltrj,resampling0,resampling8,resampling4,resampling5,resampling7,resampling3,resampling6,resampling2,resampling1,resampling9,mean_resamplings,median_resamplings,min_resamplings,max_resamplings,std_resamplings,sem_resamplings
-1,114,103,114,114,103,114,114,103,114,114,103,109.6,114.0,103,114,5.680375574437544,1.796292478040997
-2,3,11,3,3,11,3,3,11,3,3,11,6.2,3.0,3,11,4.1311822359545785,1.3063945294843615
-3,2,3,2,2,3,2,2,3,2,2,3,2.4,2.0,2,3,0.5163977794943223,0.16329931618554522
-4,2,2,2,2,2,2,2,2,2,2,2,2.0,2.0,2,2,0.0,0.0
-5,2,2,2,2,2,2,2,2,2,2,2,2.0,2.0,2,2,0.0,0.0
