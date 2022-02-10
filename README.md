@@ -1,3 +1,7 @@
+Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark 
+
+Cancer Systems Biology, Health and Technology Department, Section for Bioinformatics, 2800, Lyngby, Denmark
+
 # PyInteraph2
 
 PyInteraph2 is a software suite designed to identify intramolecular interactions
@@ -22,8 +26,6 @@ When using PyInteraph2 for publication, please cite:
 
 and
 
- ``Valentina Sora, Matteo Tiberti, and Elena Papaleo
+ ``Valentina Sora, Matteo Tiberti, Shahriyar Mahdi Robbani, Joshua Rubin, and Elena Papaleo
   PyInteraph2 and PyInKnife2 to analyze networks in protein structural ensembles 
-  Biorxiv, submitted``
-
-
+  Biorxiv,https://doi.org/10.1101/2020.11.22.381616 ``
