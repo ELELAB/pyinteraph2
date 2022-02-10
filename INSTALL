@@ -147,10 +147,11 @@ step 2 beforehand.
 Testing
 =======
 
-to check that your installation has been performed correctly, just run:
+to check that your installation has been performed correctly, just enter the tests directory in the
+pyinteraph source code directory and run pytest:
 
-    pytest
+    cd tests; pytest
 
-inside your PyInteraph source code directory. You should have no tests reporting failures or errors.
+You should have no tests reporting failures or errors.
 
 
