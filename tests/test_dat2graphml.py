@@ -38,7 +38,7 @@ def reformat_dat_graph_reference_structure_not_given(interaction_network_file):
 
 @pytest.fixture
 def reformat_dat_graph_empty_interaction_network(empty_interaction_network_file):
-    return ReformatDatGraph(empty_interaction_network_file, "output_name", reference_structure)
+    return ReformatDatGraph(empty_interaction_network_file, "output_name")
 
 
 @pytest.fixture
