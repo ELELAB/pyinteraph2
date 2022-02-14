@@ -8,21 +8,18 @@ from pyinteraph.dat2graphml import ReformatDatGraph
 
 
 @pytest.fixture
-def change_test_dir(request):
-    os.chdir('tests/data/single_chain')
-    yield
-    os.chdir(request.config.rootdir)
+def test_dir(request):
+    return os.path.join(request.fspath.dirname, 
+                        'data/single_chain')
+
+@pytest.fixture
+def reference_structure(test_dir):
+    return os.path.join(test_dir, 'sim.prot.A.pdb')
 
 
 @pytest.fixture
-def reference_structure():
-    return 'sim.prot.A.pdb'
-
-
-@pytest.fixture
-def interaction_network_file():
-    return 'hb-graph-filtered.dat'
-
+def interaction_network_file(test_dir):
+    return os.path.join(test_dir, 'hb-graph-filtered.dat')
 
 @pytest.fixture
 def empty_interaction_network_file():
@@ -30,17 +27,17 @@ def empty_interaction_network_file():
 
 
 @pytest.fixture
-def reformat_dat_graph(interaction_network_file, reference_structure, change_test_dir):
+def reformat_dat_graph(interaction_network_file, reference_structure):
     return ReformatDatGraph(interaction_network_file, "output_name", reference_structure)
 
 
 @pytest.fixture
-def reformat_dat_graph_reference_structure_not_given(interaction_network_file, change_test_dir):
+def reformat_dat_graph_reference_structure_not_given(interaction_network_file):
     return ReformatDatGraph(interaction_network_file, "output_name")
 
 
 @pytest.fixture
-def reformat_dat_graph_empty_interaction_network(empty_interaction_network_file, change_test_dir, reference_structure):
+def reformat_dat_graph_empty_interaction_network(empty_interaction_network_file):
     return ReformatDatGraph(empty_interaction_network_file, "output_name", reference_structure)
 
 
