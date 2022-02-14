@@ -27,6 +27,8 @@ import numpy as np
 import networkx as nx
 import MDAnalysis as mda
 import itertools
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
