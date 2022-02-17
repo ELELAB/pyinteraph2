@@ -21,6 +21,11 @@ If you are unsure whether your system already satisfies such requirements, we
 recommend installing PyInteraph in a conda enviornment (see below) that also
 supports installation of non-Python requirements.
 
+PLEASE NOTE: PyInteraph was mainly developed and tested on Linux systems.
+Support for Mac is limited, especially we don't currently support most recent
+MacOS versions and native use on Apple silicon Macs. We are working to add
+such support.
+
 =========================
 Installation instructions
 =========================
