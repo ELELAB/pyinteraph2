@@ -218,10 +218,13 @@ def write_table(fname, table):
     fname = os.path.splitext(fname)[0]
     # For each line in table, add line in file
     with open(f"{fname}.txt", "w") as f:
-        for path, source, target, lengths, sum_weight, avg_weight in table:
+        # Write the table header
+        f.write("path\tsource\ttarget\tlength\tsum_weights\tavg_weight\n")
+        # For each path found
+        for path, source, target, length, sum_weights, avg_weight in table:
             path = ','.join(path)
-            line = f"{path}\t{source}\t{target}\t{lengths}" \
-                   f"\t{sum_weight}\t{avg_weight}\n"
+            line = f"{path}\t{source}\t{target}\t{length}" \
+                   f"\t{sum_weights}\t{avg_weight}\n"
             f.write(line)
 
 def get_combinations(res_id, res_space):
@@ -348,7 +351,6 @@ def normalize_graph(graph):
         normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge)
 
     return normalized_graph
-
 
 def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, normalize):
     """Takes in a PSN graph where weights are persistence values. Returns
@@ -661,7 +663,9 @@ def main():
     if args.pdb is None:
         log.warning("No reference PDB file provided.")
 
+
     ############################## PATHS ##############################
+
 
     if args.do_path:
         # Check if source and target are provided
@@ -719,8 +723,8 @@ def main():
 
     if args.do_metapath:
         if args.res_gap <= 0:
-            err_str = "Residue Spacing (option -g) must be a positive integer. " \
-                      "Exiting ..."
+            err_str = "Residue spacing (option -k, --node-spacing) " \
+                      "must be a positive integer. Exiting..."
             log.error(err_str)
             exit(1)
 
