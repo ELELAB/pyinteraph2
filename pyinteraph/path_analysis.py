@@ -757,6 +757,8 @@ def main():
             sys.stdout.write(f"Saving output: {args.m_out}\n")
             metapath_matrix = nx.to_numpy_matrix(metapath_graph)
             np.savetxt(f"{args.m_out}.dat", metapath_matrix)
+            # Save matrix as csv 
+            np.savetxt(f"{args.m_out}.csv", metapath_matrix, delimiter=",")
 
 
 if __name__ == "__main__":
