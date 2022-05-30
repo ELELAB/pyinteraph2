@@ -518,11 +518,11 @@ def sb_parameters(sb_charged_groups):
 def hb_parameters(hb_don_acc):
 
     # General parameters for the calculation of hydrogen bonds
-    parameters = {"distance" : 3.5,
-                  "angle" : 120.0,
+    parameters = {"d_a_cutoff" : 3.0,
+                  "d_h_a_angle_cutoff" : 150.0,
                   "perco" : 0.0,
-                  "perresidue" : False,
                   "do_fullmatrix" : True,
+                  "update_selections" : True,
                   "other_hbs" : hb_don_acc}
 
     # Specific parameters for hydrogen bonds calculated between
@@ -992,7 +992,7 @@ def test_do_hb(systems,
 
 
 def test_create_dict_tables_hb(hb_twochains,
-                              hb_references):
+                               hb_references):
 
     # Get the reference tables
     ref_tables = hb_references["tables"]["two_chains"]
