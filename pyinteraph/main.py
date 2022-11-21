@@ -33,7 +33,7 @@ import MDAnalysis as mda
 import numpy as np
 from libinteract import libinteract as li
 
-def main():
+def main(argsv=None):
 
 
     ######################### ARGUMENT PARSER #########################
@@ -618,7 +618,7 @@ def main():
                         dest = "verbose",
                         help = v_helpstr)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argsv)
 
 
     ########################## LOGGER SETUP ###########################
