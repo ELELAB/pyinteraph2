@@ -37,6 +37,8 @@ import sys
 # Third-party packages
 import numpy as np
 import MDAnalysis as mda
+# Import the hydrogen bonds analysis module (MDAnalysis v1.0.0 and newer)
+from MDAnalysis.analysis.hydrogenbonds import hbond_analysis
 import pandas as pd
 # libinteract
 from libinteract import acPSN
@@ -1485,9 +1487,6 @@ def do_hbonds(sel1,
               perco,
               do_fullmatrix,
               other_hbs):
-    
-    # Import the hydrogen bonds analysis module (MDAnalysis v1.0.0 and newer)
-    from MDAnalysis.analysis.hydrogenbonds import hbond_analysis
     
     # Check if selection 1 is valid
     try:
