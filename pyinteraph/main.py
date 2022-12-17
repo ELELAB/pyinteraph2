@@ -35,6 +35,16 @@ from libinteract import libinteract as li
 
 def main(argsv=None):
 
+    # Override exit function to only print error WHEN "main" is called 
+    # interactively, and avoid exiting the Python interpreter
+    if __name__ != "__main__":
+        # Annuling the function that prints errors and tracebacks
+        sys.excepthook = lambda type, value, traceback: None
+        # When "exit" is called, instead of exiting the intepreter, a
+        # silent (see: preceding line) exception is raised to simply 
+        # halt the "main" function execution
+        def exit(code): raise
+
 
     ######################### ARGUMENT PARSER #########################
 
