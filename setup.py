@@ -50,7 +50,7 @@ entry_points = {"console_scripts" : [\
 
 install_requires = ["cython",
                     "biopython",
-                    "MDAnalysis==1.1.1",
+                    "MDAnalysis==2.0.0",
                     "numpy",
                     "matplotlib",
                     "seaborn",

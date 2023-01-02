@@ -434,7 +434,8 @@ def main():
     #------------------------- Hydrogen bonds ------------------------#
 
 
-    hbco_default = 3.5
+    # Default taken from the default used by MDAnalysis (v2.0.0)
+    hbco_default = 3.0
     hbco_helpstr = \
         f"Donor-acceptor distance cut-off for hydrogen bonds " \
         f"(default: {hbco_default})"
@@ -444,8 +445,9 @@ def main():
                         dest = "hb_co",
                         default = hbco_default,
                         help = hbco_helpstr)
-
-    hbang_default = 120.0
+    
+    # Default taken from the default used by MDAnalysis (v2.0.0)
+    hbang_default = 150.0
     hbang_helpstr = \
         f"Donor-acceptor angle cut-off for hydrogen bonds " \
         f"(default: {hbang_default})"
@@ -1001,21 +1003,18 @@ def main():
         # Whether to compute the full matrix
         do_fullmatrix = True if hb_graph else False
 
-        # Whtether to group the hydrogen bonds per residue
-        perresidue = False
-
         # Compute the table and the matrix
         hb_table_out, hb_mat_out = \
             li.do_hbonds(sel1 = hb_group1,
                          sel2 = hb_group2,
                          pdb = pdb,
                          uni = uni,
-                         distance = hb_co,
-                         angle = hb_angle,
+                         update_selections = True,
+                         d_a_cutoff = hb_co,
+                         d_h_a_angle_cutoff = hb_angle,
                          perco = hb_perco,
                          do_fullmatrix = do_fullmatrix,
-                         other_hbs = hbs,
-                         perresidue = perresidue)                                    
+                         other_hbs = hbs)                                    
 
         # Save .csv
         hb_table_dict = li.create_dict_tables(hb_table_out)

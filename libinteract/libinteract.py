@@ -29,6 +29,7 @@ import configparser as cp
 import itertools
 import json
 import logging as log
+import operator
 import os
 import re
 import struct
@@ -36,6 +37,9 @@ import sys
 # Third-party packages
 import numpy as np
 import MDAnalysis as mda
+# Import the hydrogen bonds analysis module (MDAnalysis v1.0.0 and newer)
+from MDAnalysis.analysis.hydrogenbonds import hbond_analysis
+import pandas as pd
 # libinteract
 from libinteract import acPSN
 from libinteract import innerloops as il
@@ -1169,7 +1173,7 @@ def create_dict_tables(table):
     
     # If multiple chains are present, split the contacts by chain
     if len(chains) > 1:
-	   
+       
        # For each chain, add the nodes that are only in contact
        # with the same chain
         for chain in chains:
@@ -1445,6 +1449,7 @@ def parse_hbs_file(fname):
     hbs_str = "HYDROGEN_BONDS"
     acceptors_str = "ACCEPTORS"
     donors_str = "DONORS"
+    hydrogens_str = "HYDROGENS"
     
     cfg = cp.ConfigParser()
 
@@ -1457,210 +1462,241 @@ def parse_hbs_file(fname):
 
     acceptors = cfg.get(hbs_str, acceptors_str)
     acceptors = [i.strip() for i in acceptors.strip().split(",")]
+    acceptors = "name " + " or name ".join(acceptors)
 
     donors = cfg.get(hbs_str, donors_str)
     donors = [i.strip() for i in donors.strip().split(",")]
+    donors = "name " + " or name ".join(donors)
 
-    return dict(ACCEPTORS = acceptors, DONORS = donors)
+    hydrogens = cfg.get(hbs_str, hydrogens_str)
+    hydrogens = [i.strip() for i in hydrogens.strip().split(",")]
+    hydrogens = "name " + " ".join(hydrogens)
+
+    return dict(ACCEPTORS = acceptors,
+                DONORS = donors,
+                HYDROGENS = hydrogens)
 
 
 def do_hbonds(sel1,
               sel2,
               pdb,
               uni,
-              update_selection1 = True,
-              update_selection2 = True,
-              filter_first = False,
-              distance = 3.0,
-              angle = 120,
-              perco = 0.0,
-              perresidue = False,
-              do_fullmatrix = False,
-              other_hbs = None):
-    
-    # Import the hydrogen bonds analysis module
-    from MDAnalysis.analysis.hbonds import hbond_analysis
+              update_selections,
+              d_a_cutoff,
+              d_h_a_angle_cutoff,
+              perco,
+              do_fullmatrix,
+              other_hbs):
     
     # Check if selection 1 is valid
     try:
         sel1atoms = uni.select_atoms(sel1)
     except:
-        log.error("ERROR: selection 1 is invalid")
+        # Log the error and re-raise the exception
+        logstr = "ERROR: selection 1 is invalid"
+        log.error(logstr)
+        raise ValueError(logstr)
     
     # Check if selection 2 is valid
     try:
         sel2atoms = uni.select_atoms(sel2)
     except:
-        log.error("ERROR: selection 2 is invalid")      
-    
-    # Check if custom donors and acceptors were provided
-    if other_hbs is None:
-        class Custom_HydrogenBondAnalysis(hbond_analysis.HydrogenBondAnalysis):
-            pass
-        hb_ff = "CHARMM27"
-    else:  
-        # Custom names
-        class Custom_HydrogenBondAnalysis(hbond_analysis.HydrogenBondAnalysis):
-            DEFAULT_DONORS = {"customFF" : other_hbs["DONORS"]}
-            DEFAULT_ACCEPTORS = {"customFF" : other_hbs["ACCEPTORS"]}
-        hb_ff = "customFF"
-    
+        # Log the error and re-raise the exception
+        logstr = "ERROR: selection 2 is invalid"
+        log.error(logstr)
+        raise ValueError(logstr)
+
+    # Set the parameters for the hydrogen bond analysis
+    h_params = {"universe" : uni,
+                "between" : [sel1, sel2],
+                "d_a_cutoff" : d_a_cutoff,
+                "d_h_a_angle_cutoff" : d_h_a_angle_cutoff,
+                "update_selections" : update_selections,
+                "donors_sel" : other_hbs["DONORS"],
+                "acceptors_sel" : other_hbs["ACCEPTORS"],
+                "hydrogens_sel" : other_hbs["HYDROGENS"]}
+
     # Set up the hydrogen bonds analysis
-    h = Custom_HydrogenBondAnalysis(universe = uni,
-                                    selection1 = sel1,
-                                    selection2 = sel2,
-                                    distance = distance,
-                                    angle = angle,
-                                    forcefield = hb_ff,
-                                    update_selection1 = update_selection1,
-                                    update_selection2 = update_selection2,
-                                    filter_first = filter_first)
+    h = hbond_analysis.HydrogenBondAnalysis(**h_params)
     
     # Inform the user about the hydrogen bond analysis parameters
-    logstr = "Will use {:s}: {:s}"
-    log.info(logstr.format("acceptors", \
-                           ", ".join(h.DEFAULT_ACCEPTORS[hb_ff])))
-    log.info(logstr.format("donors", \
-                           ", ".join(h.DEFAULT_DONORS[hb_ff])))
-    log.info("Running hydrogen bonds analysis...")
+    log.info(\
+        f"Will use '{h.donors_sel}' as selection for donors.")
+    log.info(\
+        f"Will use '{h.acceptors_sel}' as selection for acceptors.")
+
+    # Inform the user that the run is starting
+    log.info("Running the hydrogen bonds analysis...")
     
     # Run the hydrogen bonds analysis
     h.run()
+
+    # Inform the user that the run ended successfully
     log.info("Done! Finalizing...")
+
+    # Get the analysis results (raw data)
+    raw_data = h.results.hbonds.tolist()
+
+    # Get the number of frames in the trajectory
+    num_frames = len(uni.trajectory)
     
-    # Get the hydrogen bonds timeseries
-    data = h.timeseries
-    
-    # Create identifiers for the 'uni' Universe
-    uni_identifiers = [(res.segid, res.resid, res.resname, "residue") \
-                       for res in uni.residues]
+    # Create identifiers for the 'uni' Universe (topology
+    # and trajectory)
+    uni_identifiers = \
+        [(res.segid, res.resid, res.resname, "residue") \
+          for res in uni.residues]
     
     # Create identifiers for the 'pdb' Universe (reference)
-    identifiers = [(res.segid, res.resid, res.resname, "residue") \
-                   for res in pdb.residues]
+    identifiers = \
+        [(res.segid, res.resid, res.resname, "residue") \
+         for res in pdb.residues]
     
     # Map the identifiers of the uni Universe to their corresponding
     # indexes in the matrix
     uni_id2ix = \
         dict([(item, i) for i, item in enumerate(uni_identifiers)])
     
-    # Utility function to get the identifier of a hydrogen bond
+    # Utility function to get the identifier of a hydrogen bond.
+    # The 0-based index of the donor atom is stored at position 1
+    # in the output, while the 0-based index of the acceptor atom
+    # is stored at position 3 in the output.
+    # The whole output is structured as follows:
+    #
+    # results = [
+    #  [
+    #    <frame>,
+    #    <donor index (0-based)>,
+    #    <hydrogen index (0-based)>,
+    #    <acceptor index (0-based)>,
+    #    <distance>,
+    #    <angle>
+    #  ],
+    # ...
+    # ]
     get_identifier = \
-        lambda uni, hbond: frozenset(((uni.atoms[hbond[0]].segid,
-                                       uni.atoms[hbond[0]].resid,
-                                       uni.atoms[hbond[0]].resname,
-                                       "residue"),
-                                      (uni.atoms[hbond[1]].segid,
-                                       uni.atoms[hbond[1]].resid,
-                                       uni.atoms[hbond[1]].resname,
-                                       "residue")))
+        lambda uni, hb, pos: \
+            frozenset(((uni.atoms[int(hb[pos[0]])].segid,
+                        uni.atoms[int(hb[pos[0]])].resid,
+                        uni.atoms[int(hb[pos[0]])].resname,
+                        "residue"),
+                       (uni.atoms[int(hb[pos[1]])].segid,
+                        uni.atoms[int(hb[pos[1]])].resid,
+                        uni.atoms[int(hb[pos[1]])].resname,
+                        "residue")))
     
     # Initialize the full matrix to None
-    fullmatrix = None
+    full_matrix = None
     
     # Create the full matrix if requested
     if do_fullmatrix:
-        fullmatrix = np.zeros((len(identifiers),len(identifiers)))
+        full_matrix = np.zeros((len(identifiers), len(identifiers)))
     
-    # Create empty list for output
+    # Create an empty list for the tabular output
     table_out = []
     
-    if perresidue or do_fullmatrix:
-        
-        # Get the number of frames in the trajectory
-        numframes = len(uni.trajectory)
-        
-        # Set the output string format
-        outstr_fmt = "{:s}{:d}:{:s}{:d}\t\t{3.2f}\n"
-        
-        # Generate a list of sets
-        setlist = \
-            list(set(zip(*list(zip(*list(itertools.chain(*data))))[0:2])))
-        
-        # Get a list of the unique hydrogen bonds identified (between
-        # pairs of residues)
-        identifiers_setlist = \
-            list(set([get_identifier(uni, hbond) for hbond in setlist]))
-        
-        # Initialize an empty counter (number of occurrences
-        # for each hydrogen bond)
-        outdata = collections.Counter(\
-            {identifier : 0 for identifier in identifiers_setlist})
-        
-        # For each frame
-        for frame in data:
-            # Update the counter for the occurences of each
-            # hydrogen bond in this frame
-            outdata.update(\
-                set([get_identifier(uni, hbond) for hbond in frame]))
-        
+    # We use the identifiers from the topology and not the
+    # reference structure because we need to have the correct
+    # atom numbering since we ran the analysis on the Universe
+    # built from the topology and the trajectory
+    if do_fullmatrix:
+
+        # Count the number of hydrogen bonds between distinct
+        # pairs of residues
+        out_data = collections.Counter(\
+            [get_identifier(uni, hb, (1,3)) for hb in raw_data])
+
         # For each hydrogen bond identified in the trajectory
-        for identifier, hb_occur in outdata.items():
-            # Get the persistence of the hydrogen bond
-            hb_pers = (float(hb_occur)/float(numframes))*100
+        for identifier, hb_count in out_data.items():
+            
+            # Get the occurrence of the hydrogen bond
+            hb_occur = (float(hb_count) / float(num_frames)) * 100
+            
             # Convert the identifier from a frozenset to a list
             # to get items by index (the order does not matter)
             identifier_as_list = list(identifier)
+            
             # Get info about the first residue
             res1 = identifier_as_list[0]
+
+            # The index is taken from the 'uni_identifiers' because
+            # the index of the residue in the topology may be different
+            # from the index found in the reference PDB structure
             res1_resix = uni_id2ix[res1]
             res1_segid, res1_resid = res1[:2]
+            
             # Get info about the second residue (if present)
             res2 = \
                 res1 if len(identifier) == 1 else identifier_as_list[1]
+
+            # The index is taken from the 'uni_identifiers' because
+            # the index of the residue in the topology may be different
+            # from the index found in the reference PDB structure
             res2_resix = uni_id2ix[res2]
             res2_segid, res2_resid = res2[:2]
+            
             # Fill the full matrix if requested
             if do_fullmatrix:
-                fullmatrix[res1_resix, res2_resix] = hb_pers
-                fullmatrix[res2_resix, res1_resix] = hb_pers
-            # Format the output string if requesets
-            if perresidue:
-                if hb_pers > perco:
-                    outstr += outstr_fmt.format(res1_segid, res1_resid,
-                                                res1_segid, res1_resid,
-                                                hb_pers)
-    
-    # Do not merge hydrogen bonds per residue
-    if not perresidue:
+                full_matrix[res1_resix, res2_resix] = hb_occur
+                full_matrix[res2_resix, res1_resix] = hb_occur
         
-        # Utility function to get the identifier of a hydrogen bond
-        get_list_identifier = \
-            lambda uni, hbond: [(uni.atoms[hbond[0]].segid,
-                                 uni.atoms[hbond[0]].resid,
-                                 uni.atoms[hbond[0]].resname,
-                                 "residue"),
-                                (uni.atoms[hbond[1]].segid,
-                                 uni.atoms[hbond[1]].resid,
-                                 uni.atoms[hbond[1]].resname,
-                                 "residue")]
+    # Get the hydrogen bonds' counts (not using the count_by_ids()
+    # method of the HydrogenBondAnalysis class since there may be
+    # a bug when reporting atom indexes)
+    counts = collections.Counter(\
+        [(int(hb[1]), int(hb[3])) for hb in raw_data])
 
-        # Count hydrogen bonds by type
-        table = h.count_by_type()
-        hbonds_identifiers = \
-            [get_list_identifier(uni, hbond) for hbond in table]
-        
-        # For each hydrogen bonds identified
-        for i, hbidentifier in enumerate(hbonds_identifiers):
-            
-            # Get the hydrogen bond persistence
-            hb_pers = table[i][-1]*100
-            
-            # Get donor heavy atom and acceptor atom
-            donor_heavy_atom = (table[i][4],)
-            acceptor_atom = (table[i][8],)
-            
-            # Consider only those hydrogen bonds whose persistence
-            # is greater than the cut-off
+    # For each hydrogen bond
+    for hb, hb_count in counts.items():
 
-            if hb_pers > perco:
-                # Remove the res_tag columns
-                res1 = identifiers[uni_id2ix[hbidentifier[0]]][0:3]
-                res2 = identifiers[uni_id2ix[hbidentifier[1]]][0:3]
-                persistence = (hb_pers,)
-                row = res1 + donor_heavy_atom + res2 + \
-                      acceptor_atom + persistence
-                table_out.append(row)
+        # Get the hydrogen bond identifier
+        identifier = list(get_identifier(uni, hb, (0,1)))
+
+        # Sort the identifier so that the residues are sorted
+        # by chain, residue number, and atom type within a single
+        # hydrogen bond
+        identifier = sorted(identifier, key=lambda i:(i[0], i[1]))
+
+        # Get the hydrogen bond occurrence
+        hb_occur = (float(hb_count) / float(num_frames)) * 100
+            
+        # Get the donor atom type
+        donor = uni.atoms[hb[0]].type
+            
+        # Get the acceptor atom type
+        acceptor = uni.atoms[hb[1]].type
+            
+        # Consider only those hydrogen bonds whose occurrence
+        # is greater than the cut-off
+        if hb_occur > perco:
+                
+            # Use the 'pdb' identifiers here since we are
+            # outputting the table containing the info about
+            # the hydrogen bonds found
+
+            # Get the identifier of the first residue in the
+            # reference structure
+            res1 = identifiers[uni_id2ix[identifier[0]]][0:3]
+
+            # Get the identifier of the second residue in the
+            # reference structure
+            res2 = \
+                res1 if len(identifier) == 1 else \
+                identifiers[uni_id2ix[identifier[1]]][0:3] 
+
+            # Build up the row of the table that will correspond
+            # to the current hydrogen bond
+            row = res1 + (donor,) + res2 + (acceptor,) + (hb_occur,)
+
+            # Append the row to the output table
+            table_out.append(row)
+
+    # Create a temporary data frame to sort the hydrogen bonds
+    # by chain, residue number, and atom name
+    tmp_df = pd.DataFrame(table_out)
+    tmp_df = tmp_df.sort_values(by = [0,4,1,5,3,7], axis = 0)
+
+    # Convert back the data frame into the original table format
+    table_out = tmp_df.values.tolist()
 
     # Return table of hydrogen bonds and full matrix
-    return table_out, fullmatrix
+    return table_out, full_matrix
