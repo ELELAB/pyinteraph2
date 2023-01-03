@@ -482,22 +482,32 @@ def reorder_graph(graph, identifiers):
     ordered_graph.add_weighted_edges_from(weighted_edges)
     return(ordered_graph)
 
-def parse_inputs(identifiers, source=None, target=None):
-    '''Checks if source and target are correctly provided by the user
-    and if so, returns the lists of the nodes of interest.'''
+def write_metapath_table(graph, identifiers, residue_names, fname):
+        '''The function returns a file csv containing the information
+        about the edges of the metapath graph and their weight.'''
 
-    # Check if source and target are provided
-    if source != None and target != None:
-        # Convert user input to a list of nodes
-        source_list = convert_input_to_list(user_input = source,
-                                            identifiers = identifiers)
-        target_list = convert_input_to_list(user_input = target,
-                                            identifiers = identifiers)
-    else:
-        log.error("Source and target must be provided when calculating paths.")
-        exit(1)
+        # Create dictionary of {ids : resnames}
+        nodes_dict = dict(zip(identifiers, residue_names))
+        
+        with open(fname, 'w') as out:
+            
+            # Write header
+            out.write('chain1,resid1,restype1,group1,' \
+                      'chain2,resid2,restype2,group2,weight \n')
 
-    return source_list, target_list
+            # Define chain, resid, and resname for each node 
+            # of each edge, and the edge weight
+            for node1, node2, w in graph.edges(data=True):
+                chain1, chain2 = node1[0], node2[0]
+                resid1, resid2 = int(''.join([x for x in list(node1) if x.isdigit()])), \
+                                 int(''.join([x for x in list(node2) if x.isdigit()]))
+                restype1, restype2 = nodes_dict[node1], nodes_dict[node2]
+                e_weight = w['weight']*100
+
+                # Write output
+                out.write(f'{chain1},{resid1},{restype1},sidechain,' \
+                          f'{chain2},{resid2},{restype2},sidechain,{e_weight} \n')
+
 
 def main():
 
@@ -684,11 +694,16 @@ def main():
 
 
     if args.do_path:
-        
-        # Check if source and target inputs are provided
-        source_list, target_list = parse_inputs(identifiers = identifiers,
-                                                source = args.source,
-                                                target = args.target)
+        # Check if source and target are provided
+        if args.source and args.target:
+            # Convert user input to a list of nodes
+            source_list = convert_input_to_list(user_input = args.source,
+                                                identifiers = identifiers)
+            target_list = convert_input_to_list(user_input = args.target,
+                                                identifiers = identifiers)
+        else:
+            log.error("Source and target must be provided when calculating paths.")
+            exit(1)
 
         # Choost path type
         if args.path_l == "shortest":
@@ -768,25 +783,13 @@ def main():
             sys.stdout.write(f"Saving output: {args.m_out}\n")
             metapath_matrix = nx.to_numpy_matrix(metapath_graph)
             np.savetxt(f"{args.m_out}.dat", metapath_matrix)
-            
-            # Check if source and target inputs are provided
-            source_list, target_list = parse_inputs(identifiers = identifiers,
-                                                    source = args.source, 
-                                                    target = args.target)
 
-            # Get shortest paths from metapath
-            all_metapaths = get_shortest_paths(graph = metapath_graph,
-                                               source = source_list,
-                                               target = target_list)
+            # Save metapath csv
+            write_metapath_table(graph = metapath_graph, 
+                                 identifiers = identifiers,
+                                 residue_names = residue_names,
+                                 fname = f"{args.m_out}.csv")
 
-            # Create sorted table from metapaths
-            all_metapaths_table = sort_paths(graph = metapath_graph,
-                                             paths = all_metapaths,
-                                             sort_by = args.sort_by)
-
-            # Save metapath table
-            sys.stdout.write(f"Saving output: {args.m_out}\n")
-            write_table(f"{args.m_out}", all_metapaths_table)
 
 if __name__ == "__main__":
     main()
