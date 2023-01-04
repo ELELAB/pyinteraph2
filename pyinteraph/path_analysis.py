@@ -491,7 +491,7 @@ def write_metapath_table(graph, identifiers, residue_names, fname, normalize):
         
         with open(fname, 'w') as out:
             
-            # Write header depending on whether the graph
+            # Write header depending on whether the recurrency
             # is normalized or not
             if normalize == True:
                 w_label = 'relative_recurrency'
