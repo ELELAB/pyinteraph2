@@ -482,7 +482,7 @@ def reorder_graph(graph, identifiers):
     ordered_graph.add_weighted_edges_from(weighted_edges)
     return(ordered_graph)
 
-def write_metapath_table(graph, identifiers, residue_names, fname):
+def write_metapath_table(graph, identifiers, residue_names, fname, normalize):
         '''The function writes a file csv containing the information
         about the edges of the metapath graph and their weight.'''
 
@@ -491,9 +491,14 @@ def write_metapath_table(graph, identifiers, residue_names, fname):
         
         with open(fname, 'w') as out:
             
-            # Write header
-            out.write('chain1,resid1,restype1,group1,' \
-                      'chain2,resid2,restype2,group2,recurrency\n')
+            # Write header depending on whether the graph
+            # is normalized or not
+            if normalize == True:
+                w_label = 'relative_recurrency'
+            else:
+                w_label = 'recurrency'
+            out.write(f'chain1,resid1,restype1,group1,' \
+                      f'chain2,resid2,restype2,group2,{w_label}\n')
 
             # Define chain, resid, and resname for each node 
             # of each edge, and the edge weight
@@ -788,6 +793,7 @@ def main():
             write_metapath_table(graph = metapath_graph, 
                                  identifiers = identifiers,
                                  residue_names = residue_names,
+                                 normalize = args.do_normalize,
                                  fname = f"{args.m_out}.csv")
 
 
