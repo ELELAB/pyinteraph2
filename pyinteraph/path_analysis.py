@@ -663,7 +663,8 @@ def main():
                         help = z_helpstr)
 
     d_default = "metapath"
-    d_helpstr = f"Metapath plot name (default: {d_default}.pdf)."
+    d_helpstr = f"Metapath plot name (default: {d_default}.pdf). Output csv and" \
+                f"dat matrix file will be written with the same base name."
     parser.add_argument("-d", "--metapath-output",
                         dest = "m_out",
                         default = d_default,
