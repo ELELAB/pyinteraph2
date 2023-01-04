@@ -483,7 +483,7 @@ def reorder_graph(graph, identifiers):
     return(ordered_graph)
 
 def write_metapath_table(graph, identifiers, residue_names, fname):
-        '''The function returns a file csv containing the information
+        '''The function writes a file csv containing the information
         about the edges of the metapath graph and their weight.'''
 
         # Create dictionary of {ids : resnames}
@@ -493,7 +493,7 @@ def write_metapath_table(graph, identifiers, residue_names, fname):
             
             # Write header
             out.write('chain1,resid1,restype1,group1,' \
-                      'chain2,resid2,restype2,group2,weight \n')
+                      'chain2,resid2,restype2,group2,recurrency\n')
 
             # Define chain, resid, and resname for each node 
             # of each edge, and the edge weight
@@ -502,11 +502,11 @@ def write_metapath_table(graph, identifiers, residue_names, fname):
                 resid1, resid2 = int(''.join([x for x in list(node1) if x.isdigit()])), \
                                  int(''.join([x for x in list(node2) if x.isdigit()]))
                 restype1, restype2 = nodes_dict[node1], nodes_dict[node2]
-                e_weight = w['weight']*100
+                e_weight = w['weight']
 
                 # Write output
                 out.write(f'{chain1},{resid1},{restype1},sidechain,' \
-                          f'{chain2},{resid2},{restype2},sidechain,{e_weight} \n')
+                          f'{chain2},{resid2},{restype2},sidechain,{e_weight}\n')
 
 
 def main():
