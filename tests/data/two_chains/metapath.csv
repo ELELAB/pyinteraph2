@@ -1,0 +1,7 @@
+chain1,resid1,restype1,group1,chain2,resid2,restype2,group2,recurrency
+A,8,LYS,sidechain,A,9,GLN,sidechain,0.10074841681059585
+A,38,TYR,sidechain,A,119,PHE,sidechain,0.10017271157167815
+A,56,ASP,sidechain,A,96,SER,sidechain,0.10367491844176083
+A,84,ASN,sidechain,A,104,ASP,sidechain,0.20140088274804055
+A,89,VAL,sidechain,A,93,THR,sidechain,0.12862214546152786
+A,91,VAL,sidechain,A,123,LEU,sidechain,0.11082325849165561
