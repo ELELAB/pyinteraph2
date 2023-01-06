@@ -4,6 +4,8 @@
 #                     network properties
 #   Copyright (C) 2021 Mahdi Robbani, Valentina Sora, Matteo Tiberti
 #   Elena Papaleo
+#   Copyright (C) 2022 Mahdi Robbani, Valentina Sora, Matteo Tiberti
+#   Elena Papaleo, Ludovica Beltrame
 #
 #    This program is free software: you can redistribute it
 #    and/or modify it under the terms of the GNU General Public
@@ -482,6 +484,37 @@ def reorder_graph(graph, identifiers):
     ordered_graph.add_weighted_edges_from(weighted_edges)
     return(ordered_graph)
 
+def generate_metapath_table(graph, identifiers, residue_names, normalize):
+    '''The function returns a string formatted as a csv file, containing
+    the information about the edges of the metapath graph and their weight.'''
+
+    # Create dictionary of {ids : resnames}
+    nodes_dict = dict(zip(identifiers, residue_names))
+
+    # Write header depending on whether the recurrency
+    # is normalized or not
+    if normalize == True:
+        w_label = 'relative_recurrency'
+    else:
+        w_label = 'recurrency'
+
+    out = f'chain1,resid1,restype1,group1,' \
+            f'chain2,resid2,restype2,group2,{w_label}\n'
+
+    # Define chain, resid, and resname for each node
+    # of each edge, and the edge weight
+    for node1, node2, w in graph.edges(data=True):
+        chain1, chain2 = node1[0], node2[0]
+        resid1, resid2 = int(''.join([x for x in list(node1) if x.isdigit()])), \
+                            int(''.join([x for x in list(node2) if x.isdigit()]))
+        restype1, restype2 = nodes_dict[node1], nodes_dict[node2]
+        e_weight = w['weight']
+
+        # Write output
+        out += f'{chain1},{resid1},{restype1},sidechain,' \
+                f'{chain2},{resid2},{restype2},sidechain,{e_weight}\n'
+
+    return out
 
 def main():
 
@@ -632,7 +665,8 @@ def main():
                         help = z_helpstr)
 
     d_default = "metapath"
-    d_helpstr = f"Metapath plot name (default: {d_default}.pdf)."
+    d_helpstr = f"Metapath plot name (default: {d_default}.pdf). Output csv and" \
+                f"dat matrix file will be written with the same base name."
     parser.add_argument("-d", "--metapath-output",
                         dest = "m_out",
                         default = d_default,
@@ -742,7 +776,7 @@ def main():
             args.m_out = os.path.splitext(args.m_out)[0]
             # Plot graph
             plot_graph(fname = f"{args.m_out}", 
-                       graph = metapath_graph, 
+                       graph = metapath_graph,
                        hub_num = args.hub,
                        col_map_e = "rocket_r",
                        col_map_n = "gray_r",
@@ -758,6 +792,14 @@ def main():
             metapath_matrix = nx.to_numpy_matrix(metapath_graph)
             np.savetxt(f"{args.m_out}.dat", metapath_matrix)
 
+            # Save metapath csv
+            table = generate_metapath_table(graph = metapath_graph, 
+                                           identifiers = identifiers,
+                                           residue_names = residue_names,
+                                           normalize = args.do_normalize)
+
+            with open(f"{args.m_out}.csv", 'w') as fh:
+                fh.write(table)
 
 if __name__ == "__main__":
     main()

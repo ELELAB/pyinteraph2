@@ -24,6 +24,7 @@ def ref_name(ref_dir):
              'all_csv' : os.path.join(ref_dir, 'all_paths_3.txt'),
              'all_dat' : os.path.join(ref_dir, 'all_paths_3.dat'),
              'metapath' : os.path.join(ref_dir, 'metapath.dat'),
+             'metapath_csv' : os.path.join(ref_dir, 'metapath.csv')
            }
 
 @pytest.fixture
@@ -264,3 +265,15 @@ def test_reorder_graph(reordered_graph, data):
 def test_metapath_matrix(metapath_matrix, ref_name):
     ref_metapath = np.loadtxt(ref_name['metapath'])
     assert_equal(metapath_matrix, ref_metapath)
+
+def test_metapath_csv(data, reordered_graph, ref_name):
+    with open(ref_name['metapath_csv']) as fh:
+        ref_csv = fh.read()
+
+    identifiers, residue_names, _ = data
+    table = pa.generate_metapath_table(reordered_graph,
+                                       identifiers,
+                                       residue_names,
+                                       normalize=False)
+
+    assert ref_csv == table
