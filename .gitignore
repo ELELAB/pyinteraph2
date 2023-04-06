@@ -9,6 +9,8 @@ __pycache__/
 .idea
 .DS_Store
 
+tests/data/*/.traj*
+
 # Distribution / packaging
 .Python
 build/
