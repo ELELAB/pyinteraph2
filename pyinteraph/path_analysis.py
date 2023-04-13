@@ -335,7 +335,7 @@ def filter_graph(graph, node_threshold, edge_threshold):
 def normalize_graph(graph):
     """Takes in a graph where all weights ranged between 0 to 1 and 
     returns a graph where all weights are normalized (divided by max
-    weight)
+    weight) and ranged between 0 and 100.
     """
 
     normalized_graph = nx.Graph()
@@ -346,11 +346,11 @@ def normalize_graph(graph):
     for u, v, d in graph.edges(data = True):
         # Add nodes first
         normalized_graph.add_node(u, n_weight = \
-                                    graph.nodes()[u]["n_weight"]/max_node)
+                                    graph.nodes()[u]["n_weight"]/max_node*100)
         normalized_graph.add_node(v, n_weight = \
-                                    graph.nodes()[v]["n_weight"]/max_node)
+                                    graph.nodes()[v]["n_weight"]/max_node*100)
         # Add edge
-        normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge)
+        normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge*100)
 
     return normalized_graph
 
