@@ -243,7 +243,7 @@ def test_normalized_graph(graph_from_paths, normalized_graph):
     max_edge = max([d['e_weight'] for u, v, d in graph_from_paths.edges(data = True)])
     max_node = max([d['n_weight'] for n, d in graph_from_paths.nodes(data = True)])
     for u, v, d in normalized_graph.edges(data = True):
-        assert_almost_equal(graph_from_paths[u][v]['e_weight'], d['e_weight']*max_edge)
+        assert_almost_equal(graph_from_paths[u][v]['e_weight']*100, d['e_weight']*max_edge)
     for n, d in normalized_graph.nodes(data = True):
         assert_almost_equal(graph_from_paths.nodes()[n]['n_weight'], d['n_weight']*max_node)
 
