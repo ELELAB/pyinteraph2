@@ -351,7 +351,7 @@ def normalize_graph(graph):
                                     graph.nodes()[v]["n_weight"]/max_node*100)
         # Add edge
         normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge*100)
-
+    
     return normalized_graph
 
 def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, normalize):
@@ -628,6 +628,16 @@ def main():
                         type = float,
                         help = e_helpstr)
 
+    E_default  = 10
+    E_helpstr = f"During metapath filtering, only keep normalized edges " \
+                f"that occur more frequently than this value " \
+                f"(default: {E_default})."
+    parser.add_argument("-E", "--normalized-edge-threshold", 
+                        dest = "norm_edge_thresh",
+                        default = E_default,
+                        type = float,
+                        help = E_helpstr)
+
     n_default  = 0.1
     n_helpstr = f"During metapath filtering, only keep nodes that occur more " \
                 f"frequently than this value (default: {n_default})."
@@ -636,6 +646,16 @@ def main():
                         default = n_default,
                         type = float,
                         help = n_helpstr)
+
+    N_default  = 10
+    N_helpstr = f"During metapath filtering, only keep normalized nodes " \
+                f"that occur more frequently than this value " \
+                f"(default: {N_default})."
+    parser.add_argument("-N", "--normalized-node-threshold", 
+                        dest = "norm_node_thresh",
+                        default = N_default,
+                        type = float,
+                        help = N_helpstr)
 
     c_default = 3
     c_helpstr = f"During metapath plotting, nodes with a degree higher than " \
@@ -762,12 +782,18 @@ def main():
             log.error(err_str)
             exit(1)
 
+        # Set node and edge cutoff
+        if args.do_normalize == True:
+            n_threshold, e_threshold = args.norm_node_thresh, args.norm_edge_thresh
+        else:
+            n_threshold, e_threshold  = args.node_thresh, args.edge_thresh
+
         # Get metapath graph
         metapath_graph = get_metapath(graph = graph,
                                       res_id = identifiers,
                                       res_space = args.res_gap,
-                                      node_threshold = args.node_thresh,
-                                      edge_threshold = args.edge_thresh,
+                                      node_threshold = n_threshold,
+                                      edge_threshold = e_threshold,
                                       normalize = args.do_normalize)
 
         # If metapath found
