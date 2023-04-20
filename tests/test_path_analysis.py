@@ -245,7 +245,7 @@ def test_normalized_graph(graph_from_paths, normalized_graph):
     for u, v, d in normalized_graph.edges(data = True):
         assert_almost_equal(graph_from_paths[u][v]['e_weight']*100, d['e_weight']*max_edge)
     for n, d in normalized_graph.nodes(data = True):
-        assert_almost_equal(graph_from_paths.nodes()[n]['n_weight'], d['n_weight']*max_node)
+        assert_almost_equal(graph_from_paths.nodes()[n]['n_weight']*100, d['n_weight']*max_node)
 
 def test_metapath(metapath, example_metapath):
     # Remove these edges since a filter of 0.3 was used
