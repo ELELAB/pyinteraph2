@@ -335,7 +335,7 @@ def filter_graph(graph, node_threshold, edge_threshold):
 def normalize_graph(graph):
     """Takes in a graph where all weights ranged between 0 to 1 and 
     returns a graph where all weights are normalized (divided by max
-    weight)
+    weight) and ranged between 0 and 100.
     """
 
     normalized_graph = nx.Graph()
@@ -346,11 +346,11 @@ def normalize_graph(graph):
     for u, v, d in graph.edges(data = True):
         # Add nodes first
         normalized_graph.add_node(u, n_weight = \
-                                    graph.nodes()[u]["n_weight"]/max_node)
+                                    graph.nodes()[u]["n_weight"]/max_node*100)
         normalized_graph.add_node(v, n_weight = \
-                                    graph.nodes()[v]["n_weight"]/max_node)
+                                    graph.nodes()[v]["n_weight"]/max_node*100)
         # Add edge
-        normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge)
+        normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge*100)
 
     return normalized_graph
 
@@ -621,21 +621,43 @@ def main():
 
     e_default  = 0.1
     e_helpstr = f"During metapath filtering, only keep edges that occur more " \
-                f"frequently than this value (default: {e_default})."
+                f"frequently than this value (default: {e_default}). Used " \
+                f"when the normalization option is turned off."
     parser.add_argument("-e", "--edge-threshold", 
                         dest = "edge_thresh",
                         default = e_default,
                         type = float,
                         help = e_helpstr)
 
+    E_default  = 10
+    E_helpstr = f"During metapath filtering, only keep edges that occur more " \
+                f"frequently than this value (default: {E_default}). Used " \
+                f"when the normalization option is turned on."
+    parser.add_argument("-E", "--normalized-edge-threshold", 
+                        dest = "norm_edge_thresh",
+                        default = E_default,
+                        type = float,
+                        help = E_helpstr)
+
     n_default  = 0.1
     n_helpstr = f"During metapath filtering, only keep nodes that occur more " \
-                f"frequently than this value (default: {n_default})."
+                f"frequently than this value (default: {n_default}). Used  " \
+                f"when the normalization option is turned off."
     parser.add_argument("-n", "--node-threshold", 
                         dest = "node_thresh",
                         default = n_default,
                         type = float,
                         help = n_helpstr)
+
+    N_default  = 10
+    N_helpstr = f"During metapath filtering, only keep nodes that occur more " \
+                f"frequently than this value (default: {N_default}). Used " \
+                f"when the normalization option is turned on."
+    parser.add_argument("-N", "--normalized-node-threshold", 
+                        dest = "norm_node_thresh",
+                        default = N_default,
+                        type = float,
+                        help = N_helpstr)
 
     c_default = 3
     c_helpstr = f"During metapath plotting, nodes with a degree higher than " \
@@ -762,12 +784,18 @@ def main():
             log.error(err_str)
             exit(1)
 
+        # Set node and edge cutoff
+        if args.do_normalize == True:
+            n_threshold, e_threshold = args.norm_node_thresh, args.norm_edge_thresh
+        else:
+            n_threshold, e_threshold  = args.node_thresh, args.edge_thresh
+
         # Get metapath graph
         metapath_graph = get_metapath(graph = graph,
                                       res_id = identifiers,
                                       res_space = args.res_gap,
-                                      node_threshold = args.node_thresh,
-                                      edge_threshold = args.edge_thresh,
+                                      node_threshold = n_threshold,
+                                      edge_threshold = e_threshold,
                                       normalize = args.do_normalize)
 
         # If metapath found
