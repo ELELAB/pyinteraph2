@@ -351,7 +351,7 @@ def normalize_graph(graph):
                                     graph.nodes()[v]["n_weight"]/max_node*100)
         # Add edge
         normalized_graph.add_edge(u, v, e_weight = d["e_weight"]/max_edge*100)
-    
+
     return normalized_graph
 
 def get_metapath(graph, res_id, res_space, node_threshold, edge_threshold, normalize):
