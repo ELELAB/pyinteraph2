@@ -629,9 +629,9 @@ def main():
                         help = e_helpstr)
 
     E_default  = 10
-    E_helpstr = f"During metapath filtering, only keep normalized edges " \
-                f"that occur more frequently than this value " \
-                f"(default: {E_default})."
+    E_helpstr = f"During metapath filtering, only keep edges that occur more " \
+                f"frequently than this value (default: {E_default}). Used " \
+                f"only when the normalization option is turned on. "
     parser.add_argument("-E", "--normalized-edge-threshold", 
                         dest = "norm_edge_thresh",
                         default = E_default,
@@ -648,9 +648,9 @@ def main():
                         help = n_helpstr)
 
     N_default  = 10
-    N_helpstr = f"During metapath filtering, only keep normalized nodes " \
-                f"that occur more frequently than this value " \
-                f"(default: {N_default})."
+    N_helpstr = f"During metapath filtering, only keep nodes that occur more " \
+                f"frequently than this value (default: {N_default}). Used " \
+                f"only then the normalization option is turned on."
     parser.add_argument("-N", "--normalized-node-threshold", 
                         dest = "norm_node_thresh",
                         default = N_default,
