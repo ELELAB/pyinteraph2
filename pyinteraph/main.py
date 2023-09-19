@@ -934,7 +934,7 @@ def main():
                  "or name H3 or name O1 or name O2 or name OXT or name OT1 or name OT2"
         
         # Atom selection for side chain hydrogen bonds
-        sc_sel = f"protein and (not {mc_sel})"
+        sc_sel = f"protein and not ({mc_sel})"
 
         # Custom atom selection
         if (hb_group1 and hb_group2) and hb_class != "custom":
