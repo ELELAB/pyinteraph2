@@ -8,9 +8,9 @@ pyinteraph -s pdbmovie_1.pdb -t ../../../3.filt_trjs/traj_prot_dt1000.xtc -r pdb
 
 #to calculate hbonds sc-sc
 
-pyinteraph -s pdbmovie_1.pdb -t ../../../3.filt_trjs/traj_prot_dt1000.xtc -r pdbmovie_1.pdb -f --hb-graph hb-graph.dat --ff-masses charmm27 -v --hb-ad-file hydrogen_bonds.ini
+pyinteraph -s pdbmovie_1.pdb -t ../../../3.filt_trjs/traj_prot_dt1000.xtc -r pdbmovie_1.pdb -y --hb-graph hb-graph.dat --ff-masses charmm27 -v --hb-ad-file hydrogen_bonds.ini
 
 
 #to calculate hydrophobic interactions
 
-pyinteraph -s pdbmovie_1.pdb -t ../../../3.filt_trjs/traj_prot_dt1000.xtc -r pdbmovie_1.pdb --hc-co 5 -f --hc-graph hb-graph.dat --ff-masses charmm27 -v --hc-residues ALA,VAL,LEU,ILE,PHE,PRO,MET,TRP
+pyinteraph -s pdbmovie_1.pdb -t ../../../3.filt_trjs/traj_prot_dt1000.xtc -r pdbmovie_1.pdb --hc-co 5 -f --hc-graph hc-graph.dat --ff-masses charmm27 -v --hc-residues ALA,VAL,LEU,ILE,PHE,PRO,MET,TRP
