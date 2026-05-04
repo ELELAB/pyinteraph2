@@ -7,17 +7,11 @@ from matplotlib import pyplot as plt
 import argparse
 import sys
 
-def fluct_calc(u):
-    """ 
+def fluct_calc(coords):
+    """
     Collects coordinates of all alpha carbons of each frame and calculates its fluctuation
     (Each row is a frame and each column is the fluctuation of the residue)
     """
-    ca = u.select_atoms("name CA")
-    coords = []
-    for ts in u.trajectory:
-        coords.append(ca.positions.copy())
-
-    coords = np.array(coords)
     mean_pos = coords.mean(axis=0)
     fluct = coords - mean_pos
     return fluct
@@ -34,9 +28,25 @@ def dccm_calc(fluct):
     return dccm
 
 def main():
-    parser = argparse.ArgumentParser(description="Compute DCCM from MD trajectory")
+    parser = argparse.ArgumentParser(description="Compute correlation metrics from MD trajectory")
     parser.add_argument("pdb", help="Topology file (e.g. .pdb)")
     parser.add_argument("trajectory", help="Trajectory file (e.g .xtc)")
+    parser.add_argument(
+        "method",
+        choices = ["dccm", "lmi"],
+        help = "Type of calculation to perform"
+    )
+    parser.add_argument(
+        "--align",
+        default = "name CA",
+        help = "Atom selection for alignment (default: name CA)"
+    )
+
+    parser.add_argument(
+        "--select",
+        default = "name CA",
+        help = "Atom selection for DCCM/LMI calculation (default: name CA)"
+    )
 
     args = parser.parse_args()
 
@@ -50,21 +60,23 @@ def main():
         print("Error: Invalid file format for pdb or trajectory")
         sys.exit(1)
 
-    # Aligning the frames w.r.t C-alpha
-    align.AlignTraj(u, u, select="name CA", in_memory=True).run()
+    # Aligning the frames w.r.t user input (Default: name CA)
+    ref = mda.Universe(args.pdb)    # so it aligns to the topology file
+    align.AlignTraj(u, ref, select=args.align, in_memory=True).run()
 
-    fluct = fluct_calc(u)
-    dccm = dccm_calc(fluct)
+    atoms = u.select_atoms(args.select)
+    coords = []
+    for ts in u.trajectory:
+        coords.append(atoms.positions.copy())
+    coords = np.array(coords)
 
-    np.savetxt("dccm.csv", dccm, delimiter=",")  # writing to a csv
+    fluct = fluct_calc(coords)
 
-    # Visualization
-    plt.imshow(dccm, cmap='bwr', vmin=-1, vmax=1, origin='lower') 
-    plt.colorbar(label='Correlation') 
-    plt.title("DCCM") 
-    plt.xlabel("Residue number") 
-    plt.ylabel("Residue number") 
-    plt.savefig('dccm.png')
+    if args.method == "dccm":         # lmi to be added
+        result = dccm_calc(fluct)
+        output_file = "dccm.dat"
+
+    np.savetxt(output_file, result, delimiter=" ")  # writing to a .dat file
 
 if __name__ == "__main__":
     main()

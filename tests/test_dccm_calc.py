@@ -5,9 +5,7 @@ import pytest
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-from dccm_calc import dccm_calc
+from pyinteraph import dccm_calc
 
 @pytest.fixture
 def simple_coords():
@@ -21,11 +19,6 @@ def simple_coords():
 def fluct(simple_coords):
     mean_pos = simple_coords.mean(axis=0)
     return simple_coords - mean_pos
-
-#Testing fluct_calc
-def test_fluct_zero_mean(fluct):
-    """ Tests that once we subtact the mean from the coordinates, the fluctuations average to zero """
-    np.testing.assert_allclose(fluct.mean(axis=0), 0)
 
 # Testing dccm_calc
 def test_dccm_diagonal_one(fluct):
