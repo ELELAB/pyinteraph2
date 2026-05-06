@@ -47,7 +47,7 @@ entry_points = {"console_scripts" : [\
                   "path_analysis = pyinteraph.path_analysis:main",
                   "centrality_analysis = pyinteraph.centrality_analysis:main",
                   "dat2graphml = pyinteraph.dat2graphml:main",
-                  "dccm_calc = pyinteraph.dccm_calc:main"]}
+                  "motion_correlation = pyinteraph.motion_correlation:main"]}
 
 install_requires = ["cython",
                     "biopython",

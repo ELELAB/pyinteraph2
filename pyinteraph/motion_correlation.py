@@ -3,7 +3,6 @@
 import MDAnalysis as mda
 import numpy as np
 from MDAnalysis.analysis import align
-from matplotlib import pyplot as plt
 import argparse
 import sys
 
@@ -29,21 +28,34 @@ def dccm_calc(fluct):
 
 def main():
     parser = argparse.ArgumentParser(description="Compute correlation metrics from MD trajectory")
-    parser.add_argument("pdb", help="Topology file (e.g. .pdb)")
-    parser.add_argument("trajectory", help="Trajectory file (e.g .xtc)")
+
     parser.add_argument(
-        "method",
-        choices = ["dccm", "lmi"],
-        help = "Type of calculation to perform"
+        "-r", "--ref",
+        required = True,
+        help = "Reference PDB file"
     )
+
     parser.add_argument(
-        "--align",
+        "-t", "--trj",
+        required = True,
+        help = "Trajectory file"
+    )
+
+    parser.add_argument(
+        "-m", "--method",
+        choices = ["dccm", "lmi"],
+        default = "dccm",
+        help = "Type of calculation to perform (default: DCCM)"
+    )
+
+    parser.add_argument(
+        "-a", "--align",
         default = "name CA",
         help = "Atom selection for alignment (default: name CA)"
     )
 
     parser.add_argument(
-        "--select",
+        "-s", "--select",
         default = "name CA",
         help = "Atom selection for DCCM/LMI calculation (default: name CA)"
     )
@@ -52,7 +64,7 @@ def main():
 
     # Loading the structure and trajectory
     try:
-        u = mda.Universe(args.pdb, args.trajectory)
+        u = mda.Universe(args.ref, args.trj)
     except FileNotFoundError:
         print("Error: One or more files not found")
         sys.exit(1)
@@ -61,7 +73,7 @@ def main():
         sys.exit(1)
 
     # Aligning the frames w.r.t user input (Default: name CA)
-    ref = mda.Universe(args.pdb)    # so it aligns to the topology file
+    ref = mda.Universe(args.ref)    # Aligning to the reference structure
     align.AlignTraj(u, ref, select=args.align, in_memory=True).run()
 
     atoms = u.select_atoms(args.select)
