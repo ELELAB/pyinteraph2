@@ -21,9 +21,11 @@ def dccm_calc(fluct):
 
     # making the columns into frames and then flattening so that each row is a time series of the motion of each residue
     X = fluct.transpose(1, 0, 2).reshape(n_res, n_frames * 3)
-    cov = (X @ X.T) / (n_frames*3) # covariance b/w pairs of residues using matrix multiplication
+    cov = (X @ X.T) / (n_frames-1) # covariance b/w pairs of residues using matrix multiplication
     var = np.diag(cov)
-    dccm = cov / np.sqrt(np.outer(var, var))
+    denom = np.sqrt(np.outer(var, var))
+    denom[denom == 0] = np.nan    # to avoid division by 0 error (if the atom does not move at all)
+    dccm = cov / denom
     return dccm
 
 def main():
