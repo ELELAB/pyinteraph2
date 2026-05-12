@@ -6,22 +6,13 @@ from MDAnalysis.analysis import align
 import argparse
 import sys
 
-def fluct_calc(coords):
-    """
-    Collects coordinates of all alpha carbons of each frame and calculates its fluctuation
-    (Each row is a frame and each column is the fluctuation of the residue)
-    """
-    mean_pos = coords.mean(axis=0)
-    fluct = coords - mean_pos
-    return fluct
-
-def dccm_calc(fluct):
+def calculate_dccm(fluct):
     """ Generates n*n matrix showing the paired movement of the n residues """
     n_frames, n_res, _ = fluct.shape
 
     # making the columns into frames and then flattening so that each row is a time series of the motion of each residue
     X = fluct.transpose(1, 0, 2).reshape(n_res, n_frames * 3)
-    cov = (X @ X.T) / (n_frames-1) # covariance b/w pairs of residues using matrix multiplication
+    cov = (X @ X.T) / n_frames # covariance b/w pairs of residues using matrix multiplication
     var = np.diag(cov)
     denom = np.sqrt(np.outer(var, var))
     denom[denom == 0] = np.nan    # to avoid division by 0 error (if the atom does not move at all)
@@ -57,15 +48,21 @@ def main():
     )
 
     parser.add_argument(
-        "-sel", "--select",
+        "-S", "--select",
         default = "name CA",
         help = "Atom selection for DCCM/LMI calculation (default: name CA)"
     )
 
     parser.add_argument(
         "-o", "--output",
-        default = "dccm",
-        help = "Output file name (default: dccm.dat)"
+        default = "dccm.dat",
+        help = "Output file name for adjacency matrix format (default: dccm.dat)"
+    )
+
+    parser.add_argument(
+        "-c", "--dccm-csv",
+        default = "dccm.csv",
+        help = "Output file name for CSV format (default: dccm.csv)"
     )
 
     args = parser.parse_args()
@@ -83,30 +80,34 @@ def main():
         print("Error: One or more files not found")
         sys.exit(1)
 
-    # Aligning the frames w.r.t user input (Default: name CA)
+    # Align the frames w.r.t user input (Default: name CA)
     ref = mda.Universe(args.top)    # Aligning to the reference structure
     align.AlignTraj(u, ref, select=args.align, in_memory=True).run()
 
     atoms = u.select_atoms(args.select)
     coords = u.trajectory.timeseries(atoms, order="fac")    # so that the shape is (frames, atoms, coords)
-    fluct = fluct_calc(coords)
 
+    # Calculate fluctuations
+    mean_pos = coords.mean(axis=0)
+    fluct = coords - mean_pos
+
+
+    # Calculate correlation matrices
     if args.method == "dccm":         # lmi to be added
-        result = dccm_calc(fluct)
-        output_file = args.output + ".dat"
+        result = calculate_dccm(fluct)
+    elif args.method == "lmi":
+        raise NotImplementedError("The calculation of LMI is not implemented yet")
 
-    np.savetxt(output_file, result, delimiter=" ")  # writing to a .dat file
+    np.savetxt(args.output, result, delimiter=" ")  # writing to a .dat file
 
     # Writing a CSV file with residue pairs
-    csv_output = output_file.replace(".dat", ".csv")
 
-    with open(csv_output, "w") as outfile:
+    with open(args.dccm_csv, "w") as outfile:
         outfile.write("chain1,residue_number1,residue_name1,atom1,"
                        "chain2,residue_number2,residue_name2,atom2,correlation\n"
         )
         for i in range(len(atoms)):
             for j in range(i+1, len(atoms)):
-
                 outfile.write(
                     f"{atoms[i].chainID},"
                     f"{atoms[i].resid},"
