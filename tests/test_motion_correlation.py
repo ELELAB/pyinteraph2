@@ -8,6 +8,7 @@ import MDAnalysis as mda
 from MDAnalysis.analysis import align
 
 from pyinteraph.motion_correlation import calculate_dccm
+from pyinteraph.motion_correlation import calculate_lmi
 
 @pytest.fixture
 def simple_coords():
@@ -47,6 +48,11 @@ def reference_dccm(ref_dir):
     # load and remove first column which contains just row number
     return np.loadtxt(os.path.join(ref_dir, 'dccm_ca_aligned_to_ref.csv'), delimiter=',')[:,1:]
 
+@pytest.fixture
+def reference_lmi(ref_dir):
+    # load and remove first column which contains just row number
+    return np.loadtxt(os.path.join(ref_dir, 'lmi_ca_aligned_to_ref.csv'), delimiter=',')[:,1:]
+
 # Testing dccm_calc
 def test_dccm_diagonal_one(fluct):
     """ Tests that all the diagonal values of the matrix are one """
@@ -71,3 +77,18 @@ def test_reference_system(traj_flucts, reference_dccm):
     dccm = calculate_dccm(traj_flucts)
     print(reference_dccm)
     np.testing.assert_allclose(dccm, reference_dccm, atol=1e-04, rtol=1)
+
+# Testing lmi_calc
+def test_lmi_diagonal_one(fluct):
+    """ Tests that all the diagonal values of the matrix are one """
+    lmi = calculate_lmi(fluct)
+    np.testing.assert_allclose(np.diag(lmi), np.ones(lmi.shape[0]))
+
+def test_lmi_symmetry(fluct):
+    """ Tests that the matrix is symmetric """
+    lmi = calculate_lmi(fluct)
+    np.testing.assert_allclose(lmi, lmi.T)
+
+def test_lmi_reference_system(traj_flucts, reference_lmi):
+    lmi = calculate_lmi(traj_flucts)
+    np.testing.assert_allclose(lmi, reference_lmi, atol=1e-04, rtol=1)
