@@ -22,24 +22,28 @@ def calculate_dccm(fluct):
     dccm = cov / denom
     return dccm
 
-def calculate_lmi(fluct):
+def calculate_lmi(fluct, epsilon):
     """
     Generates n*n matrix showing the paired movement of the n residues
     according to linear mutual information
     """
     n_frames, n_res, _ = fluct.shape
-    epsilon = 1e-6
 
     # computing per residue covariance and log-determinants
-    Ci_list = []
-    logdet_list = []
+    res_covs = []
+    res_logdets = []
 
     for i in range(n_res):
         Xi = fluct[:,i,:]
         Ci = Xi.T @ Xi / (n_frames - 1)    # calculating 3*3 covariance matrix for each residue
-        Ci_list.append(Ci)
-        _, logdet = np.linalg.slogdet(Ci + epsilon * np.eye(3))   # log(det(Ci)) and small regularization term added to avoid det(Ci) = 0
-        logdet_list.append(logdet)
+        res_covs.append(Ci)
+        sign, logdet = np.linalg.slogdet(Ci + epsilon * np.eye(3))   # log(det(Ci)) and small regularization term added to avoid det(Ci) = 0
+
+        if sign != 1:
+            print(f"Covariance matrix for residue {i} is not positive")
+            sys.exit(1)
+
+        res_logdets.append(logdet)
 
     # pairwise calculations
     lmi_norm = np.eye(n_res)
@@ -53,13 +57,17 @@ def calculate_lmi(fluct):
             C_cross = Xi.T @ Xj / (n_frames - 1)   # 3*3 cross-covariance matrix between pairs of residues
 
             Cij = np.block([                # 6*6 joint covariance matrix where diagonals are covariance matrices of the 2 residues
-                [Ci_list[i], C_cross  ],    # and non-diagonals are the cross-covariance matrices
-                [C_cross.T, Ci_list[j]]
+                [res_covs[i], C_cross  ],    # and non-diagonals are the cross-covariance matrices
+                [C_cross.T, res_covs[j]]
             ]) + epsilon * np.eye(6)
 
-            _, logdet_Cij = np.linalg.slogdet(Cij)
+            sign, logdet_Cij = np.linalg.slogdet(Cij)
 
-            raw = max(0.0, 0.5 * (logdet_list[i] + logdet_list[j] - logdet_Cij))
+            if sign != 1:
+                print(f"Cross covariance matrix between residue {i} and {j} is not positive")
+                sys.exit(1)
+
+            raw = max(0.0, 0.5 * (res_logdets[i] + res_logdets[j] - logdet_Cij))
             norm = np.sqrt(1.0 - np.exp(-2.0 * raw/3.0))    # Normalizing
 
             lmi_norm[i,j] = lmi_norm[j,i] = norm
@@ -101,14 +109,20 @@ def main():
 
     parser.add_argument(
         "-o", "--output",
-        default = "dccm.dat",
-        help = "Output file name for adjacency matrix format (default: dccm.dat)"
+        default = "motion_correlation.dat",
+        help = "Output file name for adjacency matrix format (default: motion_correlation.dat)"
     )
 
     parser.add_argument(
         "-c", "--csv",
-        default = "dccm.csv",
-        help = "Output file name for CSV format (default: dccm.csv)"
+        default = "motion_correlation.csv",
+        help = "Output file name for CSV format (default: motion_correlation.csv)"
+    )
+
+    parser.add_argument(
+        "-e", "--eps",
+        default = 1e-8,
+        help = "Regularization parameter to avoid negative determinant of the covariance matrices (default: 1e-8)"
     )
 
     args = parser.parse_args()
@@ -141,7 +155,7 @@ def main():
     if args.method == "dccm":         # lmi to be added
         result = calculate_dccm(fluct)
     elif args.method == "lmi":
-        result = calculate_lmi(fluct)
+        result = calculate_lmi(fluct, args.eps)
 
     np.savetxt(args.output, result, delimiter=" ")  # writing to a .dat file
 
