@@ -40,8 +40,7 @@ def calculate_lmi(fluct, epsilon):
         sign, logdet = np.linalg.slogdet(Ci + epsilon * np.eye(3))   # log(det(Ci)) and small regularization term added to avoid det(Ci) = 0
 
         if sign != 1:
-            print(f"Covariance matrix for residue {i} is not positive")
-            sys.exit(1)
+            raise ValueError(f"Covariance matrix for residue {i} is not positive")
 
         res_logdets.append(logdet)
 
@@ -64,10 +63,12 @@ def calculate_lmi(fluct, epsilon):
             sign, logdet_Cij = np.linalg.slogdet(Cij)
 
             if sign != 1:
-                print(f"Cross covariance matrix between residue {i} and {j} is not positive")
-                sys.exit(1)
+                raise ValueError(f"Cross covariance matrix between residue {i} and {j} is not positive")
 
-            raw = max(0.0, 0.5 * (res_logdets[i] + res_logdets[j] - logdet_Cij))
+            raw = 0.5 * (res_logdets[i] + res_logdets[j] - logdet_Cij)
+            if raw < 0:
+                raise ValueError(f"Negative LMI value between residue {i} and {j} = {raw:.6e}")
+
             norm = np.sqrt(1.0 - np.exp(-2.0 * raw/3.0))    # Normalizing
 
             lmi_norm[i,j] = lmi_norm[j,i] = norm
@@ -152,10 +153,14 @@ def main():
     fluct = coords - mean_pos
 
     # Calculate correlation matrices
-    if args.method == "dccm":         # lmi to be added
+    if args.method == "dccm":
         result = calculate_dccm(fluct)
     elif args.method == "lmi":
-        result = calculate_lmi(fluct, args.eps)
+        try:
+            result = calculate_lmi(fluct, args.eps)
+        except ValueError as err:
+            print(f"Error during LMI calcuation: {err}")
+            sys.exit(1)
 
     np.savetxt(args.output, result, delimiter=" ")  # writing to a .dat file
 
