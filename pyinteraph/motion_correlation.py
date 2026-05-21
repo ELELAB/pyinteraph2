@@ -66,8 +66,12 @@ def calculate_lmi(fluct, epsilon):
                 raise ValueError(f"Cross covariance matrix between residue {i} and {j} is not positive")
 
             raw = 0.5 * (res_logdets[i] + res_logdets[j] - logdet_Cij)
-            if raw < 0:
+
+            # checking for floating point errors
+            if raw < -1e-4:
                 raise ValueError(f"Negative LMI value between residue {i} and {j} = {raw:.6e}")
+            elif raw < 0:
+                raw = 0.0
 
             norm = np.sqrt(1.0 - np.exp(-2.0 * raw/3.0))    # Normalizing
 
