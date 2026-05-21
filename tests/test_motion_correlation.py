@@ -81,14 +81,14 @@ def test_reference_system(traj_flucts, reference_dccm):
 # Testing lmi_calc
 def test_lmi_diagonal_one(fluct):
     """ Tests that all the diagonal values of the matrix are one """
-    lmi = calculate_lmi(fluct)
+    lmi = calculate_lmi(fluct, 1e-8)
     np.testing.assert_allclose(np.diag(lmi), np.ones(lmi.shape[0]))
 
 def test_lmi_symmetry(fluct):
     """ Tests that the matrix is symmetric """
-    lmi = calculate_lmi(fluct)
+    lmi = calculate_lmi(fluct, 1e-8)
     np.testing.assert_allclose(lmi, lmi.T)
 
 def test_lmi_reference_system(traj_flucts, reference_lmi):
-    lmi = calculate_lmi(traj_flucts)
+    lmi = calculate_lmi(traj_flucts, 1e-8)
     np.testing.assert_allclose(lmi, reference_lmi, atol=1e-04, rtol=1)
