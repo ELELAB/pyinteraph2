@@ -122,9 +122,9 @@ charged groups configuration files. For any oppositely-charged charged residue p
 bridge between them will be identified if at least two atoms belonging to the two groups are
 closer than the chosen cut-off. This calculation is performed for every model in the ensemble
 and the final occurrence value is written in the output files, if the occurrence is larger than a
-predefined cut-off, which can be changed with the option –sb-perco. In the case of the salt-
+predefined cut-off, which can be changed with the option `–sb-perco`. In the case of the salt-
 bridge analysis, the output adjacency matrix will contain the same occurrence values as the
-csv file. The distance cut-off for salt bridge identification can be modified by using option --sb-co.
+csv file. The distance cut-off for salt bridge identification can be modified by using option `--sb-co`.
 
 #### *1.4.2 Hydrogen bonds*
 
@@ -133,19 +133,19 @@ or both. These lists are defined in the hydrogen bonds configuration file as lis
 (see below) and can be customized at will. PyInteraph identifies hydrogen bonds based on
 the distance between the donor and acceptor atoms as well as the donor-hydrogen-acceptor
 angle, using the hydrogen bonds calculation module from MDAnalysis. The cut-offs for these
-parameters can be changed by means of the --hb-co and --hb-angle command-line options,
-respectively. As a default, --hb-co is set to 3.5 Å and --hb-angle at 120⁰.<br>
+parameters can be changed by means of the `--hb-co` and `--hb-angle` command-line options,
+respectively. As a default, `--hb-co` is set to 3.5 Å and `--hb-angle` at 120⁰.<br>
 It is possible to further specify which parts of the protein(s) should be subject to the hydrogen
 bonds analysis by means of the –hb-class option (as a default “all”) as detailed in the
 pyinteraph help text (here “sc” means side-chains and “mc” means main-chains - see the
 output of pyinteraph -h). Using option “custom” here will also allow the user to select more
-specific groups by supplying the --hb-custom-group-1 and --hb-custom-group-2 options.
+specific groups by supplying the `--hb-custom-group-1` and `--hb-custom-group-2` options.
 These options accepts as arguments MDAnalysis selection strings (see
 https://docs.mdanalysis.org/stable/documentation_pages/selections.html). For instance, the
 argument “resid 1:500” would select residues with number 1 to 500. The hydrogen bond
 analysis outputs all the identified hydrogen-bond interactions in the output csv file which also
 includes which atoms were involved in each hydrogen bond, after filtering for the occurrence
-cut-off (--hb-perco, as a default this is set to 0 since we recommend to use graph_analysis
+cut-off (`--hb-perco`, as a default this is set to 0 since we recommend to use graph_analysis
 to estimate the occurrence cut-off to be applied). Similar flags are available for generating the
 csv files of the other classes of interactions described below. The occurrence values in the
 output graph are calculated in a slightly different manner, i.e., a hydrogen bond between a pair
@@ -164,12 +164,13 @@ residue:
 CoM = \frac{\sum_{i=1}^{N} m_i x_i}{M}
 ```
 <br>
+
 An interaction between two residues is then identified if the distance between the centers of
-mass of their respective side chains lies below a specified cut-off, selectable with the --hc-co
-option. The occurrence cut-off can be selected by means of the --hc-perco option. The
+mass of their respective side chains lies below a specified cut-off, selectable with the `--hc-co`
+option. The occurrence cut-off can be selected by means of the `--hc-perco` option. The
 occurrence values are also used as weights in the graph adjacency matrix output.<br>
 The list of residues this analysis consider can be specified on the command-line as a comma-
-separated string using the --hc-residues (for example, --hc-residues ALA, VAL, ILE)
+separated string using the `--hc-residues` (for example, `--hc-residues ALA, VAL, ILE`)
 
 #### *1.4.4 The inter/intramolecular interaction network (IIN)*
 
@@ -196,7 +197,7 @@ The centers of mass PSN analysis (cmPSN) is a generalization of the hydrophobic 
 analysis. It is designed to be a generic measure of the interaction between residues
 disregarding their type or the type of interaction they partake in. The calculation works exactly
 in the same way as the hydrophobic clusters analysis (see section 1.4.3) with corresponding
-command-line options --cmpsn-co, --cmpsn-perco, --cmpsn-residues. The residue list
+command-line options `--cmpsn-co`, `--cmpsn-perco`, `--cmpsn-residues`. The residue list
 includes by default all the natural amino acids except glycine.
 
 Distance between centers of mass is a common approximation of inter-residue distance, but
@@ -226,7 +227,7 @@ c_{AB} = d_{AB} - R_{gA} - R_{gB}
 Where $c_{AB}$ is the corrected distance between residues A and B, $R_{gX}$ is the radius of gyration
 of residue X and $d_{AB}$ is the distance between the centers of mass of residues A and B. $c_{AB}$ is
 then compared with the distance cut-off to determine if residues are in contact or not. The
-correction to cmPSN can be turned on by means of the --cmpsn-correction option.
+correction to cmPSN can be turned on by means of the `--cmpsn-correction` option.
 
 #### *1.4.7 acPSN*
 
@@ -243,10 +244,10 @@ numbers, called “normalization factors”. A normalization factor is defined f
 and acts as a proxy for the residue's propensity to form contacts. They were first calculated
 for the canonical amino acids by Kannan and Vishveshwara (Kannan and Vishveshwara,
 1999). For each pair of residues, the normalized result represents the “interaction strength”
-between the two residues. If the interaction strength exceeds a pre-defined cut-off (i_min), an
+between the two residues. If the interaction strength exceeds a pre-defined cut-off ($i_{min}$), an
 edge is drawn between the two residues with weight equal to the interaction strength. In the
 case of a conformational ensemble, an acPSN is calculated for each structure and only edges
-present in a minimum pre-determined percentage of structures in the ensemble (p_min) are
+present in a minimum pre-determined percentage of structures in the ensemble ($p_{min}$) are
 kept in the acPSN representing the whole ensemble. This percentage represents the
 “occurrence” of the edge in the structural ensemble. The interaction strength associated with
 each edge in the final acPSN is the average interaction strength for that edge over all the
@@ -254,25 +255,25 @@ structures where the edge was present. The edges in the final acPSN can be weigh
 on their average interaction strength or on their occurrence.
 The calculation of acPSN is accessible through the pyinteraph executable. Several options
 are available to fine-tune the parameters of the acPSN construction. For example, you can set
-the distance cut-off for a pair of atoms to be considered in contact with --acpsn-co. The default
+the distance cut-off for a pair of atoms to be considered in contact with `--acpsn-co`. The default
 distance cut-off is 4.5 Å, in agreement with the cut-off used to calculate the normalization
 factors performed by Kannan and Vishveshwara. On the other hand, an interaction strength
-cut-off different from the default (3.0) can be set using the --acpsn-imin option. Users can
-also set an occurrence cut-off on acPSN’s edges (--acpsn-perco), defaulting to 0.0 (no cut-
-off). Edge weighting can be selected via the --acpsn-ew option, with “strength” (interaction
+cut-off different from the default (3.0) can be set using the `--acpsn-imin` option. Users can
+also set an occurrence cut-off on acPSN’s edges (`--acpsn-perco`), defaulting to 0.0 (no cut-
+off). Edge weighting can be selected via the `--acpsn-ew` option, with “strength” (interaction
 strength) being the default. Customized normalization factors files can be passed through the
---acpsn-nf option. Unless the --acpsn-permissive option is active, residue types found in
+`--acpsn-nf` option. Unless the `--acpsn-permissive` option is active, residue types found in
 the topology or reference file which do not have a normalization factor associated will cause
 pyinteraph to exit with an error. However, users can set a default value for residue types with
-no normalization factor via the --acpsn-nf-default option when running in permissive mode.
+no normalization factor via the `--acpsn-nf-default` option when running in permissive mode.
 
 ### 1.5 Customizing the PyInteraph analysis
 
 The analyses performed by PyInteraph can be customized by defining the groups and atoms
 that are used to perform the calculation or other aspects, such as the normalization factors for
 acPSN. This is done by modifying the default configuration files and supplying them to
-PyInteraph and supplying them to the program by using the corresponding options (--sb-cg-
-file for salt bridges, --hb-ad-file for hydrogen bonds, --acpsn-nf-file for acPSN normalization
+PyInteraph and supplying them to the program by using the corresponding options (`--sb-cg-
+file` for salt bridges, `--hb-ad-file` for hydrogen bonds, `--acpsn-nf-file` for acPSN normalization
 factors. This is explained in section 3.3.2 of the tutorial.
 
 The main output file formats are explained below:
@@ -282,13 +283,13 @@ The main output file formats are explained below:
 In PyInteraph2, CSV files are used to store lists of edges (i.e. residue-residue contacts) found
 in a PSN. These CSV files are produced by pyinteraph when constructing a PSN, and are
 generated if the user passes one (or more) of the following options:
-* --cmpsn-csv if the PSN built is a cmPSN (-m, --cmpsn option used when running).
-* --acpsn-csv if the PSN built is an acPSN (-a, --acpsn option used when running).
-* --hc-csv if the PSN built is network of hydrophobic contacts (-f, --hydrophobic option
+* `--cmpsn-csv` if the PSN built is a cmPSN (`-m, --cmpsn` option used when running).
+* `--acpsn-csv` if the PSN built is an acPSN (`-a, --acpsn` option used when running).
+* `--hc-csv` if the PSN built is network of hydrophobic contacts (`-f, --hydrophobic` option
 used when running).
-* --sb-csv if the PSN built is network of salt bridges (-b, --salt-bridges option used when
+* `--sb-csv` if the PSN built is network of salt bridges (`-b, --salt-bridges` option used when
 running).
-* --hb-csv if the PSN built is network of hydrogen bonds (-y, --hydrogen-bonds option
+* `--hb-csv` if the PSN built is network of hydrogen bonds (`-y, --hydrogen-bonds` option
 used when running).
 
 #### *1.5.2 DAT files*
@@ -594,12 +595,12 @@ the topology and trajectory files. In the example provided below, only canonical
 present and therefore the configuration files do not require any modification. The
 pyinteraph script is conceived with a flag system to specify the kind of analyses to be carried
 out on the trajectory file and related parameters. The main flags are:
-* -b, –-salt-bridges : to analyze salt bridges.
-* -f, –-hydrophobic: to analyze hydrophobic interactions.
-* -y, –-hydrogen-bonds: to analyze hydrogen bonds.
-* -p, –-potential : to calculate the pairwise knowledge-based potential pseudo-energy.
-* -m, --cmpsn: to calculate the PSN based on side-chain centers of mass
-* -a, --acpsn: to calculate the PSN based on atomic contacts
+* `-b, –-salt-bridges` : to analyze salt bridges.
+* `-f, –-hydrophobic` : to analyze hydrophobic interactions.
+* `-y, –-hydrogen-bonds` : to analyze hydrogen bonds.
+* `-p, –-potential` : to calculate the pairwise knowledge-based potential pseudo-energy.
+* `-m, --cmpsn` : to calculate the PSN based on side-chain centers of mass
+* `-a, --acpsn` : to calculate the PSN based on atomic contacts
 
 With the following command line, you can run the analyses of the three interaction classes on
 CYPA MD trajectory. Or you can use the bash scripts in the folder
@@ -662,21 +663,21 @@ SYSTEM,82,LYS,sc.lys.NZp,SYSTEM,81,GLU,sc.glu.COOn,17.582417582417584
 ```
 
 Notice that if more than one flag is used in the same command line, it is possible to perform
-two or more analyses together, for example providing both -y and -f.
+two or more analyses together, for example providing both `-y` and `-f`.
 
 The sb-graph.dat, hb-graph.dat and hc-graph.dat files are the so-called IIN files. They are
 ASCII-encoded numerical matrices, which represent adjacency matrices for weighted graphs,
 as detailed above and in the publications.
 
-The --ff-masses option controls the force field masses associated with residue atoms, and it
+The `--ff-masses` option controls the force field masses associated with residue atoms, and it
 is therefore especially important for the analysis of hydrophobic interactions (refer to
-pyinteraph –h to have a full list of the force fields currently available). This option was mainly
+`pyinteraph –h` to have a full list of the force fields currently available). This option was mainly
 introduced to improve the support for united-atom force fields, for which atomic masses of
 united atoms significantly differ from those of all-atom force fields. Indeed, the information
 about force-field masses is saved in several files under the ff_masses directory, which are
 written in the standard JSON format. Support for new molecules and force fields can be easily
 added by generating the mass file from the standard GROMACS force field files, using the
-provided script parse_masses .
+provided script parse_masses.
 
 The dat files from the calculations above can be provided to filter_graph and graph_analysis
 for network analysis, with command lines similar to the ones we will describe below. They can
@@ -733,8 +734,8 @@ information about chain definitions.
 #### *Determination of the significance threshold*
 
 The biggest connected component size value calculated for each occurrence value is written
-in the `filter_graph` output file specified by –c flag, whereas a plot in PDF format of these
-data is available by passing the -p flag:
+in the `filter_graph` output file specified by `–c` flag, whereas a plot in PDF format of these
+data is available by passing the `-p` flag:
 
 ```bash
 filter_graph -d cmpsn_all.dat -c clusters_sizes.dat -p clusters_plot.pdf
@@ -755,7 +756,7 @@ weights below the specified threshold are discarded. This can be easily performe
 filter_graph -d cmpsn_all.dat -o cmpsn_all_filtered.dat -t 20.0
 ```
 
-The flag -t indicates the selected threshold of interaction occurrence values. Both threshold
+The flag `-t` indicates the selected threshold of interaction occurrence values. Both threshold
 estimation and filtering need to be performed on the individual graphs of each interaction class.
 Once you have performed this operation on the three graphs for the interactions (salt-bridges,
 hydrogen-bonds and hydrophobic interactions) and obtained three filtered graphs, you can
@@ -780,7 +781,7 @@ energy values indicate stronger interactions between residues and vice versa. Th
 available in two distinct formats. The first one (kb-potential.dat) lists every residue pair for
 which the calculated average interaction energy over the ensemble is nonzero. The same data
 are also stored in an adjacency matrix format (kbp-graph.dat), which is compatible with the
-xPyder plugin (Pasi et al., 2012). Finally, the –kbp-kbt option is available to specify the kb*T
+xPyder plugin (Pasi et al., 2012). Finally, the `–kbp-kbt` option is available to specify the kb*T
 value in the reverse Boltzmann equation. It is useful in case the user would like to provide a
 specific unit and temperature for the calculated energy values. The default value is 1.0.
 
@@ -808,9 +809,9 @@ The macro-IIN.dat is unweighted (i.e.,all weights are equal to 1) by default. It
 as unweighted matrix of data just for qualitative purposes (i.e. to have a map visualization of
 all the more persistent interactions in the protein and their reciprocal location). Nevertheless,
 it is also possible to assign weights to edges of the obtained graphs by supplying a weighted
-adjacency matrix file, with the command line option -w. In this way the edges that are present
+adjacency matrix file, with the command line option `-w`. In this way the edges that are present
 in the macro-IIN graph are weighted according to the corresponding value in the weighted
-adjacency matrix provided with -w. For instance, one could use the interaction pseudo-energy
+adjacency matrix provided with `-w`. For instance, one could use the interaction pseudo-energy
 map, which PyInteraph2 itself provides, as the weighted matrix. In the obtained output graph,
 only significant interactions would be considered and the respective edges would be weighted
 according to the side-chain interaction energy. Nonetheless, the script accepts any matrix with
@@ -828,8 +829,8 @@ The interaction pseudo-energy map is calculated as detailed in section 3.4.5
 
 In the example to calculate acPSN we will use the cutoffs suggested by the authors of the
 method (Kannan and Vishveshwara, 1999), i.e. a I_crit of 3.0 and a distance cutoff of 4.5 Å.
-We also discarded from the analysis, residues that contiguous in the sequence (setting --
-acpsn-proxco 2) as suggested in previous applications of the method.
+We also discarded from the analysis, residues that contiguous in the sequence (setting `--
+acpsn-proxco 2`) as suggested in previous applications of the method.
 
 ```bash
 pyinteraph -s pdbmovie_1.pdb -t ../../../3.filt_trjs/traj_prot_dt1000.xtc -r pdbmovie_1.pdb -a --acpsn-co 4.5
@@ -849,7 +850,7 @@ other graphs provided in the same format for which the user would like to carry 
 analysis, such as residue-based contact maps or matrices of correlated motions. In the
 examples below we refer to each of these files as $file.dat The graph file contains no
 information about residue type or residue number; a reference PDB file can be supplied with
-the –r flag to provide such information. In this case, the graph nodes are labelled after the
+the `–r` flag to provide such information. In this case, the graph nodes are labelled after the
 residue names and numbers found in the PDB file, in consecutive order (i.e. the first graph
 node corresponds to the first PDB residues and so on). If a PDB file is not provided, simple
 numerical indices will be used as node labels. It is advisable to keep the graph labels as a
@@ -871,7 +872,7 @@ node names strictly follow residue names. In particular, they are referred to as
 (where X, Y and a are the chain ID, residue number and residue type, respectively). If
 the reference PDB file does not include a chain ID, the X will be replaced by ‘SYSTEM’.
 This helps to easily identify residues in the output files and to provide residue labels
-for the input flags (i.e. for –s and –t in the path analysis procedure, for example). If no
+for the input flags (i.e. for `–s` and `–t` in the path analysis procedure, for example). If no
 reference file is supplied, numbers are used instead. In our example the list of graph
 nodes can be provided by the following command line:
 ```bash
@@ -879,9 +880,9 @@ graph_analysis -a $file.dat -r $reference.pdb
 ```
 
 * Identify connected components. The general analysis for the connected components
-can be performed with -c flag. It provides as standard output the list of identified
+can be performed with `-c` flag. It provides as standard output the list of identified
 connected components along with the residues belonging to each one. Moreover, if
-the user provides an additional -cb flag together with an input reference structure (-r
+the user provides an additional `-cb` flag together with an input reference structure (`-r`
 flag) an output PDB file will be written identical to the reference PDB, in which the B-
 factor column is replaced by the ID of the connected component to which the residue
 belongs. For instance, all residues having “1” as B-factor belong to the largest
@@ -894,9 +895,9 @@ graph_analysis -a cmpsn_all_filtered.dat -r pdbmovie_1.pdb -c -cb ccs.pdb
 
 * Identify hubs. Calculation of hubs is performed with the -u flag. It allows calculating the
 number of edges for each node, and the nodes connected to at least k other nodes are
-included in the output. The value of k can be set with the command line option –k (we
+included in the output. The value of k can be set with the command line option `–k` (we
 recommend setting this value equal to 3 or larger). If a reference input structure is used
-(-r flag), the option -ub can be added to save as output a PDB file identical to the
+(`-r` flag), the option -ub can be added to save as output a PDB file identical to the
 reference one except for the B-factor column, which will contain the number of edges
 for each identified hub node, and 0 in all the other cases (nodes with less than k edges).
 The command line for the analysis of hubs is:
@@ -912,11 +913,11 @@ graph_analysis -a cmpsn_all_filtered.dat -r pdbmovie_1.pdb -u -ub hubs.pdb -k 3
 equally long shortest paths may exist for a given pair of nodes, all of them will be
 reported by path_analysis.
 * We also support the ability to calculate all paths up to an arbitrary length. The maximum
-length is set with option -l.
+length is set with option `-l`.
 * Calculate the metapath of the graph. The option -m is used to calculate the metapath,
-while options -e and -n are used to set the filtering thresholds for nodes and edges,
-respectively. By default, both filtering thresholds have a value of 0.1. The -g option can
-be used to select the minimum sequence distance. The -d option can be used to set
+while options `-e` and `-n` are used to set the filtering thresholds for nodes and edges,
+respectively. By default, both filtering thresholds have a value of 0.1. The `-g` option can
+be used to select the minimum sequence distance. The `-d` option can be used to set
 the name of the metapath output file. This results in the creation of a DAT file containing
 an adjacency matrix representation of the metapath and a PDF file with a plot of the
 metaapath. The DAT file can be used for plotting the metapath in xPyder. An example
@@ -934,19 +935,19 @@ path_analysis -i cmpsn_all_filtered.dat -r pdbmovie_1.pdb -m -g 3 -e 0.1 -n 0.1 
     * The node and edge based centralities are written to different files. By default,
 the node based centralities are saved in a file called “centrality.txt” while edge
 based centralities are outputted in a file called “centrality_edge.txt”. These can
-be changed with the -o option.
-* The node centrality file can be sorted based on a centrality value using the -b option
+be changed with the `-o` option.
+* The node centrality file can be sorted based on a centrality value using the `-b` option
 followed by the centrality name and the edge centralities can similarly be sorted using
-the -d option.
-* The -p option allows the user to additionally create pdb files for each node centrality
+the `-d` option.
+* The `-p` option allows the user to additionally create pdb files for each node centrality
 measure where the B factor column is replaced with the centrality value. This can be
 used for plotting in PyMOL. The -m option allows the user to create .dat files containing
 the adjacency matrix of all the edge centrality values. This can be visualized using
 xPyder
-* The -n option is used to normalize all centrality values to the range 0 to 1 where
-applicable. This is set to True by default. The -e option allows the use of endpoints
+* The `-n` option is used to normalize all centrality values to the range 0 to 1 where
+applicable. This is set to True by default. The `-e` option allows the use of endpoints
 when calculating shortest paths in closeness and betweenness centrality. This is set
-to False by default. The -x and -t options are used for the maximum number of
+to False by default. The `-x` and `-t` options are used for the maximum number of
 iterations and tolerance values when calculating eigenvector centrality. By default they
 are set to 1e-06 and 100 respectively.
 * An example command to calculate all node and edge based centrality measures:
