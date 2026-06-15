@@ -267,6 +267,110 @@ the topology or reference file which do not have a normalization factor associat
 pyinteraph to exit with an error. However, users can set a default value for residue types with
 no normalization factor via the `--acpsn-nf-default` option when running in permissive mode.
 
+#### *1.4.8 Correlated motion - DCCM and LMI*
+
+Correlated motion analyses are used to describe how residues move with respect to each
+other during a molecular dynamics simulation. While contact-based protein structure network
+analyses describe the structural connectivity between residues, correlation-based analyses
+describe dynamic relationships between residues.
+
+Before calculating correlated motions, the trajectory is aligned to a reference structure in order
+to remove global translation and rotation of the protein. The atom selection used for the
+calculation is typically the alpha-carbon atoms (`name CA`), so that each residue is represented
+by one coordinate trace through the trajectory. The calculation can be performed using either
+the dynamic cross-correlation matrix (DCCM) or linear mutual information (LMI), with the
+corresponding command-line option `--method dccm` or `--method lmi`. The atoms used for
+trajectory alignment and for the correlation calculation can be controlled with `--align` and
+`--select`, respectively.
+
+The first step is to calculate the fluctuation of each selected atom around its average position
+throughout the trajectory. For residue $i$, the fluctuation vector at frame $t$ is defined as:
+
+```math
+\Delta \mathbf{r}_i(t) = \mathbf{r}_i(t) - \langle \mathbf{r}_i \rangle
+```
+
+<br>
+
+Where $\mathbf{r}_i(t)$ is the position of residue $i$ at frame $t$, and
+$\langle \mathbf{r}_i \rangle$ is the average position of residue $i$ over all frames.
+
+The dynamic cross-correlation matrix (DCCM) measures the linear correlation between the
+fluctuations of residue pairs. For residues $i$ and $j$, the DCCM value is calculated as:
+
+```math
+C_{ij} =
+\frac{
+\langle \Delta \mathbf{r}_i \cdot \Delta \mathbf{r}_j \rangle
+}{
+\sqrt{
+\langle \Delta \mathbf{r}_i \cdot \Delta \mathbf{r}_i \rangle
+\langle \Delta \mathbf{r}_j \cdot \Delta \mathbf{r}_j \rangle
+}
+}
+```
+
+<br>
+
+Where $\Delta \mathbf{r}_i$ and $\Delta \mathbf{r}_j$ are the fluctuation vectors of residues
+$i$ and $j$, and $\langle \cdot \rangle$ denotes an average over the trajectory frames.
+
+The resulting DCCM is an $N \times N$ matrix, where $N$ is the number of selected residues.
+Each matrix element describes the degree to which two residues move in a correlated or
+anti-correlated manner. DCCM values range from $-1$ to $1$. A value close to $1$ indicates
+that two residues tend to move in the same direction, a value close to $-1$ indicates that they
+tend to move in opposite directions, and a value close to $0$ indicates little or no linear
+correlation between their motions.
+
+Linear mutual information (LMI) is another measure of correlated motion. Unlike DCCM, which
+is based directly on the dot product between fluctuation vectors, LMI uses covariance matrices
+to estimate how much information the motion of one residue provides about the motion of
+another residue. For each residue, the three Cartesian components of its fluctuation are used
+to describe its positional distribution during the simulation.
+
+For two residues $i$ and $j$, the LMI is calculated from the covariance matrix of residue $i$,
+the covariance matrix of residue $j$, and the joint covariance matrix of both residues:
+
+```math
+I_{ij} =
+\frac{1}{2}
+\ln
+\left(
+\frac{
+\det C_i \det C_j
+}{
+\det C_{ij}
+}
+\right)
+```
+
+<br>
+
+Where $C_i$ and $C_j$ are the $3 \times 3$ covariance matrices of residues $i$ and $j$,
+respectively, and $C_{ij}$ is the $6 \times 6$ joint covariance matrix containing the combined
+fluctuations of both residues.
+
+The LMI value is non-negative. Larger values indicate stronger statistical dependence between
+the motions of two residues, while values close to zero indicate that the motions of the two
+residues are approximately independent. Since LMI is not naturally bounded between 0 and 1,
+it is converted into a normalized correlation-like value:
+
+```math
+r_{MI} =
+\sqrt{
+1 - e^{-\frac{2}{3}I_{ij}}
+}
+```
+
+<br>
+
+This normalized LMI value ranges from 0 to 1, where values close to 1 indicate strong
+dependence between residue motions and values close to 0 indicate weak dependence.
+
+The final output of the correlated motion analysis is a residue-by-residue matrix. For DCCM,
+the matrix contains signed correlation values between $-1$ and $1$. For LMI, the matrix
+normalized values between 0 and 1. 
+
 ### 1.5 Customizing the PyInteraph analysis
 
 The analyses performed by PyInteraph can be customized by defining the groups and atoms
@@ -301,7 +405,7 @@ and each matrix element represents the interaction between them (i.e., a graph e
 of 0 indicates that the edge between those two residues doesn’t exist, a different value
 represents the weight of that interaction (or 1 for unweighted graphs). They are used as
 inputs/outputs in `pyinteraph`, `filter_graph`, `graph_analysis`, `path_analysis`,
-`centrality_analysis`.
+`centrality_analysis`, `motion_correlation`.
 
 #### *1.5.3 GRAPHML files*
 
