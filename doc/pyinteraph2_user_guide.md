@@ -267,23 +267,15 @@ the topology or reference file which do not have a normalization factor associat
 pyinteraph to exit with an error. However, users can set a default value for residue types with
 no normalization factor via the `--acpsn-nf-default` option when running in permissive mode.
 
-#### *1.4.8 Correlated motion - DCCM and LMI*
+### 1.5 Correlated motion - DCCM and LMI
 
-Correlated motion analyses are used to describe how residues move with respect to each
-other during a molecular dynamics simulation. While contact-based protein structure network
-analyses describe the structural connectivity between residues, correlation-based analyses
-describe dynamic relationships between residues.
+Pyinteraph2 also contains a program to calculate correlated motions of individual residues according to Dynamical 
+Cross-Correlation and Linear Mutual Information. Correlated motion analyses are used to describe 
+how residues move with respect to each other during a molecular dynamics simulation. While 
+contact-based protein structure network analyses describe the structural connectivity between 
+residues, correlation-based analyses describe dynamic relationships between residues.
 
-Before calculating correlated motions, the trajectory is aligned to a reference structure in order
-to remove global translation and rotation of the protein. The atom selection used for the
-calculation is typically the alpha-carbon atoms (`name CA`), so that each residue is represented
-by one coordinate trace through the trajectory. The calculation can be performed using either
-the dynamic cross-correlation matrix (DCCM) or linear mutual information (LMI), with the
-corresponding command-line option `--method dccm` or `--method lmi`. The atoms used for
-trajectory alignment and for the correlation calculation can be controlled with `--align` and
-`--select`, respectively.
-
-The first step is to calculate the fluctuation of each selected atom around its average position
+Both DCCM and LMI first require to calculate the fluctuation of each selected atom around its average position
 throughout the trajectory. For residue $i$, the fluctuation vector at frame $t$ is defined as:
 
 ```math
@@ -367,11 +359,24 @@ r_{MI} =
 This normalized LMI value ranges from 0 to 1, where values close to 1 indicate strong
 dependence between residue motions and values close to 0 indicate weak dependence.
 
+The script `motion_correlation` requires a trajectory and a topology file to run. 
+Before doing any calculation, the script aligns the trajectory to a reference structure in order
+to remove global translation and rotation of the protein. The atom selection used for the
+alignment and the calculation is typically the alpha-carbon atoms (`name CA`), so that each residue 
+is represented by one coordinate trace through the trajectory. The atoms used for
+trajectory alignment and for the correlation calculation can be controlled with `--align` and
+`--select`, respectively. The calculation can then be performed using either
+the dynamic cross-correlation matrix (DCCM) or linear mutual information (LMI), with the
+corresponding command-line option `--method dccm` or `--method lmi`. 
+
 The final output of the correlated motion analysis is a residue-by-residue matrix. For DCCM,
 the matrix contains signed correlation values between $-1$ and $1$. For LMI, the matrix
-normalized values between 0 and 1. 
+normalized values between 0 and 1. A csv file is also generated with a list of all the residue -
+residue pairs and their corresponding correlation or mututal information value. The names of these
+output files can be modified with the corresponding command-line option `--output` for the residue-by-residue
+matrix and `--csv` for the csv file.
 
-### 1.5 Customizing the PyInteraph analysis
+### 1.6 Customizing the PyInteraph analysis
 
 The analyses performed by PyInteraph can be customized by defining the groups and atoms
 that are used to perform the calculation or other aspects, such as the normalization factors for
@@ -382,7 +387,7 @@ factors. This is explained in section 3.3.2 of the tutorial.
 
 The main output file formats are explained below:
 
-#### *1.5.1 CSV files*
+#### *1.6.1 CSV files*
 
 In PyInteraph2, CSV files are used to store lists of edges (i.e. residue-residue contacts) found
 in a PSN. These CSV files are produced by pyinteraph when constructing a PSN, and are
@@ -396,7 +401,7 @@ running).
 * `--hb-csv` if the PSN built is network of hydrogen bonds (`-y, --hydrogen-bonds` option
 used when running).
 
-#### *1.5.2 DAT files*
+#### *1.6.2 DAT files*
 
 Differently from CSV files, DAT files in PyInteraph2 are used to store matrices representing
 the PSNs. They are simple ASCII text files which encode for a symmetric square matrix, which
@@ -407,7 +412,7 @@ represents the weight of that interaction (or 1 for unweighted graphs). They are
 inputs/outputs in `pyinteraph`, `filter_graph`, `graph_analysis`, `path_analysis`,
 `centrality_analysis`, `motion_correlation`.
 
-#### *1.5.3 GRAPHML files*
+#### *1.6.3 GRAPHML files*
 
 Finally, Pyinteraph2 generates graphml formatted files (GFFs) to extend the utilization of
 already generated PSN matrices. GFFs might be given as input to any graphml-supported
