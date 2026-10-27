@@ -350,6 +350,25 @@ def sb_references(ref_dirs):
 
 
 @pytest.fixture
+def sb_same_charge_references(ref_dirs):
+
+    # Directories containing expected results for the system with
+    # one chain or two chains
+    oc = ref_dirs["one_chain"]
+
+    # Names of the tables and matrices
+    table = "salt-bridges"
+    matrix = "sb-graph"
+
+    # Expected results for the salt bridges
+    return \
+        {"tables" :
+          {"one_chain": open(f"{oc}/salt-bridges_all.csv").readlines()},
+         "matrices" :
+            {"one_chain": np.loadtxt(f"{oc}/rep-graph_all.dat")}}
+
+
+@pytest.fixture
 def hb_references(ref_dirs):
 
     # Directories containing expected results for the system with
@@ -512,6 +531,22 @@ def sb_parameters(sb_charged_groups):
             "mindist" : True,
             "mindist_mode" : "diff",
             "cgs" : sb_charged_groups}
+
+@pytest.fixture
+def sb_same_charge_parameters(sb_charged_groups):
+    return {
+        "identfunc": li.generate_cg_identifiers,
+        "co": 4.5, 
+        "perco": 0,  
+        "ffmasses": "charmm27",  
+        "fullmatrixfunc": li.calc_cg_fullmatrix,
+        "mindist": True,
+        "mindist_mode": "diff",
+        "cgs": sb_charged_groups,  
+        "sb_mode": "same_charge",  
+        "include_backbone": True,  
+        "sb_graph": "rep-graph.dat"  
+    }
 
 
 @pytest.fixture
@@ -914,6 +949,26 @@ def test_do_sb(systems,
     # Test the equality between the table computed and the reference
     for i, t in enumerate(table):
         assert(",".join(str(x) for x in t) == ref_table[i].strip())
+
+def test_do_sb_same_charge(systems, sb_same_charge_parameters, sb_references):
+
+    # Get the reference table and the reference matrix
+    ref_table = sb_references["tables"]["one_chain"]
+    ref_matrix = sb_references["matrices"]["one_chain"]
+
+    # Compute the table and the matrix with same-charge mode
+    table, matrix = li.do_interact(
+        pdb=systems["one_chain"]["pdb"],
+        uni=systems["one_chain"]["uni"],
+        **sb_same_charge_parameters
+    )
+
+    # Test the equality between the matrix computed and the reference
+    assert_almost_equal(matrix, ref_matrix, decimal=1)
+
+    # Test the equality between the table computed and the reference
+    for i, t in enumerate(table):
+        assert ",".join(str(x) for x in t) == ref_table[i].strip()
 
 
 def test_create_dict_tables_sb(sb_twochains,

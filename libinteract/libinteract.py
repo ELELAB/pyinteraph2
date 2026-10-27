@@ -561,7 +561,7 @@ def calc_dist_matrix(uni,
         elif mindist_mode == "same":
             sets = [(pos, pos), (neg, neg)]
             sets_idxs = [(pos_idxs, pos_idxs), (neg_idxs, neg_idxs)]
-            sets_sizes = [(pos_sizes, pos_sizes), (neg_idxs, neg_sizes)]
+            sets_sizes = [(pos_sizes, pos_sizes), (neg_sizes, neg_sizes)]
 
         # If we are interested in both
         elif mindist_mode == "both":
